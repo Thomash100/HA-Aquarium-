@@ -1,4 +1,4 @@
-﻿install_resources:
+install_resources:
   name: Install or export resources
   description: Copy blueprint and dashboard resources from the integration into the Home Assistant config directory.
   fields:

@@ -1,4 +1,4 @@
-﻿type: markdown
+type: markdown
 title: Aquarium LED Cockpit
 content: >-
   {% set entity = 'sensor.aquarium_led_cockpit_status' %}

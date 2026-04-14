@@ -1,4 +1,4 @@
-﻿# Aquarium LED Cockpit
+# Aquarium LED Cockpit
 
 Aquarium LED Cockpit is a HACS-installable Home Assistant custom integration for aquarium lighting automations.
 It exports the aquarium LED blueprint into the correct Home Assistant folders, provides ready-to-paste dashboard cards,

@@ -1,4 +1,4 @@
-﻿"""Constants for the Aquarium LED Cockpit integration."""
+"""Constants for the Aquarium LED Cockpit integration."""
 
 DOMAIN = "aquarium_led_cockpit"
 

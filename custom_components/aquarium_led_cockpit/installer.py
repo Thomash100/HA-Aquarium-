@@ -1,4 +1,4 @@
-﻿"""File export helpers for Aquarium LED Cockpit."""
+"""File export helpers for Aquarium LED Cockpit."""
 from __future__ import annotations
 
 from dataclasses import dataclass

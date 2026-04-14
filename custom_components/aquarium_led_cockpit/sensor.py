@@ -1,4 +1,4 @@
-﻿"""Sensor platform for Aquarium LED Cockpit."""
+"""Sensor platform for Aquarium LED Cockpit."""
 from __future__ import annotations
 
 from typing import Any

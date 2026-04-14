@@ -1,4 +1,4 @@
-﻿Aquarium LED Cockpit exported files
+Aquarium LED Cockpit exported files
 ===================================
 
 This folder contains the files exported by the HACS integration.

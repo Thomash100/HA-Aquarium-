@@ -1,4 +1,4 @@
-﻿"""The Aquarium LED Cockpit integration."""
+"""The Aquarium LED Cockpit integration."""
 from __future__ import annotations
 
 import json

@@ -1,4 +1,4 @@
-﻿"""Runtime state for Aquarium LED Cockpit."""
+"""Runtime state for Aquarium LED Cockpit."""
 from __future__ import annotations
 
 from collections.abc import Callable

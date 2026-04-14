@@ -1,4 +1,4 @@
-﻿"""Config flow for Aquarium LED Cockpit."""
+"""Config flow for Aquarium LED Cockpit."""
 from __future__ import annotations
 
 import voluptuous as vol

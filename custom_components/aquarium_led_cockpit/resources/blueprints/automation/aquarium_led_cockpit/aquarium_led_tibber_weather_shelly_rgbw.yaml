@@ -1,4 +1,4 @@
-﻿blueprint:
+blueprint:
   name: Aquarium LED mit Tibber, Wetter und Tagesphasen fuer Shelly RGBW steuern
   description: >
     Steuert Aquarium-LEDs ueber Home Assistant und Shelly-RGBW-Lichter anhand
