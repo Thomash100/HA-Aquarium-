@@ -880,7 +880,7 @@ actions:
         sequence:
           - action: input_text.set_value
             target:
-              entity_id: !input status_text_entity
+              entity_id: "{{ status_text_entity }}"
             data:
               value: "{{ dashboard_status_json }}"
 
