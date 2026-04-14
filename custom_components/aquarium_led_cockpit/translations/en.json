@@ -1,0 +1,73 @@
+﻿{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Aquarium LED Cockpit",
+        "description": "Install the aquarium blueprint and export dashboard snippets into your Home Assistant configuration.",
+        "data": {
+          "install_blueprint": "Install blueprint",
+          "export_dashboard_snippets": "Export dashboard snippets",
+          "export_legacy_files": "Export legacy helper and cards",
+          "overwrite_existing": "Overwrite existing files",
+          "auto_install": "Export resources automatically after setup"
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Only one Aquarium LED Cockpit instance is supported."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Aquarium LED Cockpit options",
+        "description": "Choose which files should be exported automatically.",
+        "data": {
+          "install_blueprint": "Install blueprint",
+          "export_dashboard_snippets": "Export dashboard snippets",
+          "export_legacy_files": "Export legacy helper and cards",
+          "overwrite_existing": "Overwrite existing files",
+          "auto_install": "Export resources automatically after setup"
+        }
+      }
+    }
+  },
+  "services": {
+    "install_resources": {
+      "name": "Install or export resources",
+      "description": "Copy packaged blueprint and dashboard files into the Home Assistant config directory.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Config entry id",
+          "description": "Optional config entry id if you need to target a specific entry."
+        },
+        "install_blueprint": {
+          "name": "Install blueprint",
+          "description": "Export the aquarium automation blueprint."
+        },
+        "export_dashboard_snippets": {
+          "name": "Export dashboard snippets",
+          "description": "Export the sensor based dashboard YAML snippets."
+        },
+        "export_legacy_files": {
+          "name": "Export legacy files",
+          "description": "Export the input_text helper package and the older dashboard variants."
+        },
+        "overwrite_existing": {
+          "name": "Overwrite existing files",
+          "description": "Replace files that already exist at the target location."
+        }
+      }
+    },
+    "set_dashboard_status": {
+      "name": "Set dashboard status",
+      "description": "Update the live Aquarium LED Cockpit sensor from an automation.",
+      "fields": {
+        "status_json": {
+          "name": "Status JSON",
+          "description": "Compact JSON object with the aquarium status payload."
+        }
+      }
+    }
+  }
+}

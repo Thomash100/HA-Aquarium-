@@ -1,0 +1,73 @@
+﻿{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Aquarium LED Cockpit",
+        "description": "Installiert die Aquarium-Blueprint und exportiert Dashboard-Snippets in deine Home-Assistant-Konfiguration.",
+        "data": {
+          "install_blueprint": "Blueprint installieren",
+          "export_dashboard_snippets": "Dashboard-Snippets exportieren",
+          "export_legacy_files": "Legacy-Helper und Karten exportieren",
+          "overwrite_existing": "Vorhandene Dateien ueberschreiben",
+          "auto_install": "Ressourcen nach dem Setup automatisch exportieren"
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Es wird nur eine Aquarium LED Cockpit Instanz unterstuetzt."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Aquarium LED Cockpit Optionen",
+        "description": "Waehle aus, welche Dateien automatisch exportiert werden sollen.",
+        "data": {
+          "install_blueprint": "Blueprint installieren",
+          "export_dashboard_snippets": "Dashboard-Snippets exportieren",
+          "export_legacy_files": "Legacy-Helper und Karten exportieren",
+          "overwrite_existing": "Vorhandene Dateien ueberschreiben",
+          "auto_install": "Ressourcen nach dem Setup automatisch exportieren"
+        }
+      }
+    }
+  },
+  "services": {
+    "install_resources": {
+      "name": "Ressourcen installieren oder exportieren",
+      "description": "Kopiert Blueprint- und Dashboard-Dateien aus der Integration in das Home-Assistant-Konfigurationsverzeichnis.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Config-Entry-ID",
+          "description": "Optionale Config-Entry-ID, wenn gezielt eine bestimmte Instanz angesprochen werden soll."
+        },
+        "install_blueprint": {
+          "name": "Blueprint installieren",
+          "description": "Exportiert die Aquarium-Automatisierungs-Blueprint."
+        },
+        "export_dashboard_snippets": {
+          "name": "Dashboard-Snippets exportieren",
+          "description": "Exportiert die sensorbasierte Dashboard-YAML."
+        },
+        "export_legacy_files": {
+          "name": "Legacy-Dateien exportieren",
+          "description": "Exportiert das input_text-Helferpaket und die aelteren Dashboard-Varianten."
+        },
+        "overwrite_existing": {
+          "name": "Vorhandene Dateien ueberschreiben",
+          "description": "Ersetzt Dateien, die am Ziel bereits vorhanden sind."
+        }
+      }
+    },
+    "set_dashboard_status": {
+      "name": "Dashboard-Status setzen",
+      "description": "Aktualisiert den Live-Statussensor Aquarium LED Cockpit aus einer Automatisierung.",
+      "fields": {
+        "status_json": {
+          "name": "Status-JSON",
+          "description": "Kompaktes JSON-Objekt mit dem Status des Aquariums."
+        }
+      }
+    }
+  }
+}

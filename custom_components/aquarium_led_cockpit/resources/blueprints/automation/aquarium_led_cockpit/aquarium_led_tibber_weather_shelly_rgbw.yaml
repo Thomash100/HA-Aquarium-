@@ -1,0 +1,925 @@
+﻿blueprint:
+  name: Aquarium LED mit Tibber, Wetter und Tagesphasen fuer Shelly RGBW steuern
+  description: >
+    Steuert Aquarium-LEDs ueber Home Assistant und Shelly-RGBW-Lichter anhand
+    von Tageszeit, Tibber-Boersenstrompreis oder alternativen Preis-Entitaeten und aktuellem Wetter. Die
+    Beleuchtung simuliert Sonnenaufgang, Tag, Sonnenuntergang und Nacht,
+    dimmt bei hohen Strompreisen den Verbrauch herunter und erzeugt tagsueber
+    eine einfache Wolkensimulation. Die Zeitbasis kann ueber einen editierbaren
+    Zeitzonen-/Zeitversatz angepasst werden. Das Blueprint erwartet, dass die
+    ausgewaehlten Farblicht-Entitaeten rgbw_color unterstuetzen oder den Wert
+    sinnvoll umsetzen.
+  domain: automation
+  input:
+    rgbw_lights:
+      name: Shelly RGBW-Lichter
+      description: Eine oder mehrere Farblicht-Entitaeten fuer das Aquarium.
+      selector:
+        entity:
+          filter:
+            - domain: light
+          multiple: true
+    white_lights:
+      name: Optionale Weisskanaele
+      description: >
+        Optionale reine Weiss-Lichter oder Weisskanaele, die aus dem
+        berechneten W-Anteil mit angesteuert werden.
+      default: []
+      selector:
+        entity:
+          filter:
+            - domain: light
+          multiple: true
+    weather_entity:
+      name: Wetter-Entitaet
+      description: Wetter-Entitaet fuer die Wolkensimulation und Grunddaempfung.
+      selector:
+        entity:
+          filter:
+            - domain: weather
+    sun_entity:
+      name: Sonnen-Entitaet
+      description: Normalerweise sun.sun fuer datumsabhaengigen Sonnenaufgang und Sonnenuntergang.
+      default: sun.sun
+      selector:
+        entity:
+          filter:
+            - domain: sun
+    price_entity_current:
+      name: Alternative Preis-Entitaet aktuell optional
+      description: >
+        Optionale entity_id eines Sensors mit aktuellem Strompreis. Wenn gesetzt
+        und numerisch, wird diese Preisquelle statt Tibber verwendet. Damit
+        koennen auch andere Anbieter eingebunden werden.
+      default: ""
+      selector:
+        text:
+    price_entity_min:
+      name: Alternative Preis-Entitaet guenstig optional
+      description: >
+        Optionale entity_id eines Sensors mit guenstigem Referenzpreis, zum
+        Beispiel Tagesminimum oder billigster bevorstehender Preis.
+      default: ""
+      selector:
+        text:
+    price_entity_max:
+      name: Alternative Preis-Entitaet teuer optional
+      description: >
+        Optionale entity_id eines Sensors mit teurem Referenzpreis, zum
+        Beispiel Tagesmaximum oder teuerster bevorstehender Preis.
+      default: ""
+      selector:
+        text:
+    price_entity_cheap:
+      name: Alternative Guenstig-Entitaet optional
+      description: >
+        Optionale entity_id eines binary_sensor, input_boolean oder aehnlichen
+        Helfers. Wenn diese Entitaet on ist, wird der Bonus fuer billige
+        Phasen auch ohne Tibber aktiviert.
+      default: ""
+      selector:
+        text:
+    tibber_home_name:
+      name: Tibber Home-Name optional
+      description: >
+        Falls dein Tibber-Account mehrere Homes hat, trage hier den Home-Key
+        aus tibber.get_prices ein. Sonst kann das Feld leer bleiben.
+      default: ""
+      selector:
+        text:
+    price_lookahead_hours:
+      name: Tibber-Vorausblick in Stunden
+      description: So viele kommende Stunden werden fuer die Preisbewertung betrachtet.
+      default: 24
+      selector:
+        number:
+          min: 6
+          max: 48
+          step: 1
+          unit_of_measurement: h
+          mode: slider
+    cheapest_hours_count:
+      name: Anzahl billiger Stunden fuer Bonus
+      description: >
+        Liegt die aktuelle Stunde in diesem guenstigen Fenster, kann die
+        Helligkeit leicht angehoben werden.
+      default: 4
+      selector:
+        number:
+          min: 1
+          max: 24
+          step: 1
+          unit_of_measurement: h
+          mode: slider
+    price_dimming_strength_pct:
+      name: Preisabhaengige Daempfung in Prozent
+      description: >
+        Wie stark hohe Strompreise die Tageshelligkeit reduzieren duerfen.
+      default: 40
+      selector:
+        number:
+          min: 0
+          max: 90
+          step: 1
+          unit_of_measurement: "%"
+          mode: slider
+    cheap_hours_bonus_pct:
+      name: Bonus in billigen Stunden in Prozent
+      description: >
+        Zusaetzliche Aufhellung, wenn die aktuelle Stunde zu den billigsten
+        kommenden Stunden gehoert.
+      default: 10
+      selector:
+        number:
+          min: 0
+          max: 40
+          step: 1
+          unit_of_measurement: "%"
+          mode: slider
+    minimum_price_factor_pct:
+      name: Mindest-Helligkeit trotz hohem Preis in Prozent
+      description: Unter diese Preisfaktor-Grenze wird tagsueber nicht gedimmt.
+      default: 55
+      selector:
+        number:
+          min: 10
+          max: 100
+          step: 1
+          unit_of_measurement: "%"
+          mode: slider
+    timezone_offset_minutes:
+      name: Globaler Tagesphasen-Versatz in Minuten
+      description: >
+        Verschiebt die automatisch aus der Sonnen-Entitaet berechneten Tagesphasen.
+        Positive Werte spaeter, negative frueher.
+      default: 0
+      selector:
+        number:
+          min: -720
+          max: 720
+          step: 15
+          unit_of_measurement: min
+          mode: box
+    sunrise_offset_minutes:
+      name: Zusatz-Versatz Sonnenaufgang in Minuten
+      description: >
+        Verschiebt nur den Beginn des Sonnenaufgangs relativ zur berechneten
+        Sonnenaufgangszeit.
+      default: 0
+      selector:
+        number:
+          min: -240
+          max: 240
+          step: 5
+          unit_of_measurement: min
+          mode: box
+
+
+    sunrise_duration_minutes:
+      name: Dauer Sonnenaufgang in Minuten
+      default: 120
+      selector:
+        number:
+          min: 5
+          max: 360
+          step: 5
+          unit_of_measurement: min
+          mode: slider
+    sunset_offset_minutes:
+      name: Zusatz-Versatz Sonnenuntergang in Minuten
+      description: >
+        Verschiebt nur den Beginn des Sonnenuntergangs relativ zur berechneten
+        Sonnenuntergangszeit.
+      default: 0
+      selector:
+        number:
+          min: -240
+          max: 240
+          step: 5
+          unit_of_measurement: min
+          mode: box
+
+
+    sunset_duration_minutes:
+      name: Dauer Sonnenuntergang in Minuten
+      default: 150
+      selector:
+        number:
+          min: 5
+          max: 360
+          step: 5
+          unit_of_measurement: min
+          mode: slider
+    day_brightness_pct:
+      name: Basis-Helligkeit am Tag in Prozent
+      default: 90
+      selector:
+        number:
+          min: 1
+          max: 100
+          step: 1
+          unit_of_measurement: "%"
+          mode: slider
+    night_brightness_pct:
+      name: Nacht-/Mondlicht-Helligkeit in Prozent
+      description: 0 schaltet nachts ganz aus.
+      default: 2
+      selector:
+        number:
+          min: 0
+          max: 30
+          step: 1
+          unit_of_measurement: "%"
+          mode: slider
+    weather_dimming_strength_pct:
+      name: Wetterbedingte Grunddaempfung in Prozent
+      description: >
+        Grundsaetzliche Daempfung bei hoher Bewoelkung oder schlechtem Wetter.
+      default: 20
+      selector:
+        number:
+          min: 0
+          max: 60
+          step: 1
+          unit_of_measurement: "%"
+          mode: slider
+    cloud_simulation_strength_pct:
+      name: Staerke der Wolkensimulation in Prozent
+      description: >
+        Bestimmt, wie stark wandernde Wolken die Helligkeit tagsueber zusaetzlich
+        absenken.
+      default: 45
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 1
+          unit_of_measurement: "%"
+          mode: slider
+    minimum_weather_factor_pct:
+      name: Mindest-Helligkeit trotz Wetter in Prozent
+      description: Unter diese Wetter-Grenze wird tagsueber nicht gedimmt.
+      default: 50
+      selector:
+        number:
+          min: 10
+          max: 100
+          step: 1
+          unit_of_measurement: "%"
+          mode: slider
+    transition_seconds:
+      name: Uebergangszeit in Sekunden
+      description: >
+        Weiche Uebergaenge fuer Sonnenaufgang, Sonnenuntergang und Wolken.
+      default: 240
+      selector:
+        number:
+          min: 0
+          max: 1800
+          step: 5
+          unit_of_measurement: s
+          mode: box
+    dawn_rgbw:
+      name: RGBW-Farbe Morgendaemmerung
+      description: Werte als R,G,B,W mit 0 bis 255.
+      default: "255,140,60,30"
+      selector:
+        text:
+    day_rgbw:
+      name: RGBW-Farbe Tag
+      description: Werte als R,G,B,W mit 0 bis 255.
+      default: "120,180,255,220"
+      selector:
+        text:
+    dusk_rgbw:
+      name: RGBW-Farbe Abenddaemmerung
+      description: Werte als R,G,B,W mit 0 bis 255.
+      default: "255,90,30,12"
+      selector:
+        text:
+    night_rgbw:
+      name: RGBW-Farbe Nacht
+      description: Werte als R,G,B,W mit 0 bis 255.
+      default: "15,30,90,0"
+      selector:
+        text:
+    status_text_entity:
+      name: Optionale Dashboard-Status-Entitaet
+      description: >
+        Optionale input_text-Entitaet, in die die Automatisierung einen kompakten
+        JSON-Status fuer das Dashboard schreibt.
+      default: ""
+      selector:
+        text:
+    debug_notification:
+      name: Debug-Benachrichtigung
+      description: >
+        Erstellt oder aktualisiert eine persistente Benachrichtigung mit Phase,
+        Preis-, Wetter- und Farbwerten.
+      default: false
+      selector:
+        boolean:
+
+mode: restart
+max_exceeded: silent
+
+triggers:
+  - trigger: homeassistant
+    event: start
+
+  - trigger: time_pattern
+    minutes: "/5"
+
+  - trigger: state
+    entity_id:
+      - !input weather_entity
+      - !input sun_entity
+
+variables:
+  rgbw_lights: !input rgbw_lights
+  white_lights: !input white_lights
+  weather_entity: !input weather_entity
+  sun_entity: !input sun_entity
+  price_entity_current: !input price_entity_current
+  price_entity_min: !input price_entity_min
+  price_entity_max: !input price_entity_max
+  price_entity_cheap: !input price_entity_cheap
+  tibber_home_name: !input tibber_home_name
+  price_lookahead_hours: !input price_lookahead_hours
+  cheapest_hours_count: !input cheapest_hours_count
+  price_dimming_strength_pct: !input price_dimming_strength_pct
+  cheap_hours_bonus_pct: !input cheap_hours_bonus_pct
+  minimum_price_factor_pct: !input minimum_price_factor_pct
+  timezone_offset_minutes: !input timezone_offset_minutes
+  sunrise_offset_minutes: !input sunrise_offset_minutes
+  sunrise_duration_minutes: !input sunrise_duration_minutes
+  sunset_offset_minutes: !input sunset_offset_minutes
+  sunset_duration_minutes: !input sunset_duration_minutes
+  day_brightness_pct: !input day_brightness_pct
+  night_brightness_pct: !input night_brightness_pct
+  weather_dimming_strength_pct: !input weather_dimming_strength_pct
+  cloud_simulation_strength_pct: !input cloud_simulation_strength_pct
+  minimum_weather_factor_pct: !input minimum_weather_factor_pct
+  transition_seconds: !input transition_seconds
+  dawn_rgbw: !input dawn_rgbw
+  day_rgbw: !input day_rgbw
+  dusk_rgbw: !input dusk_rgbw
+  night_rgbw: !input night_rgbw
+  status_text_entity: !input status_text_entity
+  debug_notification: !input debug_notification
+
+actions:
+  - alias: Preisquelle bestimmen
+    variables:
+      price_source_mode: >-
+        {% set entity_id = price_entity_current | string | trim %}
+        {% if entity_id != '' and is_number(states(entity_id)) %}
+          entity
+        {% else %}
+          tibber
+        {% endif %}
+
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ (price_source_mode | string) != 'entity' }}"
+        sequence:
+          - alias: Preise von Tibber laden
+            continue_on_error: true
+            action: tibber.get_prices
+            data:
+              start: >-
+                {{ now().replace(minute=0, second=0, microsecond=0).strftime('%Y-%m-%d %H:%M:%S') }}
+              end: >-
+                {{ (now().replace(minute=0, second=0, microsecond=0) + timedelta(hours=(price_lookahead_hours | int(24)))).strftime('%Y-%m-%d %H:%M:%S') }}
+            response_variable: tibber_prices
+
+  - alias: Zeitfenster aufbereiten
+    variables:
+      shifted_minutes: >-
+        {% set total = now().hour * 60 + now().minute + (timezone_offset_minutes | int(0)) %}
+        {{ ((total % 1440) + 1440) % 1440 }}
+      current_ts: >-
+        {{ as_timestamp(now()) }}
+      shifted_clock: >-
+        {% set total = now().hour * 60 + now().minute + (timezone_offset_minutes | int(0)) %}
+        {% set wrapped = ((total % 1440) + 1440) % 1440 %}
+        {% set hour = (wrapped // 60) | int(0) %}
+        {% set minute = (wrapped % 60) | int(0) %}
+        {{ '%02d:%02d' | format(hour, minute) }}
+      sunrise_start_ts: >-
+        {% set global_offset_seconds = (timezone_offset_minutes | int(0)) * 60 %}
+        {% set sunrise_offset_seconds = (sunrise_offset_minutes | int(0)) * 60 %}
+        {% set next_rising = as_datetime(state_attr(sun_entity, 'next_rising')) %}
+        {% if next_rising %}
+          {% set today = now().date() %}
+          {% set sunrise_dt = next_rising if next_rising.date() == today else next_rising - timedelta(days=1) %}
+          {{ as_timestamp(sunrise_dt) + global_offset_seconds + sunrise_offset_seconds }}
+        {% else %}
+          {{ as_timestamp(now()) + global_offset_seconds + sunrise_offset_seconds }}
+        {% endif %}
+      sunset_start_ts: >-
+        {% set global_offset_seconds = (timezone_offset_minutes | int(0)) * 60 %}
+        {% set sunset_offset_seconds = (sunset_offset_minutes | int(0)) * 60 %}
+        {% set next_setting = as_datetime(state_attr(sun_entity, 'next_setting')) %}
+        {% if next_setting %}
+          {% set today = now().date() %}
+          {% set sunset_dt = next_setting if next_setting.date() == today else next_setting - timedelta(days=1) %}
+          {{ as_timestamp(sunset_dt) + global_offset_seconds + sunset_offset_seconds }}
+        {% else %}
+          {{ as_timestamp(now()) + global_offset_seconds + sunset_offset_seconds }}
+        {% endif %}
+
+  - alias: Sonnenzeiten formatieren
+    variables:
+      sunrise_start_clock: >-
+        {{ as_datetime(sunrise_start_ts | float(0)).strftime('%H:%M') }}
+      sunset_start_clock: >-
+        {{ as_datetime(sunset_start_ts | float(0)).strftime('%H:%M') }}
+
+  - alias: Phase bestimmen
+    variables:
+      phase_name: >-
+        {% set current = current_ts | float(as_timestamp(now())) %}
+        {% set sunrise_start = sunrise_start_ts | float(0) %}
+        {% set sunrise_end = sunrise_start + ((sunrise_duration_minutes | int(120)) * 60) %}
+        {% set sunset_start = sunset_start_ts | float(0) %}
+        {% set sunset_end = sunset_start + ((sunset_duration_minutes | int(150)) * 60) %}
+        {% if current >= sunrise_start and current < sunrise_end %}
+          sunrise
+        {% elif current >= sunrise_end and current < sunset_start %}
+          day
+        {% elif current >= sunset_start and current < sunset_end %}
+          sunset
+        {% else %}
+          night
+        {% endif %}
+
+  - alias: Phasenfortschritt berechnen
+    variables:
+      phase_progress: >-
+        {% set current = current_ts | float(as_timestamp(now())) %}
+        {% set sunrise_start = sunrise_start_ts | float(0) %}
+        {% set sunrise_length = ([sunrise_duration_minutes | int(120), 1] | max) * 60 %}
+        {% set sunset_start = sunset_start_ts | float(0) %}
+        {% set sunset_length = ([sunset_duration_minutes | int(150), 1] | max) * 60 %}
+        {% if (phase_name | string) == 'sunrise' %}
+          {{ ((current - sunrise_start) / sunrise_length) | float(0) }}
+        {% elif (phase_name | string) == 'sunset' %}
+          {{ ((current - sunset_start) / sunset_length) | float(0) }}
+        {% elif (phase_name | string) == 'day' %}
+          1
+        {% else %}
+          0
+        {% endif %}
+
+  - alias: Basishelligkeit berechnen
+    variables:
+      base_brightness_pct: >-
+        {% set day_level = day_brightness_pct | float(90) %}
+        {% set night_level = night_brightness_pct | float(2) %}
+        {% set progress = phase_progress | float(0) %}
+        {% if (phase_name | string) == 'sunrise' %}
+          {{ (night_level + ((day_level - night_level) * progress)) | round(1) }}
+        {% elif (phase_name | string) == 'sunset' %}
+          {{ (day_level + ((night_level - day_level) * progress)) | round(1) }}
+        {% elif (phase_name | string) == 'day' %}
+          {{ day_level }}
+        {% else %}
+          {{ night_level }}
+        {% endif %}
+
+  - alias: Tibber-Home bestimmen
+    variables:
+      tibber_selected_home: >-
+        {% set prices = tibber_prices.prices if tibber_prices is defined and tibber_prices.prices is defined else {} %}
+        {% set keys = prices.keys() | list %}
+        {% set requested = tibber_home_name | trim %}
+        {% if requested != '' and requested in keys %}
+          {{ requested }}
+        {% elif keys | count > 0 %}
+          {{ keys[0] }}
+        {% else %}
+          {{ '' }}
+        {% endif %}
+
+  - alias: Preisfenster bestimmen
+    variables:
+      tibber_price_data_valid: >-
+        {% set prices = tibber_prices.prices if tibber_prices is defined and tibber_prices.prices is defined else {} %}
+        {% set home_prices = prices[tibber_selected_home] if tibber_selected_home in prices else [] %}
+        {% set now_ts = as_timestamp(now()) %}
+        {% set ns = namespace(found=false) %}
+        {% for item in home_prices %}
+          {% set slot_ts = as_timestamp(as_datetime(item.start_time)) %}
+          {% if slot_ts <= now_ts and now_ts < slot_ts + 3600 and is_number(item.price) %}
+            {% set ns.found = true %}
+          {% endif %}
+        {% endfor %}
+        {{ ns.found }}
+      price_data_valid: >-
+        {% if (price_source_mode | string) == 'entity' %}
+          {% set entity_id = price_entity_current | string | trim %}
+          {{ entity_id != '' and is_number(states(entity_id)) }}
+        {% else %}
+          {% set prices = tibber_prices.prices if tibber_prices is defined and tibber_prices.prices is defined else {} %}
+          {% set home_prices = prices[tibber_selected_home] if tibber_selected_home in prices else [] %}
+          {% set now_ts = as_timestamp(now()) %}
+          {% set ns = namespace(found=false) %}
+          {% for item in home_prices %}
+            {% set slot_ts = as_timestamp(as_datetime(item.start_time)) %}
+            {% if slot_ts <= now_ts and now_ts < slot_ts + 3600 and is_number(item.price) %}
+              {% set ns.found = true %}
+            {% endif %}
+          {% endfor %}
+          {{ ns.found }}
+        {% endif %}
+      current_price: >-
+        {% if (price_source_mode | string) == 'entity' %}
+          {% set entity_id = price_entity_current | string | trim %}
+          {{ states(entity_id) | float(0) }}
+        {% else %}
+          {% set prices = tibber_prices.prices if tibber_prices is defined and tibber_prices.prices is defined else {} %}
+          {% set home_prices = prices[tibber_selected_home] if tibber_selected_home in prices else [] %}
+          {% set now_ts = as_timestamp(now()) %}
+          {% set ns = namespace(value=0) %}
+          {% for item in home_prices %}
+            {% set slot_ts = as_timestamp(as_datetime(item.start_time)) %}
+            {% if slot_ts <= now_ts and now_ts < slot_ts + 3600 and is_number(item.price) %}
+              {% set ns.value = item.price | float(0) %}
+            {% endif %}
+          {% endfor %}
+          {{ ns.value }}
+        {% endif %}
+      min_price: >-
+        {% if (price_source_mode | string) == 'entity' %}
+          {% set min_entity = price_entity_min | string | trim %}
+          {% set current_entity = price_entity_current | string | trim %}
+          {% if min_entity != '' and is_number(states(min_entity)) %}
+            {{ states(min_entity) | float(0) }}
+          {% elif current_entity != '' and is_number(states(current_entity)) %}
+            {{ states(current_entity) | float(0) }}
+          {% else %}
+            0
+          {% endif %}
+        {% else %}
+          {% set prices = tibber_prices.prices if tibber_prices is defined and tibber_prices.prices is defined else {} %}
+          {% set home_prices = prices[tibber_selected_home] if tibber_selected_home in prices else [] %}
+          {% set now_ts = as_timestamp(now()) %}
+          {% set ns = namespace(values=[]) %}
+          {% for item in home_prices %}
+            {% set slot_ts = as_timestamp(as_datetime(item.start_time)) %}
+            {% if slot_ts + 3600 > now_ts and is_number(item.price) %}
+              {% set ns.values = ns.values + [item.price | float(0)] %}
+            {% endif %}
+          {% endfor %}
+          {% if ns.values | count > 0 %}
+            {{ ns.values | min }}
+          {% else %}
+            0
+          {% endif %}
+        {% endif %}
+      max_price: >-
+        {% if (price_source_mode | string) == 'entity' %}
+          {% set max_entity = price_entity_max | string | trim %}
+          {% set current_entity = price_entity_current | string | trim %}
+          {% if max_entity != '' and is_number(states(max_entity)) %}
+            {{ states(max_entity) | float(0) }}
+          {% elif current_entity != '' and is_number(states(current_entity)) %}
+            {{ states(current_entity) | float(0) }}
+          {% else %}
+            0
+          {% endif %}
+        {% else %}
+          {% set prices = tibber_prices.prices if tibber_prices is defined and tibber_prices.prices is defined else {} %}
+          {% set home_prices = prices[tibber_selected_home] if tibber_selected_home in prices else [] %}
+          {% set now_ts = as_timestamp(now()) %}
+          {% set ns = namespace(values=[]) %}
+          {% for item in home_prices %}
+            {% set slot_ts = as_timestamp(as_datetime(item.start_time)) %}
+            {% if slot_ts + 3600 > now_ts and is_number(item.price) %}
+              {% set ns.values = ns.values + [item.price | float(0)] %}
+            {% endif %}
+          {% endfor %}
+          {% if ns.values | count > 0 %}
+            {{ ns.values | max }}
+          {% else %}
+            0
+          {% endif %}
+        {% endif %}
+      current_slot_is_cheap: >-
+        {% if (price_source_mode | string) == 'entity' %}
+          {% set cheap_entity = price_entity_cheap | string | trim %}
+          {% if cheap_entity != '' %}
+            {{ is_state(cheap_entity, 'on') }}
+          {% else %}
+            false
+          {% endif %}
+        {% else %}
+          {% set prices = tibber_prices.prices if tibber_prices is defined and tibber_prices.prices is defined else {} %}
+          {% set home_prices = prices[tibber_selected_home] if tibber_selected_home in prices else [] %}
+          {% set now_ts = as_timestamp(now()) %}
+          {% set ns = namespace(relevant=[], current_start='') %}
+          {% for item in home_prices %}
+            {% set slot_ts = as_timestamp(as_datetime(item.start_time)) %}
+            {% if slot_ts + 3600 > now_ts and is_number(item.price) %}
+              {% set ns.relevant = ns.relevant + [item] %}
+            {% endif %}
+            {% if slot_ts <= now_ts and now_ts < slot_ts + 3600 %}
+              {% set ns.current_start = item.start_time %}
+            {% endif %}
+          {% endfor %}
+          {% set cheapest = (ns.relevant | sort(attribute='price'))[:(cheapest_hours_count | int(4))] %}
+          {{ ns.current_start != '' and (cheapest | selectattr('start_time', 'equalto', ns.current_start) | list | count > 0) }}
+        {% endif %}
+
+  - alias: Preisfaktor berechnen
+    variables:
+      price_factor: >-
+        {% set min_factor = (minimum_price_factor_pct | float(55)) / 100 %}
+        {% if not ((price_data_valid | string) | lower == 'true') %}
+          1
+        {% else %}
+          {% set current = current_price | float(0) %}
+          {% set lowest = min_price | float(0) %}
+          {% set highest = max_price | float(0) %}
+          {% set spread = highest - lowest %}
+          {% set dim_strength = (price_dimming_strength_pct | float(40)) / 100 %}
+          {% set cheap_bonus = ((cheap_hours_bonus_pct | float(10)) / 100) if ((current_slot_is_cheap | string) | lower == 'true') else 0 %}
+          {% if spread <= 0 %}
+            {{ [1, [1 + cheap_bonus, min_factor] | max] | min }}
+          {% else %}
+            {% set position = (current - lowest) / spread %}
+            {% set raw_factor = 1 - (position * dim_strength) + cheap_bonus %}
+            {{ [1, [raw_factor, min_factor] | max] | min }}
+          {% endif %}
+        {% endif %}
+
+  - alias: Bewoelkung bestimmen
+    variables:
+      weather_state_name: >-
+        {{ states(weather_entity) | lower }}
+      cloudiness_factor: >-
+        {% set coverage = state_attr(weather_entity, 'cloud_coverage') %}
+        {% if is_number(coverage) %}
+          {{ ([coverage | float(0), 100] | min) / 100 }}
+        {% else %}
+          {% set state_name = states(weather_entity) | lower %}
+          {% if state_name in ['sunny', 'clear-night'] %}
+            0
+          {% elif state_name in ['partlycloudy', 'windy', 'windy-variant'] %}
+            0.35
+          {% elif state_name in ['cloudy', 'fog', 'hail'] %}
+            0.65
+          {% elif state_name in ['rainy', 'pouring', 'snowy', 'snowy-rainy', 'lightning', 'lightning-rainy'] %}
+            0.85
+          {% else %}
+            0.2
+          {% endif %}
+        {% endif %}
+
+  - alias: Wetterfaktoren berechnen
+    variables:
+      weather_factor: >-
+        {% set minimum_factor = (minimum_weather_factor_pct | float(50)) / 100 %}
+        {% if (phase_name | string) == 'night' %}
+          1
+        {% else %}
+          {% set dim_strength = (weather_dimming_strength_pct | float(20)) / 100 %}
+          {% set cloudiness = cloudiness_factor | float(0) %}
+          {% set raw_factor = 1 - (cloudiness * dim_strength) %}
+          {{ [1, [raw_factor, minimum_factor] | max] | min }}
+        {% endif %}
+      cloud_pulse_factor: >-
+        {% if (phase_name | string) == 'night' %}
+          1
+        {% else %}
+          {% set cloudiness = cloudiness_factor | float(0) %}
+          {% set pulse_strength = (cloud_simulation_strength_pct | float(45)) / 100 %}
+          {% set slot = ((shifted_minutes | int(0)) // 5) % 12 %}
+          {% set dip = 0 %}
+          {% if cloudiness >= 0.2 and slot in [2, 8] %}
+            {% set dip = 0.08 + (cloudiness * 0.08) %}
+          {% endif %}
+          {% if cloudiness >= 0.5 and slot in [4, 9] %}
+            {% set dip = [dip, 0.12 + (cloudiness * 0.10)] | max %}
+          {% endif %}
+          {% if cloudiness >= 0.8 and slot == 6 %}
+            {% set dip = [dip, 0.18 + (cloudiness * 0.12)] | max %}
+          {% endif %}
+          {{ [1, [1 - (dip * pulse_strength), 0.4] | max] | min }}
+        {% endif %}
+
+  - alias: RGBW-Zielfarbe berechnen
+    variables:
+      color_from_csv: >-
+        {% if (phase_name | string) == 'sunrise' %}
+          {{ dawn_rgbw | string | replace(';', ',') }}
+        {% elif (phase_name | string) == 'sunset' %}
+          {{ day_rgbw | string | replace(';', ',') }}
+        {% elif (phase_name | string) == 'night' %}
+          {{ night_rgbw | string | replace(';', ',') }}
+        {% else %}
+          {{ day_rgbw | string | replace(';', ',') }}
+        {% endif %}
+      color_to_csv: >-
+        {% if (phase_name | string) == 'sunrise' %}
+          {{ day_rgbw | string | replace(';', ',') }}
+        {% elif (phase_name | string) == 'sunset' %}
+          {{ dusk_rgbw | string | replace(';', ',') }}
+        {% elif (phase_name | string) == 'night' %}
+          {{ night_rgbw | string | replace(';', ',') }}
+        {% else %}
+          {{ day_rgbw | string | replace(';', ',') }}
+        {% endif %}
+
+  - alias: RGBW-Kanaele normalisieren
+    variables:
+      color_from_parts: >-
+        {% if color_from_csv is string %}
+          {{ (color_from_csv | replace(';', ',') | replace(' ', '')).split(',') }}
+        {% else %}
+          {{ color_from_csv | list }}
+        {% endif %}
+      color_to_parts: >-
+        {% if color_to_csv is string %}
+          {{ (color_to_csv | replace(';', ',') | replace(' ', '')).split(',') }}
+        {% else %}
+          {{ color_to_csv | list }}
+        {% endif %}
+
+  - alias: Zielkanaele berechnen
+    variables:
+      target_r: >-
+        {% set progress = phase_progress | float(0) %}
+        {% set start = color_from_parts[0] | int(0) %}
+        {% set finish = color_to_parts[0] | int(start) %}
+        {{ (start + ((finish - start) * progress)) | round(0) | int }}
+      target_g: >-
+        {% set progress = phase_progress | float(0) %}
+        {% set start = color_from_parts[1] | int(0) %}
+        {% set finish = color_to_parts[1] | int(start) %}
+        {{ (start + ((finish - start) * progress)) | round(0) | int }}
+      target_b: >-
+        {% set progress = phase_progress | float(0) %}
+        {% set start = color_from_parts[2] | int(0) %}
+        {% set finish = color_to_parts[2] | int(start) %}
+        {{ (start + ((finish - start) * progress)) | round(0) | int }}
+      target_w: >-
+        {% set progress = phase_progress | float(0) %}
+        {% set start = color_from_parts[3] | int(0) %}
+        {% set finish = color_to_parts[3] | int(start) %}
+        {{ (start + ((finish - start) * progress)) | round(0) | int }}
+
+  - alias: Zielhelligkeit berechnen
+    variables:
+      target_brightness_pct: >-
+        {% set base_level = base_brightness_pct | float(0) %}
+        {% if (phase_name | string) == 'night' %}
+          {{ [100, [base_level, 0] | max] | min | round(0) }}
+        {% else %}
+          {% set raw_target = base_level * (price_factor | float(1)) * (weather_factor | float(1)) * (cloud_pulse_factor | float(1)) %}
+          {{ [100, [raw_target, 0] | max] | min | round(0) }}
+        {% endif %}
+
+  - alias: Weisshelligkeit berechnen
+    variables:
+      target_white_brightness_pct: >-
+        {% set brightness = target_brightness_pct | float(0) %}
+        {% set white_share = (target_w | float(0)) / 255 %}
+        {{ [100, [(brightness * white_share), 0] | max] | min | round(0) }}
+
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ (target_brightness_pct | float(0)) <= 0 }}"
+        sequence:
+          - action: light.turn_off
+            target:
+              entity_id: !input rgbw_lights
+            data:
+              transition: !input transition_seconds
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ (white_lights | count) > 0 }}"
+                sequence:
+                  - action: light.turn_off
+                    target:
+                      entity_id: !input white_lights
+                    data:
+                      transition: !input transition_seconds
+
+    default:
+      - action: light.turn_on
+        target:
+          entity_id: !input rgbw_lights
+        data:
+          brightness_pct: "{{ target_brightness_pct | int(0) }}"
+          transition: !input transition_seconds
+          rgbw_color:
+            - "{{ target_r | int(0) }}"
+            - "{{ target_g | int(0) }}"
+            - "{{ target_b | int(0) }}"
+            - "{{ target_w | int(0) }}"
+
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ (white_lights | count) > 0 and (target_white_brightness_pct | float(0)) > 0 }}"
+            sequence:
+              - action: light.turn_on
+                target:
+                  entity_id: !input white_lights
+                data:
+                  brightness_pct: "{{ target_white_brightness_pct | int(0) }}"
+                  transition: !input transition_seconds
+          - conditions:
+              - condition: template
+                value_template: "{{ (white_lights | count) > 0 and (target_white_brightness_pct | float(0)) <= 0 }}"
+            sequence:
+              - action: light.turn_off
+                target:
+                  entity_id: !input white_lights
+                data:
+                  transition: !input transition_seconds
+
+  - alias: Dashboard-Status vorbereiten
+    variables:
+      dashboard_status_json: >-
+        {{ {
+          'phase': phase_name | string | trim,
+          'time': shifted_clock,
+          'sunrise': sunrise_start_clock,
+          'sunset': sunset_start_clock,
+          'price_source': price_source_mode | string | trim,
+          'price': current_price | float(0) | round(4),
+          'price_min': min_price | float(0) | round(4),
+          'price_max': max_price | float(0) | round(4),
+          'cheap': ((current_slot_is_cheap | string) | lower == 'true'),
+          'price_factor': price_factor | float(0) | round(3),
+          'weather': weather_state_name | string | trim,
+          'cloudiness_pct': (cloudiness_factor | float(0) * 100) | round(0),
+          'weather_factor': weather_factor | float(0) | round(3),
+          'cloud_factor': cloud_pulse_factor | float(0) | round(3),
+          'base_pct': base_brightness_pct | float(0) | round(1),
+          'target_pct': target_brightness_pct | int(0),
+          'white_pct': target_white_brightness_pct | int(0),
+          'rgbw': [target_r | int(0), target_g | int(0), target_b | int(0), target_w | int(0)],
+          'updated': now().strftime('%Y-%m-%d %H:%M:%S')
+        } | to_json }}
+
+  - action: aquarium_led_cockpit.set_dashboard_status
+    data:
+      status_json: "{{ dashboard_status_json }}"
+
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ (status_text_entity | string | trim) != '' }}"
+        sequence:
+          - action: input_text.set_value
+            target:
+              entity_id: !input status_text_entity
+            data:
+              value: "{{ dashboard_status_json }}"
+
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ (debug_notification | string) | lower == 'true' }}"
+        sequence:
+          - action: persistent_notification.create
+            data:
+              title: Aquarium LED Debug
+              notification_id: aquarium_led_tibber_weather_debug
+              message: >-
+                Phase: {{ phase_name | string | trim }}
+                | Uhr: {{ shifted_clock }}
+                | Sonnenaufgang: {{ sunrise_start_clock }}
+                | Sonnenuntergang: {{ sunset_start_clock }}
+                | Basis: {{ base_brightness_pct | round(1) }}%
+                | Ziel: {{ target_brightness_pct | int(0) }}%
+                | Preisquelle: {{ price_source_mode | string | trim }}
+                | Preis: {{ current_price | round(4) }}
+                | Preis min/max: {{ min_price | round(4) }} / {{ max_price | round(4) }}
+                | Billig-Fenster: {{ current_slot_is_cheap }}
+                | Preisfaktor: {{ price_factor | round(3) }}
+                | Wetter: {{ weather_state_name }}
+                | Bewoelkung: {{ (cloudiness_factor | float(0) * 100) | round(0) }}%
+                | Wetterfaktor: {{ weather_factor | round(3) }}
+                | Wolkenfaktor: {{ cloud_pulse_factor | round(3) }}
+                | RGBW: [{{ target_r | int(0) }}, {{ target_g | int(0) }}, {{ target_b | int(0) }}, {{ target_w | int(0) }}]
+
+
+
+
+
+
+
+
+
+
+
+
+

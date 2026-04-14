@@ -1,0 +1,41 @@
+﻿install_resources:
+  name: Install or export resources
+  description: Copy blueprint and dashboard resources from the integration into the Home Assistant config directory.
+  fields:
+    config_entry_id:
+      name: Config entry id
+      description: Optional config entry id when you need to target a specific entry.
+      selector:
+        text:
+    install_blueprint:
+      name: Install blueprint
+      description: Export the automation blueprint into the blueprints folder.
+      selector:
+        boolean:
+    export_dashboard_snippets:
+      name: Export dashboard snippets
+      description: Export the dashboard card YAML snippets into /config/aquarium_led_cockpit/dashboard/.
+      selector:
+        boolean:
+    export_legacy_files:
+      name: Export legacy files
+      description: Export the input_text helper package and the older dashboard variants.
+      selector:
+        boolean:
+    overwrite_existing:
+      name: Overwrite existing files
+      description: Replace files that already exist at the target path.
+      selector:
+        boolean:
+
+set_dashboard_status:
+  name: Set dashboard status
+  description: Update the live Aquarium LED Cockpit status sensor from an automation.
+  fields:
+    status_json:
+      name: Status JSON
+      description: Compact JSON object with the aquarium lighting status.
+      required: true
+      selector:
+        text:
+          multiline: true

@@ -1,0 +1,28 @@
+type: markdown
+title: Aquarium LED Cockpit
+content: >-
+  {% set raw = states('input_text.aquarium_led_dashboard_status') %}
+  {% set data = raw | from_json if raw not in ['', 'unknown', 'unavailable', 'none'] else {} %}
+  {% set rgbw = data.rgbw if data.rgbw is defined else ['-', '-', '-', '-'] %}
+
+  **Phase:** {{ data.phase | default('-') }}
+  **Zeit:** {{ data.time | default('-') }}
+  **Sonnenaufgang / Sonnenuntergang:** {{ data.sunrise | default('-') }} / {{ data.sunset | default('-') }}
+
+  **Zielhelligkeit:** {{ data.target_pct | default('-') }} %
+  **Weisskanal:** {{ data.white_pct | default('-') }} %
+  **Basis:** {{ data.base_pct | default('-') }} %
+  **RGBW:** {{ rgbw | join(', ') }}
+
+  **Preisquelle:** {{ data.price_source | default('-') }}
+  **Preis:** {{ data.price | default('-') }}
+  **Min / Max:** {{ data.price_min | default('-') }} / {{ data.price_max | default('-') }}
+  **Billigphase:** {{ 'Ja' if data.cheap | default(false) else 'Nein' }}
+  **Preisfaktor:** {{ data.price_factor | default('-') }}
+
+  **Wetter:** {{ data.weather | default('-') }}
+  **Bewoelkung:** {{ data.cloudiness_pct | default('-') }} %
+  **Wetterfaktor:** {{ data.weather_factor | default('-') }}
+  **Wolkenfaktor:** {{ data.cloud_factor | default('-') }}
+
+  _Aktualisiert: {{ data.updated | default('-') }}_

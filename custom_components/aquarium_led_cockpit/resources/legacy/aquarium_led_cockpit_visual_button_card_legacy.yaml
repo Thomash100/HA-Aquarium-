@@ -1,0 +1,181 @@
+type: custom:button-card
+entity: input_text.aquarium_led_dashboard_status
+show_name: false
+show_state: false
+show_icon: false
+tap_action:
+  action: more-info
+hold_action:
+  action: more-info
+styles:
+  card:
+    - padding: 20px
+    - border-radius: 28px
+    - overflow: hidden
+    - border: 1px solid rgba(255,255,255,0.12)
+    - box-shadow: 0 22px 48px rgba(0,0,0,0.28)
+    - background: |
+        [[[
+          const raw = entity?.state || '';
+          let data = {};
+          try { data = JSON.parse(raw); } catch (e) {}
+          const phase = data.phase || 'night';
+          const backgrounds = {
+            sunrise: 'radial-gradient(circle at 15% 15%, rgba(255,220,158,0.95), rgba(245,149,92,0.88) 34%, rgba(70,113,169,0.92) 100%)',
+            day: 'radial-gradient(circle at 15% 15%, rgba(195,248,255,0.95), rgba(102,179,255,0.88) 38%, rgba(16,96,156,0.96) 100%)',
+            sunset: 'radial-gradient(circle at 15% 15%, rgba(255,196,123,0.95), rgba(219,99,72,0.88) 36%, rgba(53,43,91,0.96) 100%)',
+            night: 'radial-gradient(circle at 15% 15%, rgba(105,132,255,0.38), rgba(22,35,78,0.92) 42%, rgba(7,11,27,0.98) 100%)'
+          };
+          return backgrounds[phase] || backgrounds.night;
+        ]]]
+  grid:
+    - grid-template-areas: '"cockpit"'
+    - grid-template-columns: 1fr
+    - grid-template-rows: min-content
+  custom_fields:
+    cockpit:
+      - align-self: stretch
+      - justify-self: stretch
+custom_fields:
+  cockpit: |
+    [[[
+      const raw = entity?.state || '';
+      let data = {};
+      try { data = JSON.parse(raw); } catch (e) {}
+
+      const safe = (value, fallback = '-') => {
+        if (value === undefined || value === null || value === '') return fallback;
+        return value;
+      };
+      const num = (value, fallback = 0) => {
+        const parsed = Number(value);
+        return Number.isFinite(parsed) ? parsed : fallback;
+      };
+      const clamp = (value, min = 0, max = 100) => Math.max(min, Math.min(max, value));
+      const pct = (value, max = 100) => clamp((num(value, 0) / max) * 100);
+      const phaseNames = {
+        sunrise: 'Sonnenaufgang',
+        day: 'Tagesphase',
+        sunset: 'Sonnenuntergang',
+        night: 'Nachtmodus'
+      };
+      const phaseIcons = {
+        sunrise: 'mdi:weather-sunset-up',
+        day: 'mdi:white-balance-sunny',
+        sunset: 'mdi:weather-sunset-down',
+        night: 'mdi:weather-night'
+      };
+      const accent = {
+        sunrise: '#ffe1a6',
+        day: '#b8f2ff',
+        sunset: '#ffbd8f',
+        night: '#9fb4ff'
+      }[data.phase] || '#b8f2ff';
+      const panelBg = 'rgba(5, 11, 20, 0.20)';
+      const panelBorder = '1px solid rgba(255,255,255,0.10)';
+      const rgbw = Array.isArray(data.rgbw) ? data.rgbw : ['-', '-', '-', '-'];
+      const cheap = data.cheap === true || String(data.cheap).toLowerCase() === 'true';
+
+      const row = (label, value, strong = false) => `
+        <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;margin-top:6px;">
+          <span style="font-size:12px;opacity:0.72;letter-spacing:0.02em;">${label}</span>
+          <span style="font-size:13px;${strong ? 'font-weight:700;' : 'font-weight:600;'}text-align:right;">${value}</span>
+        </div>`;
+
+      const bar = (label, value, suffix, fill) => {
+        const width = clamp(value);
+        return `
+          <div style="margin-top:10px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+              <span style="font-size:12px;opacity:0.76;">${label}</span>
+              <span style="font-size:12px;font-weight:700;">${Math.round(width)}${suffix}</span>
+            </div>
+            <div style="height:10px;background:rgba(255,255,255,0.16);border-radius:999px;overflow:hidden;">
+              <div style="width:${width}%;height:100%;border-radius:999px;background:${fill};box-shadow:0 0 14px ${fill};"></div>
+            </div>
+          </div>`;
+      };
+
+      const panel = (title, icon, body) => `
+        <div style="background:${panelBg};border:${panelBorder};border-radius:22px;padding:14px 14px 12px 14px;backdrop-filter:blur(7px);">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <ha-icon icon="${icon}" style="width:18px;height:18px;color:${accent};"></ha-icon>
+            <div style="font-size:12px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;opacity:0.82;">${title}</div>
+          </div>
+          ${body}
+        </div>`;
+
+      if (!raw || raw === 'unknown' || raw === 'unavailable' || raw === 'none') {
+        return `
+          <div style="position:relative;display:grid;gap:14px;">
+            <div style="font-size:12px;letter-spacing:0.18em;text-transform:uppercase;opacity:0.76;">Aquarium Cockpit</div>
+            <div style="background:${panelBg};border:${panelBorder};border-radius:24px;padding:18px;backdrop-filter:blur(8px);">
+              <div style="font-size:22px;font-weight:700;">Noch keine Statusdaten</div>
+              <div style="margin-top:8px;font-size:14px;opacity:0.82;line-height:1.5;">
+                Setze in der Blueprint <b>status_text_entity</b> auf
+                <b>input_text.aquarium_led_dashboard_status</b>, damit die Cockpit-Karte mit Live-Daten gefuellt wird.
+              </div>
+            </div>
+          </div>`;
+      }
+
+      return `
+        <div style="position:absolute;inset:0;pointer-events:none;opacity:0.10;background:repeating-linear-gradient(135deg, rgba(255,255,255,0.26) 0 2px, transparent 2px 14px);"></div>
+        <div style="position:relative;display:grid;gap:14px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;">
+            <div>
+              <div style="font-size:11px;letter-spacing:0.18em;text-transform:uppercase;opacity:0.74;">Aquarium Cockpit</div>
+              <div style="display:flex;align-items:center;gap:10px;margin-top:4px;">
+                <ha-icon icon="${phaseIcons[data.phase] || 'mdi:fishbowl'}" style="width:28px;height:28px;color:${accent};"></ha-icon>
+                <div style="font-size:27px;line-height:1.1;font-weight:800;">${phaseNames[data.phase] || safe(data.phase)}</div>
+              </div>
+              <div style="margin-top:8px;font-size:13px;opacity:0.92;">${safe(data.time)} Uhr</div>
+            </div>
+            <div style="min-width:122px;padding:12px 14px;border-radius:18px;background:rgba(255,255,255,0.13);backdrop-filter:blur(8px);text-align:right;">
+              <div style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;opacity:0.74;">Ziellicht</div>
+              <div style="font-size:34px;font-weight:800;line-height:1;">${safe(data.target_pct, 0)}%</div>
+              <div style="font-size:12px;opacity:0.88;margin-top:4px;">Weiss ${safe(data.white_pct, 0)}%</div>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(170px, 1fr));gap:12px;">
+            ${panel('Zyklus', 'mdi:timeline-clock',
+              row('Sonnenaufgang', safe(data.sunrise)) +
+              row('Sonnenuntergang', safe(data.sunset)) +
+              row('Basishelligkeit', `${safe(data.base_pct, 0)} %`, true) +
+              bar('Ziel', num(data.target_pct), '%', 'linear-gradient(90deg, #fff1b3, #79e4ff)')
+            )}
+
+            ${panel('Energie', 'mdi:cash-clock',
+              row('Quelle', safe(data.price_source), true) +
+              row('Aktuell', safe(data.price)) +
+              row('Min / Max', `${safe(data.price_min)} / ${safe(data.price_max)}`) +
+              row('Billigphase', cheap ? 'Ja' : 'Nein', true) +
+              bar('Preisfaktor', pct(data.price_factor, 1), '%', 'linear-gradient(90deg, #8fffd1, #ffd36e)')
+            )}
+
+            ${panel('Wetter', 'mdi:weather-partly-cloudy',
+              row('Lage', safe(data.weather), true) +
+              row('Bewoelkung', `${safe(data.cloudiness_pct, 0)} %`) +
+              bar('Wetterfaktor', pct(data.weather_factor, 1), '%', 'linear-gradient(90deg, #a9e8ff, #6fe4c6)') +
+              bar('Wolkenfaktor', pct(data.cloud_factor, 1), '%', 'linear-gradient(90deg, #dde8ff, #8ac9ff)')
+            )}
+
+            ${panel('RGBW Kanaele', 'mdi:led-strip-variant',
+              bar('Rot', pct(rgbw[0], 255), '%', 'linear-gradient(90deg, #ff8b8b, #ff4d4d)') +
+              bar('Gruen', pct(rgbw[1], 255), '%', 'linear-gradient(90deg, #a8ffb8, #43d96b)') +
+              bar('Blau', pct(rgbw[2], 255), '%', 'linear-gradient(90deg, #9cc5ff, #4f84ff)') +
+              bar('Weiss', pct(rgbw[3], 255), '%', 'linear-gradient(90deg, #f9f9ff, #c9d6ff)')
+            )}
+          </div>
+
+          <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;padding-top:4px;">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <span style="padding:7px 10px;border-radius:999px;background:rgba(255,255,255,0.13);font-size:12px;font-weight:700;">Preis ${safe(data.price)}</span>
+              <span style="padding:7px 10px;border-radius:999px;background:rgba(255,255,255,0.13);font-size:12px;font-weight:700;">Cloud ${safe(data.cloudiness_pct, 0)}%</span>
+              <span style="padding:7px 10px;border-radius:999px;background:${cheap ? 'rgba(135,255,196,0.22)' : 'rgba(255,255,255,0.13)'};font-size:12px;font-weight:700;">${cheap ? 'Guenstige Phase' : 'Normale Phase'}</span>
+            </div>
+            <div style="font-size:12px;opacity:0.74;">Update ${safe(data.updated)}</div>
+          </div>
+        </div>`;
+    ]]]

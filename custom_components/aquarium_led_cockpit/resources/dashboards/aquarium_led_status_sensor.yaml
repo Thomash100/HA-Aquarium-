@@ -1,0 +1,27 @@
+﻿type: markdown
+title: Aquarium LED Cockpit
+content: >-
+  {% set entity = 'sensor.aquarium_led_cockpit_status' %}
+  {% set rgbw = state_attr(entity, 'rgbw') if state_attr(entity, 'rgbw') is not none else ['-', '-', '-', '-'] %}
+
+  **Phase:** {{ states(entity) }}
+  **Zeit:** {{ state_attr(entity, 'time') | default('-') }}
+  **Sonnenaufgang / Sonnenuntergang:** {{ state_attr(entity, 'sunrise') | default('-') }} / {{ state_attr(entity, 'sunset') | default('-') }}
+
+  **Zielhelligkeit:** {{ state_attr(entity, 'target_pct') | default('-') }} %
+  **Weisskanal:** {{ state_attr(entity, 'white_pct') | default('-') }} %
+  **Basis:** {{ state_attr(entity, 'base_pct') | default('-') }} %
+  **RGBW:** {{ rgbw | join(', ') }}
+
+  **Preisquelle:** {{ state_attr(entity, 'price_source') | default('-') }}
+  **Preis:** {{ state_attr(entity, 'price') | default('-') }}
+  **Min / Max:** {{ state_attr(entity, 'price_min') | default('-') }} / {{ state_attr(entity, 'price_max') | default('-') }}
+  **Billigphase:** {{ 'Ja' if state_attr(entity, 'cheap') | default(false) else 'Nein' }}
+  **Preisfaktor:** {{ state_attr(entity, 'price_factor') | default('-') }}
+
+  **Wetter:** {{ state_attr(entity, 'weather') | default('-') }}
+  **Bewoelkung:** {{ state_attr(entity, 'cloudiness_pct') | default('-') }} %
+  **Wetterfaktor:** {{ state_attr(entity, 'weather_factor') | default('-') }}
+  **Wolkenfaktor:** {{ state_attr(entity, 'cloud_factor') | default('-') }}
+
+  _Aktualisiert: {{ state_attr(entity, 'updated') | default('-') }}_
