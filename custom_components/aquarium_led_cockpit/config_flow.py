@@ -63,9 +63,6 @@ class AquariumLedCockpitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(self, user_input: dict[str, bool] | None = None):
         """Handle the initial config step."""
-        await self.async_set_unique_id(DOMAIN)
-        self._abort_if_unique_id_configured(reason="single_instance_allowed")
-
         if user_input is not None:
             return self.async_create_entry(title="Aquarium LED Cockpit", data=user_input)
 
