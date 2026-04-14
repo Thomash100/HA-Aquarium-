@@ -27,7 +27,7 @@ cards:
       panel: |
         [[[
           const raw = entity?.state || '';
-          const data = entity?.attributes || {};
+              const data = entity?.attributes || {};
           const safe = (v, fallback = '-') => (v === undefined || v === null || v === '') ? fallback : v;
           const phaseLabel = {
             sunrise: 'SUNRISE RAMP',
@@ -91,7 +91,7 @@ cards:
           body: |
             [[[
               const raw = entity?.state || '';
-          const data = entity?.attributes || {};
+              const data = entity?.attributes || {};
               const safe = (v, fallback = '-') => (v === undefined || v === null || v === '') ? fallback : v;
               const num = (v, fallback = 0) => Number.isFinite(Number(v)) ? Number(v) : fallback;
               const clamp = (v) => Math.max(0, Math.min(100, v));
@@ -147,7 +147,7 @@ cards:
           body: |
             [[[
               const raw = entity?.state || '';
-          const data = entity?.attributes || {};
+              const data = entity?.attributes || {};
               const safe = (v, fallback = '-') => (v === undefined || v === null || v === '') ? fallback : v;
               const num = (v, fallback = 0) => Number.isFinite(Number(v)) ? Number(v) : fallback;
               const clamp = (v) => Math.max(0, Math.min(100, v));
@@ -201,7 +201,7 @@ cards:
           body: |
             [[[
               const raw = entity?.state || '';
-          const data = entity?.attributes || {};
+              const data = entity?.attributes || {};
               const safe = (v, fallback = '-') => (v === undefined || v === null || v === '') ? fallback : v;
               const num = (v, fallback = 0) => Number.isFinite(Number(v)) ? Number(v) : fallback;
               const pct255 = (v) => Math.max(0, Math.min(100, (num(v, 0) / 255) * 100));
@@ -258,7 +258,7 @@ cards:
           body: |
             [[[
               const raw = entity?.state || '';
-          const data = entity?.attributes || {};
+              const data = entity?.attributes || {};
               const safe = (v, fallback = '-') => (v === undefined || v === null || v === '') ? fallback : v;
               return `
                 <div style="font-family:Consolas, 'Courier New', monospace;">

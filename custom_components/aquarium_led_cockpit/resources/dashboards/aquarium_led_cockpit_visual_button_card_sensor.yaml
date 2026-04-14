@@ -17,7 +17,7 @@ styles:
     - background: |
         [[[
           const raw = entity?.state || '';
-      const data = entity?.attributes || {};
+          const data = entity?.attributes || {};
           const phase = (data.phase || raw) || 'night';
           const backgrounds = {
             sunrise: 'radial-gradient(circle at 15% 15%, rgba(255,220,158,0.95), rgba(245,149,92,0.88) 34%, rgba(70,113,169,0.92) 100%)',
@@ -39,7 +39,7 @@ custom_fields:
   cockpit: |
     [[[
       const raw = entity?.state || '';
-      const data = entity?.attributes || {};
+          const data = entity?.attributes || {};
 
       const safe = (value, fallback = '-') => {
         if (value === undefined || value === null || value === '') return fallback;
