@@ -1,4 +1,4 @@
-"""The Aquarium LED Cockpit integration."""
+﻿"""The Aquarium LED Cockpit integration."""
 from __future__ import annotations
 
 import json
@@ -32,8 +32,6 @@ from .const import (
     SERVICE_INSTALL_RESOURCES,
     SERVICE_SET_DASHBOARD_STATUS,
 )
-from .installer import async_install_resources
-from .runtime import async_get_runtime
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -129,6 +127,8 @@ async def _async_notify_installation(
 
 async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
     """Set up services for Aquarium LED Cockpit."""
+    from .runtime import async_get_runtime
+
     await async_get_runtime(hass)
     domain_data = hass.data.setdefault(DOMAIN, {})
 
@@ -136,6 +136,8 @@ async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
         return True
 
     async def async_handle_install_resources(call: ServiceCall) -> None:
+        from .installer import async_install_resources
+
         entry = _resolve_entry(hass, call.data.get(CONF_CONFIG_ENTRY_ID))
         settings = _merged_entry_settings(entry)
 
@@ -165,6 +167,8 @@ async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
         await _async_notify_installation(hass, results, automatic=False)
 
     async def async_handle_set_dashboard_status(call: ServiceCall) -> None:
+        from .runtime import async_get_runtime
+
         runtime = await async_get_runtime(hass)
 
         try:
@@ -195,6 +199,9 @@ async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Aquarium LED Cockpit from a config entry."""
+    from .installer import async_install_resources
+    from .runtime import async_get_runtime
+
     await async_get_runtime(hass)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
