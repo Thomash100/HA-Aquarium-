@@ -2,7 +2,7 @@
     "domain":  "aquarium_led_cockpit",
     "name":  "Aquarium LED Cockpit",
     "codeowners":  [
-
+                       "@Thomash100"
                    ],
     "config_flow":  true,
     "documentation":  "https://github.com/Thomash100/HA-Aquarium-",
