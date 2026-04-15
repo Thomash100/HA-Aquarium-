@@ -328,7 +328,7 @@ triggers:
     event: start
 
   - trigger: time_pattern
-    minutes: "/5"
+    minutes: "/1"
 
   - trigger: state
     entity_id:
@@ -505,6 +505,34 @@ actions:
 
   - alias: Preisfenster bestimmen
     variables:
+      current_price_min_attr: >-
+        {% set entity_id = price_entity_current | string | trim %}
+        {% if entity_id == '' %}
+          none
+        {% else %}
+          {% set ns = namespace(value=none) %}
+          {% for attribute_name in ['min_price', 'price_min', 'lowest_price', 'today_min', 'min'] %}
+            {% set attribute_value = state_attr(entity_id, attribute_name) %}
+            {% if ns.value is none and is_number(attribute_value) %}
+              {% set ns.value = attribute_value | float(0) %}
+            {% endif %}
+          {% endfor %}
+          {{ ns.value }}
+        {% endif %}
+      current_price_max_attr: >-
+        {% set entity_id = price_entity_current | string | trim %}
+        {% if entity_id == '' %}
+          none
+        {% else %}
+          {% set ns = namespace(value=none) %}
+          {% for attribute_name in ['max_price', 'price_max', 'highest_price', 'today_max', 'max'] %}
+            {% set attribute_value = state_attr(entity_id, attribute_name) %}
+            {% if ns.value is none and is_number(attribute_value) %}
+              {% set ns.value = attribute_value | float(0) %}
+            {% endif %}
+          {% endfor %}
+          {{ ns.value }}
+        {% endif %}
       tibber_price_data_valid: >-
         {% set prices = tibber_prices.prices if tibber_prices is defined and tibber_prices.prices is defined else {} %}
         {% set home_prices = prices[tibber_selected_home] if tibber_selected_home in prices else [] %}
@@ -520,7 +548,12 @@ actions:
       price_data_valid: >-
         {% if (price_source_mode | string) == 'entity' %}
           {% set entity_id = price_entity_current | string | trim %}
-          {{ entity_id != '' and is_number(states(entity_id)) }}
+          {% set has_current = entity_id != '' and is_number(states(entity_id)) %}
+          {% set min_entity = price_entity_min | string | trim %}
+          {% set max_entity = price_entity_max | string | trim %}
+          {% set has_min = (min_entity != '' and is_number(states(min_entity))) or is_number(current_price_min_attr) %}
+          {% set has_max = (max_entity != '' and is_number(states(max_entity))) or is_number(current_price_max_attr) %}
+          {{ has_current and has_min and has_max }}
         {% else %}
           {% set prices = tibber_prices.prices if tibber_prices is defined and tibber_prices.prices is defined else {} %}
           {% set home_prices = prices[tibber_selected_home] if tibber_selected_home in prices else [] %}
@@ -557,6 +590,8 @@ actions:
           {% set current_entity = price_entity_current | string | trim %}
           {% if min_entity != '' and is_number(states(min_entity)) %}
             {{ states(min_entity) | float(0) }}
+          {% elif is_number(current_price_min_attr) %}
+            {{ current_price_min_attr | float(0) }}
           {% elif current_entity != '' and is_number(states(current_entity)) %}
             {{ states(current_entity) | float(0) }}
           {% else %}
@@ -585,6 +620,8 @@ actions:
           {% set current_entity = price_entity_current | string | trim %}
           {% if max_entity != '' and is_number(states(max_entity)) %}
             {{ states(max_entity) | float(0) }}
+          {% elif is_number(current_price_max_attr) %}
+            {{ current_price_max_attr | float(0) }}
           {% elif current_entity != '' and is_number(states(current_entity)) %}
             {{ states(current_entity) | float(0) }}
           {% else %}
@@ -613,7 +650,13 @@ actions:
           {% if cheap_entity != '' %}
             {{ is_state(cheap_entity, 'on') }}
           {% else %}
-            false
+            {% set current = current_price | float(0) %}
+            {% set lowest = min_price | float(current) %}
+            {% set highest = max_price | float(current) %}
+            {% set spread = highest - lowest %}
+            {% set cheap_share = (cheapest_hours_count | float(4)) / ([price_lookahead_hours | float(24), 1] | max) %}
+            {% set threshold = lowest + (spread * cheap_share) %}
+            {{ spread > 0 and current <= threshold }}
           {% endif %}
         {% else %}
           {% set prices = tibber_prices.prices if tibber_prices is defined and tibber_prices.prices is defined else {} %}
