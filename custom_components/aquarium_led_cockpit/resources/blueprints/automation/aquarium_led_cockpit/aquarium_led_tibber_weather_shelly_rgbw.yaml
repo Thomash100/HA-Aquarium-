@@ -533,14 +533,40 @@ actions:
           {% endfor %}
           {{ ns.value }}
         {% endif %}
+      tibber_slot_seconds: >-
+        {% set prices = tibber_prices.prices if tibber_prices is defined and tibber_prices.prices is defined else {} %}
+        {% set home_prices = prices[tibber_selected_home] if tibber_selected_home in prices else [] %}
+        {% set ns = namespace(seconds=0) %}
+        {% for item in home_prices %}
+          {% set slot_ts = as_timestamp(as_datetime(item.start_time)) %}
+          {% if ns.seconds == 0 and loop.index < (home_prices | count) %}
+            {% set next_slot_ts = as_timestamp(as_datetime(home_prices[loop.index].start_time)) %}
+            {% set slot_seconds = (next_slot_ts - slot_ts) | int(0) %}
+            {% if slot_seconds > 0 %}
+              {% set ns.seconds = slot_seconds %}
+            {% endif %}
+          {% endif %}
+        {% endfor %}
+        {{ ns.seconds if ns.seconds > 0 else 3600 }}
+      tibber_cheapest_slot_count: >-
+        {% set slot_seconds = [tibber_slot_seconds | int(3600), 60] | max %}
+        {% set target_seconds = ((cheapest_hours_count | float(4)) * 3600) | round(0) | int(slot_seconds) %}
+        {{ ((target_seconds + slot_seconds - 1) // slot_seconds) | int(1) }}
       tibber_price_data_valid: >-
         {% set prices = tibber_prices.prices if tibber_prices is defined and tibber_prices.prices is defined else {} %}
         {% set home_prices = prices[tibber_selected_home] if tibber_selected_home in prices else [] %}
         {% set now_ts = as_timestamp(now()) %}
+        {% set default_slot_seconds = tibber_slot_seconds | int(3600) %}
         {% set ns = namespace(found=false) %}
         {% for item in home_prices %}
           {% set slot_ts = as_timestamp(as_datetime(item.start_time)) %}
-          {% if slot_ts <= now_ts and now_ts < slot_ts + 3600 and is_number(item.price) %}
+          {% if loop.index < (home_prices | count) %}
+            {% set next_slot_ts = as_timestamp(as_datetime(home_prices[loop.index].start_time)) %}
+          {% else %}
+            {% set next_slot_ts = slot_ts + default_slot_seconds %}
+          {% endif %}
+          {% set slot_end_ts = next_slot_ts if next_slot_ts > slot_ts else slot_ts + default_slot_seconds %}
+          {% if slot_ts <= now_ts and now_ts < slot_end_ts and is_number(item.price) %}
             {% set ns.found = true %}
           {% endif %}
         {% endfor %}
@@ -558,10 +584,17 @@ actions:
           {% set prices = tibber_prices.prices if tibber_prices is defined and tibber_prices.prices is defined else {} %}
           {% set home_prices = prices[tibber_selected_home] if tibber_selected_home in prices else [] %}
           {% set now_ts = as_timestamp(now()) %}
+          {% set default_slot_seconds = tibber_slot_seconds | int(3600) %}
           {% set ns = namespace(found=false) %}
           {% for item in home_prices %}
             {% set slot_ts = as_timestamp(as_datetime(item.start_time)) %}
-            {% if slot_ts <= now_ts and now_ts < slot_ts + 3600 and is_number(item.price) %}
+            {% if loop.index < (home_prices | count) %}
+              {% set next_slot_ts = as_timestamp(as_datetime(home_prices[loop.index].start_time)) %}
+            {% else %}
+              {% set next_slot_ts = slot_ts + default_slot_seconds %}
+            {% endif %}
+            {% set slot_end_ts = next_slot_ts if next_slot_ts > slot_ts else slot_ts + default_slot_seconds %}
+            {% if slot_ts <= now_ts and now_ts < slot_end_ts and is_number(item.price) %}
               {% set ns.found = true %}
             {% endif %}
           {% endfor %}
@@ -575,10 +608,17 @@ actions:
           {% set prices = tibber_prices.prices if tibber_prices is defined and tibber_prices.prices is defined else {} %}
           {% set home_prices = prices[tibber_selected_home] if tibber_selected_home in prices else [] %}
           {% set now_ts = as_timestamp(now()) %}
+          {% set default_slot_seconds = tibber_slot_seconds | int(3600) %}
           {% set ns = namespace(value=0) %}
           {% for item in home_prices %}
             {% set slot_ts = as_timestamp(as_datetime(item.start_time)) %}
-            {% if slot_ts <= now_ts and now_ts < slot_ts + 3600 and is_number(item.price) %}
+            {% if loop.index < (home_prices | count) %}
+              {% set next_slot_ts = as_timestamp(as_datetime(home_prices[loop.index].start_time)) %}
+            {% else %}
+              {% set next_slot_ts = slot_ts + default_slot_seconds %}
+            {% endif %}
+            {% set slot_end_ts = next_slot_ts if next_slot_ts > slot_ts else slot_ts + default_slot_seconds %}
+            {% if slot_ts <= now_ts and now_ts < slot_end_ts and is_number(item.price) %}
               {% set ns.value = item.price | float(0) %}
             {% endif %}
           {% endfor %}
@@ -601,10 +641,17 @@ actions:
           {% set prices = tibber_prices.prices if tibber_prices is defined and tibber_prices.prices is defined else {} %}
           {% set home_prices = prices[tibber_selected_home] if tibber_selected_home in prices else [] %}
           {% set now_ts = as_timestamp(now()) %}
+          {% set default_slot_seconds = tibber_slot_seconds | int(3600) %}
           {% set ns = namespace(values=[]) %}
           {% for item in home_prices %}
             {% set slot_ts = as_timestamp(as_datetime(item.start_time)) %}
-            {% if slot_ts + 3600 > now_ts and is_number(item.price) %}
+            {% if loop.index < (home_prices | count) %}
+              {% set next_slot_ts = as_timestamp(as_datetime(home_prices[loop.index].start_time)) %}
+            {% else %}
+              {% set next_slot_ts = slot_ts + default_slot_seconds %}
+            {% endif %}
+            {% set slot_end_ts = next_slot_ts if next_slot_ts > slot_ts else slot_ts + default_slot_seconds %}
+            {% if slot_end_ts > now_ts and is_number(item.price) %}
               {% set ns.values = ns.values + [item.price | float(0)] %}
             {% endif %}
           {% endfor %}
@@ -631,10 +678,17 @@ actions:
           {% set prices = tibber_prices.prices if tibber_prices is defined and tibber_prices.prices is defined else {} %}
           {% set home_prices = prices[tibber_selected_home] if tibber_selected_home in prices else [] %}
           {% set now_ts = as_timestamp(now()) %}
+          {% set default_slot_seconds = tibber_slot_seconds | int(3600) %}
           {% set ns = namespace(values=[]) %}
           {% for item in home_prices %}
             {% set slot_ts = as_timestamp(as_datetime(item.start_time)) %}
-            {% if slot_ts + 3600 > now_ts and is_number(item.price) %}
+            {% if loop.index < (home_prices | count) %}
+              {% set next_slot_ts = as_timestamp(as_datetime(home_prices[loop.index].start_time)) %}
+            {% else %}
+              {% set next_slot_ts = slot_ts + default_slot_seconds %}
+            {% endif %}
+            {% set slot_end_ts = next_slot_ts if next_slot_ts > slot_ts else slot_ts + default_slot_seconds %}
+            {% if slot_end_ts > now_ts and is_number(item.price) %}
               {% set ns.values = ns.values + [item.price | float(0)] %}
             {% endif %}
           {% endfor %}
@@ -662,17 +716,25 @@ actions:
           {% set prices = tibber_prices.prices if tibber_prices is defined and tibber_prices.prices is defined else {} %}
           {% set home_prices = prices[tibber_selected_home] if tibber_selected_home in prices else [] %}
           {% set now_ts = as_timestamp(now()) %}
+          {% set default_slot_seconds = tibber_slot_seconds | int(3600) %}
+          {% set slot_count = tibber_cheapest_slot_count | int(1) %}
           {% set ns = namespace(relevant=[], current_start='') %}
           {% for item in home_prices %}
             {% set slot_ts = as_timestamp(as_datetime(item.start_time)) %}
-            {% if slot_ts + 3600 > now_ts and is_number(item.price) %}
+            {% if loop.index < (home_prices | count) %}
+              {% set next_slot_ts = as_timestamp(as_datetime(home_prices[loop.index].start_time)) %}
+            {% else %}
+              {% set next_slot_ts = slot_ts + default_slot_seconds %}
+            {% endif %}
+            {% set slot_end_ts = next_slot_ts if next_slot_ts > slot_ts else slot_ts + default_slot_seconds %}
+            {% if slot_end_ts > now_ts and is_number(item.price) %}
               {% set ns.relevant = ns.relevant + [item] %}
             {% endif %}
-            {% if slot_ts <= now_ts and now_ts < slot_ts + 3600 %}
+            {% if slot_ts <= now_ts and now_ts < slot_end_ts %}
               {% set ns.current_start = item.start_time %}
             {% endif %}
           {% endfor %}
-          {% set cheapest = (ns.relevant | sort(attribute='price'))[:(cheapest_hours_count | int(4))] %}
+          {% set cheapest = (ns.relevant | sort(attribute='price'))[:slot_count] %}
           {{ ns.current_start != '' and (cheapest | selectattr('start_time', 'equalto', ns.current_start) | list | count > 0) }}
         {% endif %}
 
