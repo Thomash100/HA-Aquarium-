@@ -45,13 +45,22 @@ blueprint:
         entity:
           filter:
             - domain: sun
-    price_entity_current:
-      name: Preis-Entitaet aktuell optional
+    tibber_price_entity:
+      name: Tibber Preis-Entitaet optional
       description: >
-        Optional waehlbarer Sensor mit aktuellem Strompreis, zum Beispiel dein
-        Tibber-Preissensor. Wenn gesetzt und numerisch, wird diese Preisquelle
-        statt tibber.get_prices verwendet. Attribute wie min_price und max_price
-        werden automatisch erkannt.
+        Optional waehlbarer Tibber-Preissensor. Wenn gesetzt und numerisch,
+        wird dieser direkt fuer die Preissteuerung verwendet. Attribute wie
+        min_price und max_price werden automatisch erkannt.
+      default: ""
+      selector:
+        entity:
+          filter:
+            - domain: sensor
+    price_entity_current:
+      name: Andere Preis-Entitaet aktuell optional
+      description: >
+        Optional waehlbarer Sensor mit aktuellem Strompreis fuer andere Anbieter.
+        Wird verwendet, wenn keine Tibber Preis-Entitaet gesetzt ist.
       default: ""
       selector:
         entity:
@@ -92,10 +101,10 @@ blueprint:
                 - binary_sensor
                 - input_boolean
     tibber_home_name:
-      name: Tibber Home-Name optional
+      name: Tibber Home-Key optional nur Fallback
       description: >
-        Falls dein Tibber-Account mehrere Homes hat, trage hier den Home-Key
-        aus tibber.get_prices ein. Sonst kann das Feld leer bleiben.
+        Nur noetig, wenn du keine Tibber Preis-Entitaet nutzt und tibber.get_prices
+        ueber mehrere Homes aufgerufen wird. Sonst leer lassen.
       default: ""
       selector:
         text:
@@ -352,6 +361,7 @@ variables:
   white_lights: !input white_lights
   weather_entity: !input weather_entity
   sun_entity: !input sun_entity
+  tibber_price_entity: !input tibber_price_entity
   price_entity_current: !input price_entity_current
   price_entity_min: !input price_entity_min
   price_entity_max: !input price_entity_max
@@ -383,12 +393,30 @@ variables:
 actions:
   - alias: Preisquelle bestimmen
     variables:
+      active_price_entity: >-
+        {% set tibber_entity = tibber_price_entity | string | trim %}
+        {% set other_entity = price_entity_current | string | trim %}
+        {% if tibber_entity != '' and is_number(states(tibber_entity)) %}
+          {{ tibber_entity }}
+        {% elif other_entity != '' and is_number(states(other_entity)) %}
+          {{ other_entity }}
+        {% else %}
+          {{ '' }}
+        {% endif %}
       price_source_mode: >-
-        {% set entity_id = price_entity_current | string | trim %}
-        {% if entity_id != '' and is_number(states(entity_id)) %}
+        {% set entity_id = active_price_entity | string | trim %}
+        {% if entity_id != '' %}
           entity
         {% else %}
           tibber
+        {% endif %}
+      price_source_label: >-
+        {% set entity_id = active_price_entity | string | trim %}
+        {% set tibber_entity = tibber_price_entity | string | trim %}
+        {% if entity_id != '' and tibber_entity != '' and entity_id == tibber_entity %}
+          tibber_entity
+        {% else %}
+          {{ price_source_mode | string | trim }}
         {% endif %}
 
   - choose:
@@ -518,7 +546,7 @@ actions:
   - alias: Preisfenster bestimmen
     variables:
       current_price_min_attr: >-
-        {% set entity_id = price_entity_current | string | trim %}
+        {% set entity_id = active_price_entity | string | trim %}
         {% if entity_id == '' %}
           none
         {% else %}
@@ -532,7 +560,7 @@ actions:
           {{ ns.value }}
         {% endif %}
       current_price_max_attr: >-
-        {% set entity_id = price_entity_current | string | trim %}
+        {% set entity_id = active_price_entity | string | trim %}
         {% if entity_id == '' %}
           none
         {% else %}
@@ -585,7 +613,7 @@ actions:
         {{ ns.found }}
       price_data_valid: >-
         {% if (price_source_mode | string) == 'entity' %}
-          {% set entity_id = price_entity_current | string | trim %}
+          {% set entity_id = active_price_entity | string | trim %}
           {% set has_current = entity_id != '' and is_number(states(entity_id)) %}
           {% set min_entity = price_entity_min | string | trim %}
           {% set max_entity = price_entity_max | string | trim %}
@@ -614,7 +642,7 @@ actions:
         {% endif %}
       current_price: >-
         {% if (price_source_mode | string) == 'entity' %}
-          {% set entity_id = price_entity_current | string | trim %}
+          {% set entity_id = active_price_entity | string | trim %}
           {{ states(entity_id) | float(0) }}
         {% else %}
           {% set prices = tibber_prices.prices if tibber_prices is defined and tibber_prices.prices is defined else {} %}
@@ -639,7 +667,7 @@ actions:
       min_price: >-
         {% if (price_source_mode | string) == 'entity' %}
           {% set min_entity = price_entity_min | string | trim %}
-          {% set current_entity = price_entity_current | string | trim %}
+          {% set current_entity = active_price_entity | string | trim %}
           {% if min_entity != '' and is_number(states(min_entity)) %}
             {{ states(min_entity) | float(0) }}
           {% elif is_number(current_price_min_attr) %}
@@ -676,7 +704,7 @@ actions:
       max_price: >-
         {% if (price_source_mode | string) == 'entity' %}
           {% set max_entity = price_entity_max | string | trim %}
-          {% set current_entity = price_entity_current | string | trim %}
+          {% set current_entity = active_price_entity | string | trim %}
           {% if max_entity != '' and is_number(states(max_entity)) %}
             {{ states(max_entity) | float(0) }}
           {% elif is_number(current_price_max_attr) %}
@@ -969,7 +997,7 @@ actions:
           'time': shifted_clock,
           'sunrise': sunrise_start_clock,
           'sunset': sunset_start_clock,
-          'price_source': price_source_mode | string | trim,
+          'price_source': price_source_label | string | trim,
           'price': current_price | float(0) | round(4),
           'price_min': min_price | float(0) | round(4),
           'price_max': max_price | float(0) | round(4),
@@ -1017,7 +1045,7 @@ actions:
                 | Sonnenuntergang: {{ sunset_start_clock }}
                 | Basis: {{ base_brightness_pct | round(1) }}%
                 | Ziel: {{ target_brightness_pct | int(0) }}%
-                | Preisquelle: {{ price_source_mode | string | trim }}
+                | Preisquelle: {{ price_source_label | string | trim }}
                 | Preis: {{ current_price | round(4) }}
                 | Preis min/max: {{ min_price | round(4) }} / {{ max_price | round(4) }}
                 | Billig-Fenster: {{ current_slot_is_cheap }}
