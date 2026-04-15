@@ -46,39 +46,51 @@ blueprint:
           filter:
             - domain: sun
     price_entity_current:
-      name: Alternative Preis-Entitaet aktuell optional
+      name: Preis-Entitaet aktuell optional
       description: >
-        Optionale entity_id eines Sensors mit aktuellem Strompreis. Wenn gesetzt
-        und numerisch, wird diese Preisquelle statt Tibber verwendet. Damit
-        koennen auch andere Anbieter eingebunden werden.
+        Optional waehlbarer Sensor mit aktuellem Strompreis, zum Beispiel dein
+        Tibber-Preissensor. Wenn gesetzt und numerisch, wird diese Preisquelle
+        statt tibber.get_prices verwendet. Attribute wie min_price und max_price
+        werden automatisch erkannt.
       default: ""
       selector:
-        text:
+        entity:
+          filter:
+            - domain: sensor
     price_entity_min:
-      name: Alternative Preis-Entitaet guenstig optional
+      name: Preis-Entitaet guenstig optional
       description: >
-        Optionale entity_id eines Sensors mit guenstigem Referenzpreis, zum
-        Beispiel Tagesminimum oder billigster bevorstehender Preis.
+        Optional waehlbarer Sensor mit guenstigem Referenzpreis, zum Beispiel
+        Tagesminimum oder billigster bevorstehender Preis. Kann leer bleiben,
+        wenn dein aktueller Preissensor min_price bereits als Attribut liefert.
       default: ""
       selector:
-        text:
+        entity:
+          filter:
+            - domain: sensor
     price_entity_max:
-      name: Alternative Preis-Entitaet teuer optional
+      name: Preis-Entitaet teuer optional
       description: >
-        Optionale entity_id eines Sensors mit teurem Referenzpreis, zum
-        Beispiel Tagesmaximum oder teuerster bevorstehender Preis.
+        Optional waehlbarer Sensor mit teurem Referenzpreis, zum Beispiel
+        Tagesmaximum oder teuerster bevorstehender Preis. Kann leer bleiben,
+        wenn dein aktueller Preissensor max_price bereits als Attribut liefert.
       default: ""
       selector:
-        text:
+        entity:
+          filter:
+            - domain: sensor
     price_entity_cheap:
-      name: Alternative Guenstig-Entitaet optional
+      name: Guenstig-Entitaet optional
       description: >
-        Optionale entity_id eines binary_sensor, input_boolean oder aehnlichen
-        Helfers. Wenn diese Entitaet on ist, wird der Bonus fuer billige
-        Phasen auch ohne Tibber aktiviert.
+        Optional waehlbarer binary_sensor oder input_boolean. Wenn diese
+        Entitaet on ist, wird der Bonus fuer billige Phasen direkt aktiviert.
       default: ""
       selector:
-        text:
+        entity:
+          filter:
+            - domain:
+                - binary_sensor
+                - input_boolean
     tibber_home_name:
       name: Tibber Home-Name optional
       description: >
