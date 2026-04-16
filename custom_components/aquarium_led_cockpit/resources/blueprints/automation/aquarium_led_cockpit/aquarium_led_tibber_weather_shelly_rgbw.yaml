@@ -108,6 +108,59 @@ blueprint:
       default: ""
       selector:
         text:
+    maintenance_switch_entity:
+      name: Wartungsschalter
+      description: >
+        Standardmaessig der exportierte Dashboard-Helfer fuer Wartungslicht. Wenn
+        aktiv, schaltet die Automatisierung fuer kurze Arbeiten auf 100 Prozent Licht.
+      default: input_boolean.aquarium_led_maintenance_mode
+      selector:
+        entity:
+          filter:
+            - domain: input_boolean
+    maintenance_timeout_minutes:
+      name: Wartungsdauer in Minuten
+      description: Nach dieser Zeit wird der Wartungsschalter automatisch wieder ausgeschaltet.
+      default: 30
+      selector:
+        number:
+          min: 5
+          max: 120
+          step: 5
+          unit_of_measurement: min
+          mode: box
+    day_brightness_control_entity:
+      name: Regler Taghelligkeit optional
+      description: Standardmaessig der exportierte Dashboard-Regler fuer die Taghelligkeit.
+      default: input_number.aquarium_led_day_brightness_pct
+      selector:
+        entity:
+          filter:
+            - domain: input_number
+    night_brightness_control_entity:
+      name: Regler Nachtlicht optional
+      description: Standardmaessig der exportierte Dashboard-Regler fuer das Nachtlicht.
+      default: input_number.aquarium_led_night_brightness_pct
+      selector:
+        entity:
+          filter:
+            - domain: input_number
+    price_dimming_strength_control_entity:
+      name: Regler Preisdimmung optional
+      description: Standardmaessig der exportierte Dashboard-Regler fuer die Preisdaempfung.
+      default: input_number.aquarium_led_price_dimming_strength_pct
+      selector:
+        entity:
+          filter:
+            - domain: input_number
+    cloud_simulation_strength_control_entity:
+      name: Regler Wolkenstaerke optional
+      description: Standardmaessig der exportierte Dashboard-Regler fuer die Wolkensimulation.
+      default: input_number.aquarium_led_cloud_simulation_strength_pct
+      selector:
+        entity:
+          filter:
+            - domain: input_number
     price_lookahead_hours:
       name: Tibber-Vorausblick in Stunden
       description: So viele kommende Stunden werden fuer die Preisbewertung betrachtet.
@@ -367,6 +420,12 @@ variables:
   price_entity_max: !input price_entity_max
   price_entity_cheap: !input price_entity_cheap
   tibber_home_name: !input tibber_home_name
+  maintenance_switch_entity: !input maintenance_switch_entity
+  maintenance_timeout_minutes: !input maintenance_timeout_minutes
+  day_brightness_control_entity: !input day_brightness_control_entity
+  night_brightness_control_entity: !input night_brightness_control_entity
+  price_dimming_strength_control_entity: !input price_dimming_strength_control_entity
+  cloud_simulation_strength_control_entity: !input cloud_simulation_strength_control_entity
   price_lookahead_hours: !input price_lookahead_hours
   cheapest_hours_count: !input cheapest_hours_count
   price_dimming_strength_pct: !input price_dimming_strength_pct
@@ -418,6 +477,74 @@ actions:
         {% else %}
           {{ price_source_mode | string | trim }}
         {% endif %}
+
+  - alias: Dashboard-Regler und Wartung auswerten
+    variables:
+      effective_day_brightness_pct: >-
+        {% set entity_id = day_brightness_control_entity | string | trim %}
+        {% if entity_id != '' and is_number(states(entity_id)) %}
+          {{ states(entity_id) | float(day_brightness_pct | float(90)) }}
+        {% else %}
+          {{ day_brightness_pct | float(90) }}
+        {% endif %}
+      effective_night_brightness_pct: >-
+        {% set entity_id = night_brightness_control_entity | string | trim %}
+        {% if entity_id != '' and is_number(states(entity_id)) %}
+          {{ states(entity_id) | float(night_brightness_pct | float(2)) }}
+        {% else %}
+          {{ night_brightness_pct | float(2) }}
+        {% endif %}
+      effective_price_dimming_strength_pct: >-
+        {% set entity_id = price_dimming_strength_control_entity | string | trim %}
+        {% if entity_id != '' and is_number(states(entity_id)) %}
+          {{ states(entity_id) | float(price_dimming_strength_pct | float(40)) }}
+        {% else %}
+          {{ price_dimming_strength_pct | float(40) }}
+        {% endif %}
+      effective_cloud_simulation_strength_pct: >-
+        {% set entity_id = cloud_simulation_strength_control_entity | string | trim %}
+        {% if entity_id != '' and is_number(states(entity_id)) %}
+          {{ states(entity_id) | float(cloud_simulation_strength_pct | float(45)) }}
+        {% else %}
+          {{ cloud_simulation_strength_pct | float(45) }}
+        {% endif %}
+      maintenance_requested: >-
+        {% set entity_id = maintenance_switch_entity | string | trim %}
+        {{ entity_id != '' and is_state(entity_id, 'on') }}
+      maintenance_started_ts: >-
+        {% set entity_id = maintenance_switch_entity | string | trim %}
+        {% set state_obj = expand(entity_id) | first %}
+        {% if state_obj %}
+          {{ as_timestamp(state_obj.last_changed) }}
+        {% else %}
+          0
+        {% endif %}
+      maintenance_elapsed_seconds: >-
+        {% if ((maintenance_requested | string) | lower == 'true') %}
+          {{ [0, (as_timestamp(now()) - (maintenance_started_ts | float(0)))] | max }}
+        {% else %}
+          0
+        {% endif %}
+      maintenance_expired: >-
+        {{ ((maintenance_requested | string) | lower == 'true') and (maintenance_elapsed_seconds | float(0)) >= ((maintenance_timeout_minutes | int(30)) * 60) }}
+      maintenance_mode_active: >-
+        {{ ((maintenance_requested | string) | lower == 'true') and not ((maintenance_expired | string) | lower == 'true') }}
+      maintenance_remaining_minutes: >-
+        {% if ((maintenance_mode_active | string) | lower == 'true') %}
+          {% set remaining = ((maintenance_timeout_minutes | int(30)) * 60) - (maintenance_elapsed_seconds | float(0)) %}
+          {{ ([0, ((remaining / 60) | round(0, 'ceil'))] | max) | int(0) }}
+        {% else %}
+          0
+        {% endif %}
+
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ (maintenance_switch_entity | string | trim) != '' and ((maintenance_expired | string) | lower == 'true') }}"
+        sequence:
+          - action: homeassistant.turn_off
+            target:
+              entity_id: "{{ maintenance_switch_entity }}"
 
   - choose:
       - conditions:
@@ -516,8 +643,8 @@ actions:
   - alias: Basishelligkeit berechnen
     variables:
       base_brightness_pct: >-
-        {% set day_level = day_brightness_pct | float(90) %}
-        {% set night_level = night_brightness_pct | float(2) %}
+        {% set day_level = effective_day_brightness_pct | float(day_brightness_pct | float(90)) %}
+        {% set night_level = effective_night_brightness_pct | float(night_brightness_pct | float(2)) %}
         {% set progress = phase_progress | float(0) %}
         {% if (phase_name | string) == 'sunrise' %}
           {{ (night_level + ((day_level - night_level) * progress)) | round(1) }}
@@ -789,7 +916,7 @@ actions:
           {% set lowest = min_price | float(0) %}
           {% set highest = max_price | float(0) %}
           {% set spread = highest - lowest %}
-          {% set dim_strength = (price_dimming_strength_pct | float(40)) / 100 %}
+          {% set dim_strength = (effective_price_dimming_strength_pct | float(price_dimming_strength_pct | float(40))) / 100 %}
           {% set cheap_bonus = ((cheap_hours_bonus_pct | float(10)) / 100) if ((current_slot_is_cheap | string) | lower == 'true') else 0 %}
           {% if spread <= 0 %}
             {{ [1, [1 + cheap_bonus, min_factor] | max] | min }}
@@ -840,7 +967,7 @@ actions:
           1
         {% else %}
           {% set cloudiness = cloudiness_factor | float(0) %}
-          {% set pulse_strength = (cloud_simulation_strength_pct | float(45)) / 100 %}
+          {% set pulse_strength = (effective_cloud_simulation_strength_pct | float(cloud_simulation_strength_pct | float(45))) / 100 %}
           {% set slot = ((shifted_minutes | int(0)) // 5) % 12 %}
           {% set dip = 0 %}
           {% if cloudiness >= 0.2 and slot in [2, 8] %}
@@ -934,10 +1061,55 @@ actions:
         {% set white_share = (target_w | float(0)) / 255 %}
         {{ [100, [(brightness * white_share), 0] | max] | min | round(0) }}
 
+  - alias: Wartungsmodus anwenden
+    variables:
+      applied_phase_name: >-
+        {% if ((maintenance_mode_active | string) | lower == 'true') %}
+          maintenance
+        {% else %}
+          {{ phase_name | string | trim }}
+        {% endif %}
+      applied_target_r: >-
+        {% if ((maintenance_mode_active | string) | lower == 'true') %}
+          255
+        {% else %}
+          {{ target_r | int(0) }}
+        {% endif %}
+      applied_target_g: >-
+        {% if ((maintenance_mode_active | string) | lower == 'true') %}
+          255
+        {% else %}
+          {{ target_g | int(0) }}
+        {% endif %}
+      applied_target_b: >-
+        {% if ((maintenance_mode_active | string) | lower == 'true') %}
+          255
+        {% else %}
+          {{ target_b | int(0) }}
+        {% endif %}
+      applied_target_w: >-
+        {% if ((maintenance_mode_active | string) | lower == 'true') %}
+          255
+        {% else %}
+          {{ target_w | int(0) }}
+        {% endif %}
+      applied_target_brightness_pct: >-
+        {% if ((maintenance_mode_active | string) | lower == 'true') %}
+          100
+        {% else %}
+          {{ target_brightness_pct | int(0) }}
+        {% endif %}
+      applied_target_white_brightness_pct: >-
+        {% if ((maintenance_mode_active | string) | lower == 'true') %}
+          100
+        {% else %}
+          {{ target_white_brightness_pct | int(0) }}
+        {% endif %}
+
   - choose:
       - conditions:
           - condition: template
-            value_template: "{{ (target_brightness_pct | float(0)) <= 0 }}"
+            value_template: "{{ (applied_target_brightness_pct | float(0)) <= 0 }}"
         sequence:
           - action: light.turn_off
             target:
@@ -960,28 +1132,28 @@ actions:
         target:
           entity_id: !input rgbw_lights
         data:
-          brightness_pct: "{{ target_brightness_pct | int(0) }}"
+          brightness_pct: "{{ applied_target_brightness_pct | int(0) }}"
           transition: !input transition_seconds
           rgbw_color:
-            - "{{ target_r | int(0) }}"
-            - "{{ target_g | int(0) }}"
-            - "{{ target_b | int(0) }}"
-            - "{{ target_w | int(0) }}"
+            - "{{ applied_target_r | int(0) }}"
+            - "{{ applied_target_g | int(0) }}"
+            - "{{ applied_target_b | int(0) }}"
+            - "{{ applied_target_w | int(0) }}"
 
       - choose:
           - conditions:
               - condition: template
-                value_template: "{{ (white_lights | count) > 0 and (target_white_brightness_pct | float(0)) > 0 }}"
+                value_template: "{{ (white_lights | count) > 0 and (applied_target_white_brightness_pct | float(0)) > 0 }}"
             sequence:
               - action: light.turn_on
                 target:
                   entity_id: !input white_lights
                 data:
-                  brightness_pct: "{{ target_white_brightness_pct | int(0) }}"
+                  brightness_pct: "{{ applied_target_white_brightness_pct | int(0) }}"
                   transition: !input transition_seconds
           - conditions:
               - condition: template
-                value_template: "{{ (white_lights | count) > 0 and (target_white_brightness_pct | float(0)) <= 0 }}"
+                value_template: "{{ (white_lights | count) > 0 and (applied_target_white_brightness_pct | float(0)) <= 0 }}"
             sequence:
               - action: light.turn_off
                 target:
@@ -993,7 +1165,7 @@ actions:
     variables:
       dashboard_status_json: >-
         {{ {
-          'phase': phase_name | string | trim,
+          'phase': applied_phase_name | string | trim,
           'time': shifted_clock,
           'sunrise': sunrise_start_clock,
           'sunset': sunset_start_clock,
@@ -1002,15 +1174,21 @@ actions:
           'price_min': min_price | float(0) | round(4),
           'price_max': max_price | float(0) | round(4),
           'cheap': ((current_slot_is_cheap | string) | lower == 'true'),
+          'maintenance': ((maintenance_mode_active | string) | lower == 'true'),
+          'maintenance_remaining_min': maintenance_remaining_minutes | int(0),
           'price_factor': price_factor | float(0) | round(3),
           'weather': weather_state_name | string | trim,
           'cloudiness_pct': (cloudiness_factor | float(0) * 100) | round(0),
           'weather_factor': weather_factor | float(0) | round(3),
           'cloud_factor': cloud_pulse_factor | float(0) | round(3),
           'base_pct': base_brightness_pct | float(0) | round(1),
-          'target_pct': target_brightness_pct | int(0),
-          'white_pct': target_white_brightness_pct | int(0),
-          'rgbw': [target_r | int(0), target_g | int(0), target_b | int(0), target_w | int(0)],
+          'target_pct': applied_target_brightness_pct | int(0),
+          'white_pct': applied_target_white_brightness_pct | int(0),
+          'config_day_pct': effective_day_brightness_pct | float(0) | round(1),
+          'config_night_pct': effective_night_brightness_pct | float(0) | round(1),
+          'config_price_dimming_pct': effective_price_dimming_strength_pct | float(0) | round(1),
+          'config_cloud_pct': effective_cloud_simulation_strength_pct | float(0) | round(1),
+          'rgbw': [applied_target_r | int(0), applied_target_g | int(0), applied_target_b | int(0), applied_target_w | int(0)],
           'updated': now().strftime('%Y-%m-%d %H:%M:%S')
         } | to_json }}
 
@@ -1039,12 +1217,14 @@ actions:
               title: Aquarium LED Debug
               notification_id: aquarium_led_tibber_weather_debug
               message: >-
-                Phase: {{ phase_name | string | trim }}
+                Phase: {{ applied_phase_name | string | trim }}
                 | Uhr: {{ shifted_clock }}
                 | Sonnenaufgang: {{ sunrise_start_clock }}
                 | Sonnenuntergang: {{ sunset_start_clock }}
+                | Wartung: {{ maintenance_mode_active }}
+                | Restminuten: {{ maintenance_remaining_minutes | int(0) }}
                 | Basis: {{ base_brightness_pct | round(1) }}%
-                | Ziel: {{ target_brightness_pct | int(0) }}%
+                | Ziel: {{ applied_target_brightness_pct | int(0) }}%
                 | Preisquelle: {{ price_source_label | string | trim }}
                 | Preis: {{ current_price | round(4) }}
                 | Preis min/max: {{ min_price | round(4) }} / {{ max_price | round(4) }}
@@ -1054,7 +1234,7 @@ actions:
                 | Bewoelkung: {{ (cloudiness_factor | float(0) * 100) | round(0) }}%
                 | Wetterfaktor: {{ weather_factor | round(3) }}
                 | Wolkenfaktor: {{ cloud_pulse_factor | round(3) }}
-                | RGBW: [{{ target_r | int(0) }}, {{ target_g | int(0) }}, {{ target_b | int(0) }}, {{ target_w | int(0) }}]
+                | RGBW: [{{ applied_target_r | int(0) }}, {{ applied_target_g | int(0) }}, {{ applied_target_b | int(0) }}, {{ applied_target_w | int(0) }}]
 
 
 

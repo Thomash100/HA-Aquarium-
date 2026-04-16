@@ -1,0 +1,42 @@
+input_boolean:
+  aquarium_led_maintenance_mode:
+    name: Aquarium LED Wartungsmodus
+    icon: mdi:toolbox-outline
+
+input_number:
+  aquarium_led_day_brightness_pct:
+    name: Aquarium LED Taghelligkeit
+    icon: mdi:weather-sunny
+    min: 1
+    max: 100
+    step: 1
+    mode: slider
+    unit_of_measurement: "%"
+    initial: 90
+  aquarium_led_night_brightness_pct:
+    name: Aquarium LED Nachtlicht
+    icon: mdi:weather-night
+    min: 0
+    max: 30
+    step: 1
+    mode: slider
+    unit_of_measurement: "%"
+    initial: 2
+  aquarium_led_price_dimming_strength_pct:
+    name: Aquarium LED Preisdimmung
+    icon: mdi:cash-remove
+    min: 0
+    max: 90
+    step: 1
+    mode: slider
+    unit_of_measurement: "%"
+    initial: 40
+  aquarium_led_cloud_simulation_strength_pct:
+    name: Aquarium LED Wolkenstaerke
+    icon: mdi:weather-cloudy-arrow-right
+    min: 0
+    max: 100
+    step: 1
+    mode: slider
+    unit_of_measurement: "%"
+    initial: 45

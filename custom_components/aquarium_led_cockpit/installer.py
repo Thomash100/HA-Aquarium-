@@ -63,6 +63,16 @@ def _build_install_plan(
             )
         )
 
+    if install_blueprint or export_dashboard_snippets:
+        items.append(
+            InstallItem(
+                key="dashboard_controls_package",
+                source=RESOURCE_ROOT / "packages" / "aquarium_led_cockpit_controls.yaml",
+                target=config_root / "packages" / "aquarium_led_cockpit_controls.yaml",
+                description="Dashboard control helper package",
+            )
+        )
+
     if export_dashboard_snippets:
         dashboard_root = config_root / EXPORT_FOLDER / "dashboard"
         items.extend(
@@ -88,6 +98,12 @@ def _build_install_plan(
                     source=RESOURCE_ROOT / "dashboards" / "aquarium_led_technikpanel_sensor.yaml",
                     target=dashboard_root / "aquarium_led_technikpanel_sensor.yaml",
                     description="Technical panel dashboard card",
+                ),
+                InstallItem(
+                    key="dashboard_controls",
+                    source=RESOURCE_ROOT / "dashboards" / "aquarium_led_controls_panel.yaml",
+                    target=dashboard_root / "aquarium_led_controls_panel.yaml",
+                    description="Dashboard controls panel",
                 ),
             ]
         )
