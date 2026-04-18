@@ -1,21 +1,48 @@
-type: entities
-title: Aquarium LED Steuerung
-show_header_toggle: false
-state_color: true
-entities:
-  - entity: input_boolean.aquarium_led_maintenance_mode
-    name: Wartungslicht 30 Minuten
-    icon: mdi:toolbox-outline
-    secondary_info: last-changed
-  - entity: input_number.aquarium_led_day_brightness_pct
-    name: Taghelligkeit
-    icon: mdi:weather-sunny
-  - entity: input_number.aquarium_led_night_brightness_pct
-    name: Nachtlicht
-    icon: mdi:weather-night
-  - entity: input_number.aquarium_led_price_dimming_strength_pct
-    name: Preisdimmung
-    icon: mdi:cash-remove
-  - entity: input_number.aquarium_led_cloud_simulation_strength_pct
-    name: Wolkenstaerke
-    icon: mdi:weather-cloudy-arrow-right
+type: vertical-stack
+cards:
+  - type: entities
+    title: Aquarium LED Automatik
+    show_header_toggle: false
+    state_color: true
+    entities:
+      - entity: input_boolean.aquarium_led_maintenance_mode
+        name: Wartungslicht 30 Minuten
+        icon: mdi:toolbox-outline
+        secondary_info: last-changed
+      - entity: input_number.aquarium_led_day_brightness_pct
+        name: Taghelligkeit
+        icon: mdi:weather-sunny
+      - entity: input_number.aquarium_led_night_brightness_pct
+        name: Nachtlicht
+        icon: mdi:weather-night
+      - entity: input_number.aquarium_led_price_dimming_strength_pct
+        name: Preisdimmung
+        icon: mdi:cash-remove
+      - entity: input_number.aquarium_led_cloud_simulation_strength_pct
+        name: Wolkenstaerke
+        icon: mdi:weather-cloudy-arrow-right
+
+  - type: entities
+    title: Aquarium LED Manueller RGBW-Override
+    show_header_toggle: false
+    state_color: true
+    entities:
+      - entity: input_boolean.aquarium_led_manual_override_mode
+        name: Manuelle Lichtsteuerung
+        icon: mdi:tune-variant
+        secondary_info: last-changed
+      - entity: input_number.aquarium_led_manual_brightness_pct
+        name: Helligkeit manuell
+        icon: mdi:brightness-6
+      - entity: input_number.aquarium_led_manual_red
+        name: Rot manuell
+        icon: mdi:palette
+      - entity: input_number.aquarium_led_manual_green
+        name: Gruen manuell
+        icon: mdi:palette
+      - entity: input_number.aquarium_led_manual_blue
+        name: Blau manuell
+        icon: mdi:palette
+      - entity: input_number.aquarium_led_manual_white
+        name: Weiss manuell
+        icon: mdi:white-balance-sunny

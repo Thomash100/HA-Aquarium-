@@ -2,6 +2,9 @@ input_boolean:
   aquarium_led_maintenance_mode:
     name: Aquarium LED Wartungsmodus
     icon: mdi:toolbox-outline
+  aquarium_led_manual_override_mode:
+    name: Aquarium LED Manuelle Steuerung
+    icon: mdi:tune-variant
 
 input_number:
   aquarium_led_day_brightness_pct:
@@ -40,3 +43,44 @@ input_number:
     mode: slider
     unit_of_measurement: "%"
     initial: 45
+  aquarium_led_manual_brightness_pct:
+    name: Aquarium LED Manuelle Helligkeit
+    icon: mdi:brightness-6
+    min: 0
+    max: 100
+    step: 1
+    mode: slider
+    unit_of_measurement: "%"
+    initial: 75
+  aquarium_led_manual_red:
+    name: Aquarium LED Manuell Rot
+    icon: mdi:palette
+    min: 0
+    max: 255
+    step: 1
+    mode: slider
+    initial: 120
+  aquarium_led_manual_green:
+    name: Aquarium LED Manuell Gruen
+    icon: mdi:palette
+    min: 0
+    max: 255
+    step: 1
+    mode: slider
+    initial: 180
+  aquarium_led_manual_blue:
+    name: Aquarium LED Manuell Blau
+    icon: mdi:palette
+    min: 0
+    max: 255
+    step: 1
+    mode: slider
+    initial: 255
+  aquarium_led_manual_white:
+    name: Aquarium LED Manuell Weiss
+    icon: mdi:white-balance-sunny
+    min: 0
+    max: 255
+    step: 1
+    mode: slider
+    initial: 220

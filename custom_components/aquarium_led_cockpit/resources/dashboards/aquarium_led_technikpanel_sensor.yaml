@@ -30,18 +30,23 @@ cards:
               const data = entity?.attributes || {};
           const safe = (v, fallback = '-') => (v === undefined || v === null || v === '') ? fallback : v;
           const maintenance = data.maintenance === true || String(data.maintenance).toLowerCase() === 'true';
+          const manual = data.manual === true || String(data.manual).toLowerCase() === 'true';
           const cheap = data.cheap === true || String(data.cheap).toLowerCase() === 'true';
           const phaseLabel = {
             sunrise: 'SUNRISE RAMP',
             day: 'DAYLIGHT RUN',
             sunset: 'SUNSET RAMP',
-            night: 'NIGHT MODE'
+            night: 'NIGHT MODE',
+            maintenance: 'SERVICE MODE',
+            manual: 'MANUAL OVERRIDE'
           }[(data.phase || raw)] || String(safe(data.phase || raw)).toUpperCase();
           const accent = {
             sunrise: '#ffd08a',
             day: '#89ebff',
             sunset: '#ff9f7d',
-            night: '#9bb4ff'
+            night: '#9bb4ff',
+            maintenance: '#ffbf75',
+            manual: '#79f2c6'
           }[(data.phase || raw)] || '#89ebff';
           return `
             <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;">
@@ -59,9 +64,9 @@ cards:
                   <div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;opacity:0.68;">Ziel</div>
                   <div style="margin-top:4px;font-size:22px;font-weight:800;">${safe(data.target_pct, 0)}%</div>
                 </div>
-                <div style="padding:10px 12px;border-radius:14px;background:${maintenance ? 'rgba(255, 179, 71, 0.24)' : (cheap ? 'rgba(86, 214, 159, 0.20)' : 'rgba(255,255,255,0.08)')};border:1px solid rgba(255,255,255,0.08);">
+                <div style="padding:10px 12px;border-radius:14px;background:${maintenance ? 'rgba(255, 179, 71, 0.24)' : (manual ? 'rgba(121, 242, 198, 0.20)' : (cheap ? 'rgba(86, 214, 159, 0.20)' : 'rgba(255,255,255,0.08)'))};border:1px solid rgba(255,255,255,0.08);">
                   <div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;opacity:0.68;">Mode</div>
-                  <div style="margin-top:4px;font-size:16px;font-weight:800;">${maintenance ? `WARTUNG ${safe(data.maintenance_remaining_min, 0)}M` : (cheap ? 'GUENSTIG' : 'NORMAL')}</div>
+                  <div style="margin-top:4px;font-size:16px;font-weight:800;">${maintenance ? `WARTUNG ${safe(data.maintenance_remaining_min, 0)}M` : (manual ? 'MANUELL' : (cheap ? 'GUENSTIG' : 'NORMAL'))}</div>
                 </div>
               </div>
             </div>`;
@@ -279,7 +284,7 @@ cards:
                 </div>`;
             ]]]
   - type: entities
-    title: Steuerung
+    title: Automatik und Wartung
     show_header_toggle: false
     state_color: true
     entities:
@@ -299,3 +304,28 @@ cards:
       - entity: input_number.aquarium_led_cloud_simulation_strength_pct
         name: Wolkenstaerke
         icon: mdi:weather-cloudy-arrow-right
+
+  - type: entities
+    title: Manueller RGBW-Override
+    show_header_toggle: false
+    state_color: true
+    entities:
+      - entity: input_boolean.aquarium_led_manual_override_mode
+        name: Manuelle Lichtsteuerung
+        icon: mdi:tune-variant
+        secondary_info: last-changed
+      - entity: input_number.aquarium_led_manual_brightness_pct
+        name: Helligkeit manuell
+        icon: mdi:brightness-6
+      - entity: input_number.aquarium_led_manual_red
+        name: Rot manuell
+        icon: mdi:palette
+      - entity: input_number.aquarium_led_manual_green
+        name: Gruen manuell
+        icon: mdi:palette
+      - entity: input_number.aquarium_led_manual_blue
+        name: Blau manuell
+        icon: mdi:palette
+      - entity: input_number.aquarium_led_manual_white
+        name: Weiss manuell
+        icon: mdi:white-balance-sunny

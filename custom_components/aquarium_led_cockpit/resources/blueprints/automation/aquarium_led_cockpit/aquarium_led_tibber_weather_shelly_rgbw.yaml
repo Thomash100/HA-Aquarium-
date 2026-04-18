@@ -161,6 +161,54 @@ blueprint:
         entity:
           filter:
             - domain: input_number
+    manual_override_switch_entity:
+      name: Manueller RGBW-Override-Schalter optional
+      description: Standardmaessig der exportierte Dashboard-Schalter fuer die manuelle Farbvorgabe.
+      default: input_boolean.aquarium_led_manual_override_mode
+      selector:
+        entity:
+          filter:
+            - domain: input_boolean
+    manual_brightness_control_entity:
+      name: Regler manuelle Helligkeit optional
+      description: Standardmaessig der exportierte Dashboard-Regler fuer die direkte Helligkeitsvorgabe.
+      default: input_number.aquarium_led_manual_brightness_pct
+      selector:
+        entity:
+          filter:
+            - domain: input_number
+    manual_red_control_entity:
+      name: Regler manuell Rot optional
+      description: Standardmaessig der exportierte Dashboard-Regler fuer den Rot-Kanal.
+      default: input_number.aquarium_led_manual_red
+      selector:
+        entity:
+          filter:
+            - domain: input_number
+    manual_green_control_entity:
+      name: Regler manuell Gruen optional
+      description: Standardmaessig der exportierte Dashboard-Regler fuer den Gruen-Kanal.
+      default: input_number.aquarium_led_manual_green
+      selector:
+        entity:
+          filter:
+            - domain: input_number
+    manual_blue_control_entity:
+      name: Regler manuell Blau optional
+      description: Standardmaessig der exportierte Dashboard-Regler fuer den Blau-Kanal.
+      default: input_number.aquarium_led_manual_blue
+      selector:
+        entity:
+          filter:
+            - domain: input_number
+    manual_white_control_entity:
+      name: Regler manuell Weiss optional
+      description: Standardmaessig der exportierte Dashboard-Regler fuer den Weiss-Kanal.
+      default: input_number.aquarium_led_manual_white
+      selector:
+        entity:
+          filter:
+            - domain: input_number
     price_lookahead_hours:
       name: Tibber-Vorausblick in Stunden
       description: So viele kommende Stunden werden fuer die Preisbewertung betrachtet.
@@ -408,6 +456,17 @@ triggers:
     entity_id:
       - !input weather_entity
       - !input sun_entity
+      - !input maintenance_switch_entity
+      - !input day_brightness_control_entity
+      - !input night_brightness_control_entity
+      - !input price_dimming_strength_control_entity
+      - !input cloud_simulation_strength_control_entity
+      - !input manual_override_switch_entity
+      - !input manual_brightness_control_entity
+      - !input manual_red_control_entity
+      - !input manual_green_control_entity
+      - !input manual_blue_control_entity
+      - !input manual_white_control_entity
 
 variables:
   rgbw_lights: !input rgbw_lights
@@ -426,6 +485,12 @@ variables:
   night_brightness_control_entity: !input night_brightness_control_entity
   price_dimming_strength_control_entity: !input price_dimming_strength_control_entity
   cloud_simulation_strength_control_entity: !input cloud_simulation_strength_control_entity
+  manual_override_switch_entity: !input manual_override_switch_entity
+  manual_brightness_control_entity: !input manual_brightness_control_entity
+  manual_red_control_entity: !input manual_red_control_entity
+  manual_green_control_entity: !input manual_green_control_entity
+  manual_blue_control_entity: !input manual_blue_control_entity
+  manual_white_control_entity: !input manual_white_control_entity
   price_lookahead_hours: !input price_lookahead_hours
   cheapest_hours_count: !input cheapest_hours_count
   price_dimming_strength_pct: !input price_dimming_strength_pct
@@ -478,7 +543,7 @@ actions:
           {{ price_source_mode | string | trim }}
         {% endif %}
 
-  - alias: Dashboard-Regler und Wartung auswerten
+  - alias: Dashboard-Regler, manuellen Override und Wartung auswerten
     variables:
       effective_day_brightness_pct: >-
         {% set entity_id = day_brightness_control_entity | string | trim %}
@@ -535,6 +600,46 @@ actions:
           {{ ([0, ((remaining / 60) | round(0, 'ceil'))] | max) | int(0) }}
         {% else %}
           0
+        {% endif %}
+      manual_override_requested: >-
+        {% set entity_id = manual_override_switch_entity | string | trim %}
+        {{ entity_id != '' and is_state(entity_id, 'on') }}
+      manual_override_active: >-
+        {{ ((manual_override_requested | string) | lower == 'true') and not ((maintenance_mode_active | string) | lower == 'true') }}
+      manual_brightness_pct: >-
+        {% set entity_id = manual_brightness_control_entity | string | trim %}
+        {% if entity_id != '' and is_number(states(entity_id)) %}
+          {{ [100, [states(entity_id) | float(effective_day_brightness_pct | float(90)), 0] | max] | min }}
+        {% else %}
+          {{ [100, [effective_day_brightness_pct | float(90), 0] | max] | min }}
+        {% endif %}
+      manual_r: >-
+        {% set entity_id = manual_red_control_entity | string | trim %}
+        {% if entity_id != '' and is_number(states(entity_id)) %}
+          {{ [255, [states(entity_id) | int(120), 0] | max] | min }}
+        {% else %}
+          120
+        {% endif %}
+      manual_g: >-
+        {% set entity_id = manual_green_control_entity | string | trim %}
+        {% if entity_id != '' and is_number(states(entity_id)) %}
+          {{ [255, [states(entity_id) | int(180), 0] | max] | min }}
+        {% else %}
+          180
+        {% endif %}
+      manual_b: >-
+        {% set entity_id = manual_blue_control_entity | string | trim %}
+        {% if entity_id != '' and is_number(states(entity_id)) %}
+          {{ [255, [states(entity_id) | int(255), 0] | max] | min }}
+        {% else %}
+          255
+        {% endif %}
+      manual_w: >-
+        {% set entity_id = manual_white_control_entity | string | trim %}
+        {% if entity_id != '' and is_number(states(entity_id)) %}
+          {{ [255, [states(entity_id) | int(220), 0] | max] | min }}
+        {% else %}
+          220
         {% endif %}
 
   - choose:
@@ -1061,47 +1166,63 @@ actions:
         {% set white_share = (target_w | float(0)) / 255 %}
         {{ [100, [(brightness * white_share), 0] | max] | min | round(0) }}
 
-  - alias: Wartungsmodus anwenden
+  - alias: Angewendete Lichtwerte bestimmen
     variables:
       applied_phase_name: >-
         {% if ((maintenance_mode_active | string) | lower == 'true') %}
           maintenance
+        {% elif ((manual_override_active | string) | lower == 'true') %}
+          manual
         {% else %}
           {{ phase_name | string | trim }}
         {% endif %}
       applied_target_r: >-
         {% if ((maintenance_mode_active | string) | lower == 'true') %}
           255
+        {% elif ((manual_override_active | string) | lower == 'true') %}
+          {{ manual_r | int(0) }}
         {% else %}
           {{ target_r | int(0) }}
         {% endif %}
       applied_target_g: >-
         {% if ((maintenance_mode_active | string) | lower == 'true') %}
           255
+        {% elif ((manual_override_active | string) | lower == 'true') %}
+          {{ manual_g | int(0) }}
         {% else %}
           {{ target_g | int(0) }}
         {% endif %}
       applied_target_b: >-
         {% if ((maintenance_mode_active | string) | lower == 'true') %}
           255
+        {% elif ((manual_override_active | string) | lower == 'true') %}
+          {{ manual_b | int(0) }}
         {% else %}
           {{ target_b | int(0) }}
         {% endif %}
       applied_target_w: >-
         {% if ((maintenance_mode_active | string) | lower == 'true') %}
           255
+        {% elif ((manual_override_active | string) | lower == 'true') %}
+          {{ manual_w | int(0) }}
         {% else %}
           {{ target_w | int(0) }}
         {% endif %}
       applied_target_brightness_pct: >-
         {% if ((maintenance_mode_active | string) | lower == 'true') %}
           100
+        {% elif ((manual_override_active | string) | lower == 'true') %}
+          {{ manual_brightness_pct | round(0) | int(0) }}
         {% else %}
           {{ target_brightness_pct | int(0) }}
         {% endif %}
       applied_target_white_brightness_pct: >-
         {% if ((maintenance_mode_active | string) | lower == 'true') %}
           100
+        {% elif ((manual_override_active | string) | lower == 'true') %}
+          {% set brightness = manual_brightness_pct | float(0) %}
+          {% set white_share = (manual_w | float(0)) / 255 %}
+          {{ [100, [(brightness * white_share), 0] | max] | min | round(0) }}
         {% else %}
           {{ target_white_brightness_pct | int(0) }}
         {% endif %}
@@ -1176,6 +1297,8 @@ actions:
           'cheap': ((current_slot_is_cheap | string) | lower == 'true'),
           'maintenance': ((maintenance_mode_active | string) | lower == 'true'),
           'maintenance_remaining_min': maintenance_remaining_minutes | int(0),
+          'manual': ((manual_override_active | string) | lower == 'true'),
+          'manual_requested': ((manual_override_requested | string) | lower == 'true'),
           'price_factor': price_factor | float(0) | round(3),
           'weather': weather_state_name | string | trim,
           'cloudiness_pct': (cloudiness_factor | float(0) * 100) | round(0),
@@ -1188,6 +1311,8 @@ actions:
           'config_night_pct': effective_night_brightness_pct | float(0) | round(1),
           'config_price_dimming_pct': effective_price_dimming_strength_pct | float(0) | round(1),
           'config_cloud_pct': effective_cloud_simulation_strength_pct | float(0) | round(1),
+          'config_manual_brightness_pct': manual_brightness_pct | float(0) | round(1),
+          'config_manual_rgbw': [manual_r | int(0), manual_g | int(0), manual_b | int(0), manual_w | int(0)],
           'rgbw': [applied_target_r | int(0), applied_target_g | int(0), applied_target_b | int(0), applied_target_w | int(0)],
           'updated': now().strftime('%Y-%m-%d %H:%M:%S')
         } | to_json }}
@@ -1223,6 +1348,8 @@ actions:
                 | Sonnenuntergang: {{ sunset_start_clock }}
                 | Wartung: {{ maintenance_mode_active }}
                 | Restminuten: {{ maintenance_remaining_minutes | int(0) }}
+                | Manuell: {{ manual_override_active }}
+                | Manuell Ziel: {{ manual_brightness_pct | round(0) }}%
                 | Basis: {{ base_brightness_pct | round(1) }}%
                 | Ziel: {{ applied_target_brightness_pct | int(0) }}%
                 | Preisquelle: {{ price_source_label | string | trim }}
@@ -1234,6 +1361,7 @@ actions:
                 | Bewoelkung: {{ (cloudiness_factor | float(0) * 100) | round(0) }}%
                 | Wetterfaktor: {{ weather_factor | round(3) }}
                 | Wolkenfaktor: {{ cloud_pulse_factor | round(3) }}
+                | Override RGBW: [{{ manual_r | int(0) }}, {{ manual_g | int(0) }}, {{ manual_b | int(0) }}, {{ manual_w | int(0) }}]
                 | RGBW: [{{ applied_target_r | int(0) }}, {{ applied_target_g | int(0) }}, {{ applied_target_b | int(0) }}, {{ applied_target_w | int(0) }}]
 
 
