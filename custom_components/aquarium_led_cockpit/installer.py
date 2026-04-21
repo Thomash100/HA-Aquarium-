@@ -105,6 +105,12 @@ def _build_install_plan(
                     target=dashboard_root / "aquarium_led_controls_panel.yaml",
                     description="Dashboard controls panel",
                 ),
+                InstallItem(
+                    key="dashboard_power_price_24h",
+                    source=RESOURCE_ROOT / "dashboards" / "aquarium_led_power_price_24h.yaml",
+                    target=dashboard_root / "aquarium_led_power_price_24h.yaml",
+                    description="24h power and Tibber price chart",
+                ),
             ]
         )
 

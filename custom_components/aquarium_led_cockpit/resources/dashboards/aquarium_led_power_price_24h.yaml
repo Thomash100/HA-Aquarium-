@@ -1,0 +1,34 @@
+type: vertical-stack
+cards:
+  - type: markdown
+    content: >-
+      ## Aquarium Leistung und Tibber Preis 24h
+
+      Passe in dieser Datei bei Bedarf die Entity-IDs an:
+      `sensor.aquarium_rgbw_power`, `sensor.aquarium_rgb_white_power` und `sensor.tibber_aquarium_price`.
+  - type: history-graph
+    title: Aquarium LED Leistung 24h
+    hours_to_show: 24
+    fit_y_data: true
+    entities:
+      - entity: sensor.aquarium_rgbw_power
+        name: RGBW Leistung
+      - entity: sensor.aquarium_rgb_white_power
+        name: RGB Weiss Leistung
+  - type: history-graph
+    title: Tibber Preis 24h
+    hours_to_show: 24
+    fit_y_data: true
+    entities:
+      - entity: sensor.tibber_aquarium_price
+        name: Tibber Preis
+  - type: entities
+    title: Verwendete Sensoren
+    show_header_toggle: false
+    entities:
+      - entity: sensor.aquarium_rgbw_power
+        name: RGBW Leistung Sensor
+      - entity: sensor.aquarium_rgb_white_power
+        name: RGB Weiss Leistung Sensor
+      - entity: sensor.tibber_aquarium_price
+        name: Tibber Preis Sensor
