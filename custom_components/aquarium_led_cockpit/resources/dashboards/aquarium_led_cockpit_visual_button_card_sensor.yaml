@@ -95,7 +95,7 @@ custom_fields:
       };
 
       const panel = (title, icon, body) => `
-        <div style="background:${panelBg};border:${panelBorder};border-radius:22px;padding:14px 14px 12px 14px;backdrop-filter:blur(7px);">
+        <div style="box-sizing:border-box;min-width:0;width:100%;background:${panelBg};border:${panelBorder};border-radius:22px;padding:14px 14px 12px 14px;backdrop-filter:blur(7px);overflow:hidden;">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
             <ha-icon icon="${icon}" style="width:18px;height:18px;color:${accent};"></ha-icon>
             <div style="font-size:12px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;opacity:0.82;">${title}</div>
@@ -118,8 +118,8 @@ custom_fields:
 
       return `
         <div style="position:absolute;inset:0;pointer-events:none;opacity:0.10;background:repeating-linear-gradient(135deg, rgba(255,255,255,0.26) 0 2px, transparent 2px 14px);"></div>
-        <div style="position:relative;display:grid;gap:14px;">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;">
+        <div style="position:relative;display:grid;gap:14px;min-width:0;width:100%;box-sizing:border-box;overflow:hidden;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;min-width:0;">
             <div>
               <div style="font-size:11px;letter-spacing:0.18em;text-transform:uppercase;opacity:0.74;">Aquarium Cockpit</div>
               <div style="display:flex;align-items:center;gap:10px;margin-top:4px;">
@@ -128,14 +128,14 @@ custom_fields:
               </div>
               <div style="margin-top:8px;font-size:13px;opacity:0.92;">${safe(data.time)} Uhr</div>
             </div>
-            <div style="min-width:122px;padding:12px 14px;border-radius:18px;background:rgba(255,255,255,0.13);backdrop-filter:blur(8px);text-align:right;">
+            <div style="box-sizing:border-box;min-width:110px;max-width:100%;padding:12px 14px;border-radius:18px;background:rgba(255,255,255,0.13);backdrop-filter:blur(8px);text-align:right;flex:0 1 160px;">
               <div style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;opacity:0.74;">Ziellicht</div>
               <div style="font-size:34px;font-weight:800;line-height:1;">${safe(data.target_pct, 0)}%</div>
               <div style="font-size:12px;opacity:0.88;margin-top:4px;">Weiss ${safe(data.white_pct, 0)}%</div>
             </div>
           </div>
 
-          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(170px, 1fr));gap:12px;">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(145px, 1fr));gap:12px;min-width:0;width:100%;box-sizing:border-box;">
             ${panel('Zyklus', 'mdi:timeline-clock',
               row('Sonnenaufgang', safe(data.sunrise)) +
               row('Sonnenuntergang', safe(data.sunset)) +
