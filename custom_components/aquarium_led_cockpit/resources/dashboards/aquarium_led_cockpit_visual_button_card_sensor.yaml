@@ -9,7 +9,13 @@ hold_action:
   action: more-info
 styles:
   card:
-    - padding: 20px
+    - padding: |
+        [[[
+          const width = window.innerWidth || 1024;
+          if (width <= 480) return '14px';
+          if (width <= 720) return '16px';
+          return '20px';
+        ]]]
     - border-radius: 28px
     - overflow: hidden
     - border: 1px solid rgba(255,255,255,0.12)
@@ -23,7 +29,9 @@ styles:
             sunrise: 'radial-gradient(circle at 15% 15%, rgba(255,220,158,0.95), rgba(245,149,92,0.88) 34%, rgba(70,113,169,0.92) 100%)',
             day: 'radial-gradient(circle at 15% 15%, rgba(195,248,255,0.95), rgba(102,179,255,0.88) 38%, rgba(16,96,156,0.96) 100%)',
             sunset: 'radial-gradient(circle at 15% 15%, rgba(255,196,123,0.95), rgba(219,99,72,0.88) 36%, rgba(53,43,91,0.96) 100%)',
-            night: 'radial-gradient(circle at 15% 15%, rgba(105,132,255,0.38), rgba(22,35,78,0.92) 42%, rgba(7,11,27,0.98) 100%)'
+            night: 'radial-gradient(circle at 15% 15%, rgba(105,132,255,0.38), rgba(22,35,78,0.92) 42%, rgba(7,11,27,0.98) 100%)',
+            manual: 'radial-gradient(circle at 15% 15%, rgba(174,255,220,0.62), rgba(77,171,138,0.90) 38%, rgba(14,62,67,0.98) 100%)',
+            maintenance: 'radial-gradient(circle at 15% 15%, rgba(255,226,173,0.90), rgba(221,143,82,0.92) 36%, rgba(78,44,24,0.98) 100%)'
           };
           return backgrounds[phase] || backgrounds.night;
         ]]]
@@ -39,7 +47,7 @@ custom_fields:
   cockpit: |
     [[[
       const raw = entity?.state || '';
-          const data = entity?.attributes || {};
+      const data = entity?.attributes || {};
 
       const safe = (value, fallback = '-') => {
         if (value === undefined || value === null || value === '') return fallback;
@@ -51,23 +59,39 @@ custom_fields:
       };
       const clamp = (value, min = 0, max = 100) => Math.max(min, Math.min(max, value));
       const pct = (value, max = 100) => clamp((num(value, 0) / max) * 100);
+      const viewportWidth = window.innerWidth || 1024;
+      const isPhone = viewportWidth <= 480;
+      const isCompact = viewportWidth <= 720;
+      const outerGap = isPhone ? 10 : 14;
+      const panelGap = isPhone ? 10 : 12;
+      const panelGrid = isPhone ? '1fr' : (isCompact ? 'repeat(2, minmax(0, 1fr))' : 'repeat(auto-fit, minmax(145px, 1fr))');
+      const titleSize = isPhone ? 22 : (isCompact ? 24 : 27);
+      const targetBoxWidth = isPhone ? '100%' : '160px';
+      const targetFontSize = isPhone ? 28 : 34;
+      const badgeJustify = isPhone ? 'stretch' : 'space-between';
       const phaseNames = {
         sunrise: 'Sonnenaufgang',
         day: 'Tagesphase',
         sunset: 'Sonnenuntergang',
-        night: 'Nachtmodus'
+        night: 'Nachtmodus',
+        manual: 'Manuelle Steuerung',
+        maintenance: 'Wartungsmodus'
       };
       const phaseIcons = {
         sunrise: 'mdi:weather-sunset-up',
         day: 'mdi:white-balance-sunny',
         sunset: 'mdi:weather-sunset-down',
-        night: 'mdi:weather-night'
+        night: 'mdi:weather-night',
+        manual: 'mdi:tune-variant',
+        maintenance: 'mdi:toolbox-outline'
       };
       const accent = {
         sunrise: '#ffe1a6',
         day: '#b8f2ff',
         sunset: '#ffbd8f',
-        night: '#9fb4ff'
+        night: '#9fb4ff',
+        manual: '#93ffd7',
+        maintenance: '#ffd39e'
       }[(data.phase || raw)] || '#b8f2ff';
       const panelBg = 'rgba(5, 11, 20, 0.20)';
       const panelBorder = '1px solid rgba(255,255,255,0.10)';
@@ -75,30 +99,30 @@ custom_fields:
       const cheap = data.cheap === true || String(data.cheap).toLowerCase() === 'true';
 
       const row = (label, value, strong = false) => `
-        <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;margin-top:6px;">
-          <span style="font-size:12px;opacity:0.72;letter-spacing:0.02em;">${label}</span>
-          <span style="font-size:13px;${strong ? 'font-weight:700;' : 'font-weight:600;'}text-align:right;">${value}</span>
+        <div style="display:flex;justify-content:space-between;gap:${isPhone ? 8 : 12}px;align-items:center;margin-top:6px;flex-wrap:${isPhone ? 'wrap' : 'nowrap'};">
+          <span style="font-size:${isPhone ? 11 : 12}px;opacity:0.72;letter-spacing:0.02em;">${label}</span>
+          <span style="font-size:${isPhone ? 12 : 13}px;${strong ? 'font-weight:700;' : 'font-weight:600;'}text-align:right;max-width:100%;word-break:break-word;">${value}</span>
         </div>`;
 
       const bar = (label, value, suffix, fill) => {
         const width = clamp(value);
         return `
-          <div style="margin-top:10px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
-              <span style="font-size:12px;opacity:0.76;">${label}</span>
-              <span style="font-size:12px;font-weight:700;">${Math.round(width)}${suffix}</span>
+          <div style="margin-top:${isPhone ? 8 : 10}px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;gap:8px;">
+              <span style="font-size:${isPhone ? 11 : 12}px;opacity:0.76;">${label}</span>
+              <span style="font-size:${isPhone ? 11 : 12}px;font-weight:700;">${Math.round(width)}${suffix}</span>
             </div>
-            <div style="height:10px;background:rgba(255,255,255,0.16);border-radius:999px;overflow:hidden;">
+            <div style="height:${isPhone ? 9 : 10}px;background:rgba(255,255,255,0.16);border-radius:999px;overflow:hidden;">
               <div style="width:${width}%;height:100%;border-radius:999px;background:${fill};box-shadow:0 0 14px ${fill};"></div>
             </div>
           </div>`;
       };
 
       const panel = (title, icon, body) => `
-        <div style="box-sizing:border-box;min-width:0;width:100%;background:${panelBg};border:${panelBorder};border-radius:22px;padding:14px 14px 12px 14px;backdrop-filter:blur(7px);overflow:hidden;">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-            <ha-icon icon="${icon}" style="width:18px;height:18px;color:${accent};"></ha-icon>
-            <div style="font-size:12px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;opacity:0.82;">${title}</div>
+        <div style="box-sizing:border-box;min-width:0;width:100%;background:${panelBg};border:${panelBorder};border-radius:${isPhone ? 18 : 22}px;padding:${isPhone ? '12px 12px 10px 12px' : '14px 14px 12px 14px'};backdrop-filter:blur(7px);overflow:hidden;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:${isPhone ? 6 : 8}px;">
+            <ha-icon icon="${icon}" style="width:${isPhone ? 16 : 18}px;height:${isPhone ? 16 : 18}px;color:${accent};"></ha-icon>
+            <div style="font-size:${isPhone ? 11 : 12}px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;opacity:0.82;">${title}</div>
           </div>
           ${body}
         </div>`;
@@ -118,24 +142,24 @@ custom_fields:
 
       return `
         <div style="position:absolute;inset:0;pointer-events:none;opacity:0.10;background:repeating-linear-gradient(135deg, rgba(255,255,255,0.26) 0 2px, transparent 2px 14px);"></div>
-        <div style="position:relative;display:grid;gap:14px;min-width:0;width:100%;box-sizing:border-box;overflow:hidden;">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;min-width:0;">
-            <div>
-              <div style="font-size:11px;letter-spacing:0.18em;text-transform:uppercase;opacity:0.74;">Aquarium Cockpit</div>
-              <div style="display:flex;align-items:center;gap:10px;margin-top:4px;">
-                <ha-icon icon="${phaseIcons[(data.phase || raw)] || 'mdi:fishbowl'}" style="width:28px;height:28px;color:${accent};"></ha-icon>
-                <div style="font-size:27px;line-height:1.1;font-weight:800;">${phaseNames[(data.phase || raw)] || safe((data.phase || raw))}</div>
+        <div style="position:relative;display:grid;gap:${outerGap}px;min-width:0;width:100%;box-sizing:border-box;overflow:hidden;">
+          <div style="display:flex;justify-content:space-between;align-items:${isPhone ? 'stretch' : 'flex-start'};gap:${isPhone ? 10 : 16}px;flex-wrap:wrap;min-width:0;">
+            <div style="min-width:0;flex:1 1 220px;">
+              <div style="font-size:${isPhone ? 10 : 11}px;letter-spacing:0.18em;text-transform:uppercase;opacity:0.74;">Aquarium Cockpit</div>
+              <div style="display:flex;align-items:center;gap:${isPhone ? 8 : 10}px;margin-top:4px;min-width:0;">
+                <ha-icon icon="${phaseIcons[(data.phase || raw)] || 'mdi:fishbowl'}" style="width:${isPhone ? 24 : 28}px;height:${isPhone ? 24 : 28}px;color:${accent};flex:0 0 auto;"></ha-icon>
+                <div style="font-size:${titleSize}px;line-height:1.1;font-weight:800;min-width:0;word-break:break-word;">${phaseNames[(data.phase || raw)] || safe((data.phase || raw))}</div>
               </div>
-              <div style="margin-top:8px;font-size:13px;opacity:0.92;">${safe(data.time)} Uhr</div>
+              <div style="margin-top:${isPhone ? 6 : 8}px;font-size:${isPhone ? 12 : 13}px;opacity:0.92;">${safe(data.time)} Uhr</div>
             </div>
-            <div style="box-sizing:border-box;min-width:110px;max-width:100%;padding:12px 14px;border-radius:18px;background:rgba(255,255,255,0.13);backdrop-filter:blur(8px);text-align:right;flex:0 1 160px;">
-              <div style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;opacity:0.74;">Ziellicht</div>
-              <div style="font-size:34px;font-weight:800;line-height:1;">${safe(data.target_pct, 0)}%</div>
-              <div style="font-size:12px;opacity:0.88;margin-top:4px;">Weiss ${safe(data.white_pct, 0)}%</div>
+            <div style="box-sizing:border-box;min-width:${isPhone ? '0' : '110px'};width:${targetBoxWidth};max-width:100%;padding:${isPhone ? '10px 12px' : '12px 14px'};border-radius:${isPhone ? 16 : 18}px;background:rgba(255,255,255,0.13);backdrop-filter:blur(8px);text-align:${isPhone ? 'left' : 'right'};flex:${isPhone ? '1 1 100%' : '0 1 160px'};">
+              <div style="font-size:${isPhone ? 10 : 11}px;letter-spacing:0.12em;text-transform:uppercase;opacity:0.74;">Ziellicht</div>
+              <div style="font-size:${targetFontSize}px;font-weight:800;line-height:1;">${safe(data.target_pct, 0)}%</div>
+              <div style="font-size:${isPhone ? 11 : 12}px;opacity:0.88;margin-top:4px;">Weiss ${safe(data.white_pct, 0)}%</div>
             </div>
           </div>
 
-          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(145px, 1fr));gap:12px;min-width:0;width:100%;box-sizing:border-box;">
+          <div style="display:grid;grid-template-columns:${panelGrid};gap:${panelGap}px;min-width:0;width:100%;box-sizing:border-box;align-items:start;">
             ${panel('Zyklus', 'mdi:timeline-clock',
               row('Sonnenaufgang', safe(data.sunrise)) +
               row('Sonnenuntergang', safe(data.sunset)) +
@@ -166,14 +190,13 @@ custom_fields:
             )}
           </div>
 
-          <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;padding-top:4px;">
-            <div style="display:flex;gap:8px;flex-wrap:wrap;">
-              <span style="padding:7px 10px;border-radius:999px;background:rgba(255,255,255,0.13);font-size:12px;font-weight:700;">Preis ${safe(data.price)}</span>
-              <span style="padding:7px 10px;border-radius:999px;background:rgba(255,255,255,0.13);font-size:12px;font-weight:700;">Cloud ${safe(data.cloudiness_pct, 0)}%</span>
-              <span style="padding:7px 10px;border-radius:999px;background:${cheap ? 'rgba(135,255,196,0.22)' : 'rgba(255,255,255,0.13)'};font-size:12px;font-weight:700;">${cheap ? 'Guenstige Phase' : 'Normale Phase'}</span>
+          <div style="display:flex;justify-content:${badgeJustify};gap:${isPhone ? 8 : 12}px;align-items:${isPhone ? 'stretch' : 'center'};flex-wrap:wrap;padding-top:4px;">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;flex:1 1 220px;">
+              <span style="padding:${isPhone ? '6px 9px' : '7px 10px'};border-radius:999px;background:rgba(255,255,255,0.13);font-size:${isPhone ? 11 : 12}px;font-weight:700;">Preis ${safe(data.price)}</span>
+              <span style="padding:${isPhone ? '6px 9px' : '7px 10px'};border-radius:999px;background:rgba(255,255,255,0.13);font-size:${isPhone ? 11 : 12}px;font-weight:700;">Cloud ${safe(data.cloudiness_pct, 0)}%</span>
+              <span style="padding:${isPhone ? '6px 9px' : '7px 10px'};border-radius:999px;background:${cheap ? 'rgba(135,255,196,0.22)' : 'rgba(255,255,255,0.13)'};font-size:${isPhone ? 11 : 12}px;font-weight:700;">${cheap ? 'Guenstige Phase' : 'Normale Phase'}</span>
             </div>
-            <div style="font-size:12px;opacity:0.74;">Update ${safe(data.updated)}</div>
+            <div style="font-size:${isPhone ? 11 : 12}px;opacity:0.74;flex:${isPhone ? '1 1 100%' : '0 0 auto'};text-align:${isPhone ? 'left' : 'right'};">Update ${safe(data.updated)}</div>
           </div>
         </div>`;
     ]]]
-
