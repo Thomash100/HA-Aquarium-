@@ -161,3 +161,15 @@ data:
 ## License
 
 This project is licensed under the MIT License. See [LICENSE](LICENSE).
+
+<!-- SYSTEMMEDIA_LEGAL_START -->
+## Rechtliche Hinweise
+
+- Impressum: https://systemmedia.de/impressum/
+- Datenschutz / DSGVO-Hinweise: https://systemmedia.de/datenschutz/
+- Nutzungsbedingungen und Haftungsausschluss: https://systemmedia.de/nutzungsbedingungen/
+
+Dieses Repository enthält, sofern nicht ausdrücklich anders gekennzeichnet, Test-, Entwicklungs-, Demonstrations- oder Evaluierungsinhalte. Nutzung auf eigene Verantwortung.
+
+Soweit eine `LICENSE`-Datei vorhanden ist, gelten die dort genannten Lizenzbedingungen für die eingeräumten Nutzungsrechte. Ergänzend gelten die Status-, Gewährleistungs- und Haftungshinweise in `LEGAL.md`.
+<!-- SYSTEMMEDIA_LEGAL_END -->
