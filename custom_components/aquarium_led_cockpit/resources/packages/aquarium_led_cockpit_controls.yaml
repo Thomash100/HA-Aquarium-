@@ -5,6 +5,9 @@ input_boolean:
   aquarium_led_manual_override_mode:
     name: Aquarium LED Manuelle Steuerung
     icon: mdi:tune-variant
+  aquarium_led_simulation_mode:
+    name: Aquarium LED Simulation
+    icon: mdi:test-tube
 
 input_number:
   aquarium_led_day_brightness_pct:

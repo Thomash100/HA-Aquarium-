@@ -96,6 +96,7 @@ async def _async_notify_installation(
             "Next steps:",
             "- Reload blueprints if the automation blueprint was exported.",
             "- Add the exported dashboard YAML snippets from /config/aquarium_led_cockpit/dashboard/ to Lovelace.",
+            "- Enable Home Assistant packages if you want to use the exported control helpers from /config/packages/.",
             "- Install custom:button-card through HACS if you want the visual cards.",
             "- The live status entity is sensor.aquarium_led_cockpit_status.",
         ]

@@ -9,6 +9,10 @@ cards:
         name: Wartungslicht 30 Minuten
         icon: mdi:toolbox-outline
         secondary_info: last-changed
+      - entity: input_boolean.aquarium_led_simulation_mode
+        name: Simulation ohne Lichtbefehle
+        icon: mdi:test-tube
+        secondary_info: last-changed
       - entity: input_number.aquarium_led_day_brightness_pct
         name: Taghelligkeit
         icon: mdi:weather-sunny

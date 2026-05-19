@@ -7,6 +7,7 @@ It combines:
 - sun-based sunrise and sunset phases
 - Tibber or generic electricity price inputs
 - weather-aware dimming and cloud simulation
+- simulation mode without sending light commands
 - exported dashboard cards for a cockpit-style UI
 - a live entity: `sensor.aquarium_led_cockpit_status`
 

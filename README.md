@@ -28,7 +28,9 @@ Transform your aquarium lighting into a dynamic day cycle that reacts to the sun
 - Dynamic aquarium LED control for Shelly RGBW lights
 - Sunrise and sunset phases based on `sun.sun`
 - Daytime cloud simulation with weather-aware dimming
+- Simulation mode that updates the cockpit status without sending light commands
 - Tibber spot-price support and generic price entities for other providers
+- Price-aware dimming where cheap-hour bonus is limited to genuinely low-price ranges
 - Optional legacy `input_text` export for older dashboard setups
 - Live dashboard entity: `sensor.aquarium_led_cockpit_status`
 - Visual dashboard cards for cockpit and technical panel layouts
@@ -64,17 +66,23 @@ After setup, the integration can export:
 
 - the aquarium blueprint to `/config/blueprints/automation/aquarium_led_cockpit/`
 - sensor-based dashboard cards to `/config/aquarium_led_cockpit/dashboard/`
+- dashboard control helpers to `/config/packages/aquarium_led_cockpit_controls.yaml`
 - optional legacy helper/card files for older setups
+
+The helper package requires Home Assistant packages to be enabled, for example
+`homeassistant: packages: !include_dir_named packages` in `configuration.yaml`.
 
 ## Dashboard Variants
 
-The integration currently ships with three dashboard snippets:
+The integration currently ships with five dashboard snippets:
 
 | Variant | File | Purpose |
 | --- | --- | --- |
 | Markdown status | `aquarium_led_status_sensor.yaml` | Lightweight status overview without custom cards |
 | Visual cockpit | `aquarium_led_cockpit_visual_button_card_sensor.yaml` | Single-card glass cockpit with RGBW, price, weather, and phase status |
 | Technical panel | `aquarium_led_technikpanel_sensor.yaml` | Multi-panel control-room view with separate lighting, price, weather, and timing sections |
+| Controls panel | `aquarium_led_controls_panel.yaml` | Entity controls for brightness, cloud strength, maintenance, simulation, and manual RGBW |
+| Power and price | `aquarium_led_power_price_24h.yaml` | 24h history chart template for power and price sensors |
 
 For the visual variants, install `custom:button-card` through HACS.
 
@@ -116,6 +124,9 @@ Updates the live status sensor from an automation or script.
 | `aquarium_led_status_sensor.yaml` | `/config/aquarium_led_cockpit/dashboard/` |
 | `aquarium_led_cockpit_visual_button_card_sensor.yaml` | `/config/aquarium_led_cockpit/dashboard/` |
 | `aquarium_led_technikpanel_sensor.yaml` | `/config/aquarium_led_cockpit/dashboard/` |
+| `aquarium_led_controls_panel.yaml` | `/config/aquarium_led_cockpit/dashboard/` |
+| `aquarium_led_power_price_24h.yaml` | `/config/aquarium_led_cockpit/dashboard/` |
+| `aquarium_led_cockpit_controls.yaml` | `/config/packages/` |
 | `aquarium_led_dashboard_status_helper.yaml` | optional legacy export into `/config/packages/` |
 
 ## Troubleshooting
@@ -161,7 +172,6 @@ data:
 ## License
 
 This project is licensed under the MIT License. See [LICENSE](LICENSE).
-
 <!-- SYSTEMMEDIA_LEGAL_START -->
 ## Rechtliche Hinweise
 

@@ -5,6 +5,7 @@ content: >-
   {% set rgbw = state_attr(entity, 'rgbw') if state_attr(entity, 'rgbw') is not none else ['-', '-', '-', '-'] %}
 
   **Phase:** {{ states(entity) }}
+  **Simulation:** {{ 'Ja' if state_attr(entity, 'simulation') | default(false) else 'Nein' }}
   **Zeit:** {{ state_attr(entity, 'time') | default('-') }}
   **Sonnenaufgang / Sonnenuntergang:** {{ state_attr(entity, 'sunrise') | default('-') }} / {{ state_attr(entity, 'sunset') | default('-') }}
 

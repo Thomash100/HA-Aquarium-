@@ -32,6 +32,7 @@ cards:
           const maintenance = data.maintenance === true || String(data.maintenance).toLowerCase() === 'true';
           const manual = data.manual === true || String(data.manual).toLowerCase() === 'true';
           const cheap = data.cheap === true || String(data.cheap).toLowerCase() === 'true';
+          const simulation = data.simulation === true || String(data.simulation).toLowerCase() === 'true';
           const phaseLabel = {
             sunrise: 'SUNRISE RAMP',
             day: 'DAYLIGHT RUN',
@@ -64,9 +65,9 @@ cards:
                   <div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;opacity:0.68;">Ziel</div>
                   <div style="margin-top:4px;font-size:22px;font-weight:800;">${safe(data.target_pct, 0)}%</div>
                 </div>
-                <div style="padding:10px 12px;border-radius:14px;background:${maintenance ? 'rgba(255, 179, 71, 0.24)' : (manual ? 'rgba(121, 242, 198, 0.20)' : (cheap ? 'rgba(86, 214, 159, 0.20)' : 'rgba(255,255,255,0.08)'))};border:1px solid rgba(255,255,255,0.08);">
+                <div style="padding:10px 12px;border-radius:14px;background:${simulation ? 'rgba(156, 210, 255, 0.22)' : (maintenance ? 'rgba(255, 179, 71, 0.24)' : (manual ? 'rgba(121, 242, 198, 0.20)' : (cheap ? 'rgba(86, 214, 159, 0.20)' : 'rgba(255,255,255,0.08)')))};border:1px solid rgba(255,255,255,0.08);">
                   <div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;opacity:0.68;">Mode</div>
-                  <div style="margin-top:4px;font-size:16px;font-weight:800;">${maintenance ? `WARTUNG ${safe(data.maintenance_remaining_min, 0)}M` : (manual ? 'MANUELL' : (cheap ? 'GUENSTIG' : 'NORMAL'))}</div>
+                  <div style="margin-top:4px;font-size:16px;font-weight:800;">${simulation ? 'SIMULATION' : (maintenance ? `WARTUNG ${safe(data.maintenance_remaining_min, 0)}M` : (manual ? 'MANUELL' : (cheap ? 'GUENSTIG' : 'NORMAL')))}</div>
                 </div>
               </div>
             </div>`;
@@ -291,6 +292,10 @@ cards:
       - entity: input_boolean.aquarium_led_maintenance_mode
         name: Wartungslicht 30 Minuten
         icon: mdi:toolbox-outline
+        secondary_info: last-changed
+      - entity: input_boolean.aquarium_led_simulation_mode
+        name: Simulation ohne Lichtbefehle
+        icon: mdi:test-tube
         secondary_info: last-changed
       - entity: input_number.aquarium_led_day_brightness_pct
         name: Taghelligkeit

@@ -129,6 +129,17 @@ blueprint:
           step: 5
           unit_of_measurement: min
           mode: box
+    simulation_mode_entity:
+      name: Simulationsmodus optional
+      description: >
+        Standardmaessig der exportierte Dashboard-Helfer fuer Simulation. Wenn
+        aktiv, berechnet die Automatisierung Status, Phase, Preis, Wetter und
+        Zielwerte, sendet aber keine Lichtbefehle.
+      default: input_boolean.aquarium_led_simulation_mode
+      selector:
+        entity:
+          filter:
+            - domain: input_boolean
     day_brightness_control_entity:
       name: Regler Taghelligkeit optional
       description: Standardmaessig der exportierte Dashboard-Regler fuer die Taghelligkeit.
@@ -457,6 +468,7 @@ triggers:
       - !input weather_entity
       - !input sun_entity
       - !input maintenance_switch_entity
+      - !input simulation_mode_entity
       - !input day_brightness_control_entity
       - !input night_brightness_control_entity
       - !input price_dimming_strength_control_entity
@@ -481,6 +493,7 @@ variables:
   tibber_home_name: !input tibber_home_name
   maintenance_switch_entity: !input maintenance_switch_entity
   maintenance_timeout_minutes: !input maintenance_timeout_minutes
+  simulation_mode_entity: !input simulation_mode_entity
   day_brightness_control_entity: !input day_brightness_control_entity
   night_brightness_control_entity: !input night_brightness_control_entity
   price_dimming_strength_control_entity: !input price_dimming_strength_control_entity
@@ -601,6 +614,9 @@ actions:
         {% else %}
           0
         {% endif %}
+      simulation_mode_active: >-
+        {% set entity_id = simulation_mode_entity | string | trim %}
+        {{ entity_id != '' and is_state(entity_id, 'on') }}
       manual_override_requested: >-
         {% set entity_id = manual_override_switch_entity | string | trim %}
         {{ entity_id != '' and is_state(entity_id, 'on') }}
@@ -736,9 +752,9 @@ actions:
         {% set sunset_start = sunset_start_ts | float(0) %}
         {% set sunset_length = ([sunset_duration_minutes | int(150), 1] | max) * 60 %}
         {% if (phase_name | string) == 'sunrise' %}
-          {{ ((current - sunrise_start) / sunrise_length) | float(0) }}
+          {{ [1, [((current - sunrise_start) / sunrise_length) | float(0), 0] | max] | min }}
         {% elif (phase_name | string) == 'sunset' %}
-          {{ ((current - sunset_start) / sunset_length) | float(0) }}
+          {{ [1, [((current - sunset_start) / sunset_length) | float(0), 0] | max] | min }}
         {% elif (phase_name | string) == 'day' %}
           1
         {% else %}
@@ -1022,11 +1038,13 @@ actions:
           {% set highest = max_price | float(0) %}
           {% set spread = highest - lowest %}
           {% set dim_strength = (effective_price_dimming_strength_pct | float(price_dimming_strength_pct | float(40))) / 100 %}
-          {% set cheap_bonus = ((cheap_hours_bonus_pct | float(10)) / 100) if ((current_slot_is_cheap | string) | lower == 'true') else 0 %}
           {% if spread <= 0 %}
-            {{ [1, [1 + cheap_bonus, min_factor] | max] | min }}
+            1
           {% else %}
-            {% set position = (current - lowest) / spread %}
+            {% set position = [1, [((current - lowest) / spread), 0] | max] | min %}
+            {% set cheap_share = (cheapest_hours_count | float(4)) / ([price_lookahead_hours | float(24), 1] | max) %}
+            {% set cheap_bonus_allowed = ((current_slot_is_cheap | string) | lower == 'true') and position <= cheap_share %}
+            {% set cheap_bonus = ((cheap_hours_bonus_pct | float(10)) / 100) if cheap_bonus_allowed else 0 %}
             {% set raw_factor = 1 - (position * dim_strength) + cheap_bonus %}
             {{ [1, [raw_factor, min_factor] | max] | min }}
           {% endif %}
@@ -1230,6 +1248,13 @@ actions:
   - choose:
       - conditions:
           - condition: template
+            value_template: "{{ ((simulation_mode_active | string) | lower == 'true') }}"
+        sequence:
+          - alias: Simulationsmodus aktiv, keine Lichtbefehle senden
+            variables:
+              simulation_skipped_lights: true
+      - conditions:
+          - condition: template
             value_template: "{{ (applied_target_brightness_pct | float(0)) <= 0 }}"
         sequence:
           - action: light.turn_off
@@ -1295,6 +1320,7 @@ actions:
           'price_min': min_price | float(0) | round(4),
           'price_max': max_price | float(0) | round(4),
           'cheap': ((current_slot_is_cheap | string) | lower == 'true'),
+          'simulation': ((simulation_mode_active | string) | lower == 'true'),
           'maintenance': ((maintenance_mode_active | string) | lower == 'true'),
           'maintenance_remaining_min': maintenance_remaining_minutes | int(0),
           'manual': ((manual_override_active | string) | lower == 'true'),
@@ -1346,6 +1372,7 @@ actions:
                 | Uhr: {{ shifted_clock }}
                 | Sonnenaufgang: {{ sunrise_start_clock }}
                 | Sonnenuntergang: {{ sunset_start_clock }}
+                | Simulation: {{ simulation_mode_active }}
                 | Wartung: {{ maintenance_mode_active }}
                 | Restminuten: {{ maintenance_remaining_minutes | int(0) }}
                 | Manuell: {{ manual_override_active }}
