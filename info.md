@@ -2,6 +2,10 @@
 
 Aquarium LED Cockpit is a HACS-installable Home Assistant custom integration for dynamic aquarium lighting.
 
+Release label: `V26.05.19.001_BETA.00`
+
+Home Assistant manifest version: `26.5.19-beta.1`
+
 It combines:
 
 - sun-based sunrise and sunset phases
