@@ -86,7 +86,7 @@ The integration currently ships with five dashboard snippets:
 | Visual cockpit | `aquarium_led_cockpit_visual_button_card_sensor.yaml` | Single-card glass cockpit with RGBW, price, weather, and phase status |
 | Technical panel | `aquarium_led_technikpanel_sensor.yaml` | Multi-panel control-room view with separate lighting, price, weather, and timing sections |
 | Controls panel | `aquarium_led_controls_panel.yaml` | Entity controls for brightness, cloud strength, maintenance, simulation, and manual RGBW |
-| Power and price | `aquarium_led_power_price_24h.yaml` | 24h history chart template for power and price sensors |
+| 24h status | `aquarium_led_power_price_24h.yaml` | 24h history card using the built-in cockpit status sensor, ready for optional power and price sensors |
 
 For the visual variants, install `custom:button-card` through HACS.
 

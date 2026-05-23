@@ -2,33 +2,22 @@ type: vertical-stack
 cards:
   - type: markdown
     content: >-
-      ## Aquarium Leistung und Tibber Preis 24h
+      ## Aquarium Verlauf 24h
 
-      Passe in dieser Datei bei Bedarf die Entity-IDs an:
-      `sensor.aquarium_rgbw_power`, `sensor.aquarium_rgb_white_power` und `sensor.tibber_aquarium_price`.
+      Diese Standardkarte nutzt nur die Cockpit-Status-Entitaet, die von der
+      Integration angelegt wird. Wenn du eigene Shelly- oder Tibber-Sensoren
+      anzeigen moechtest, fuege sie hier zusaetzlich mit ihren echten
+      Entity-IDs ein.
   - type: history-graph
-    title: Aquarium LED Leistung 24h
+    title: Aquarium LED Status 24h
     hours_to_show: 24
     fit_y_data: true
     entities:
-      - entity: sensor.aquarium_rgbw_power
-        name: RGBW Leistung
-      - entity: sensor.aquarium_rgb_white_power
-        name: RGB Weiss Leistung
-  - type: history-graph
-    title: Tibber Preis 24h
-    hours_to_show: 24
-    fit_y_data: true
-    entities:
-      - entity: sensor.tibber_aquarium_price
-        name: Tibber Preis
+      - entity: sensor.aquarium_led_cockpit_status
+        name: Cockpit Status
   - type: entities
-    title: Verwendete Sensoren
+    title: Verwendete Entitaet
     show_header_toggle: false
     entities:
-      - entity: sensor.aquarium_rgbw_power
-        name: RGBW Leistung Sensor
-      - entity: sensor.aquarium_rgb_white_power
-        name: RGB Weiss Leistung Sensor
-      - entity: sensor.tibber_aquarium_price
-        name: Tibber Preis Sensor
+      - entity: sensor.aquarium_led_cockpit_status
+        name: Aquarium LED Cockpit Status
