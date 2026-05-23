@@ -140,6 +140,37 @@ blueprint:
         entity:
           filter:
             - domain: input_boolean
+    time_lapse_mode_entity:
+      name: Zeitraffer-Simulation optional
+      description: >
+        Wenn aktiv, nutzt die Automatisierung die Simulationszeit statt der
+        echten Uhrzeit und sendet keine Lichtbefehle. Die Simulationszeit wird
+        beim Minuten-Trigger automatisch weitergeschoben.
+      default: input_boolean.aquarium_led_time_lapse_mode
+      selector:
+        entity:
+          filter:
+            - domain: input_boolean
+    simulation_time_entity:
+      name: Simulationszeit optional
+      description: >
+        Input number mit der simulierten Minute des Tages. 0 ist 00:00,
+        360 ist 06:00, 720 ist 12:00 und 1439 ist 23:59.
+      default: input_number.aquarium_led_simulation_time_minutes
+      selector:
+        entity:
+          filter:
+            - domain: input_number
+    simulation_step_entity:
+      name: Zeitraffer-Schritt optional
+      description: >
+        Input number fuer die Minuten, um die die Simulationszeit pro echtem
+        Minuten-Trigger weiterlaufen soll.
+      default: input_number.aquarium_led_simulation_step_minutes
+      selector:
+        entity:
+          filter:
+            - domain: input_number
     day_brightness_control_entity:
       name: Regler Taghelligkeit optional
       description: Standardmaessig der exportierte Dashboard-Regler fuer die Taghelligkeit.
@@ -458,17 +489,23 @@ max_exceeded: silent
 
 triggers:
   - trigger: homeassistant
+    id: ha_start
     event: start
 
   - trigger: time_pattern
+    id: minute_tick
     minutes: "/1"
 
   - trigger: state
+    id: watched_state
     entity_id:
       - !input weather_entity
       - !input sun_entity
       - !input maintenance_switch_entity
       - !input simulation_mode_entity
+      - !input time_lapse_mode_entity
+      - !input simulation_time_entity
+      - !input simulation_step_entity
       - !input day_brightness_control_entity
       - !input night_brightness_control_entity
       - !input price_dimming_strength_control_entity
@@ -494,6 +531,9 @@ variables:
   maintenance_switch_entity: !input maintenance_switch_entity
   maintenance_timeout_minutes: !input maintenance_timeout_minutes
   simulation_mode_entity: !input simulation_mode_entity
+  time_lapse_mode_entity: !input time_lapse_mode_entity
+  simulation_time_entity: !input simulation_time_entity
+  simulation_step_entity: !input simulation_step_entity
   day_brightness_control_entity: !input day_brightness_control_entity
   night_brightness_control_entity: !input night_brightness_control_entity
   price_dimming_strength_control_entity: !input price_dimming_strength_control_entity
@@ -615,8 +655,26 @@ actions:
           0
         {% endif %}
       simulation_mode_active: >-
-        {% set entity_id = simulation_mode_entity | string | trim %}
+        {% set simulation_entity_id = simulation_mode_entity | string | trim %}
+        {% set time_lapse_entity_id = time_lapse_mode_entity | string | trim %}
+        {{ (simulation_entity_id != '' and is_state(simulation_entity_id, 'on')) or (time_lapse_entity_id != '' and is_state(time_lapse_entity_id, 'on')) }}
+      time_lapse_mode_active: >-
+        {% set entity_id = time_lapse_mode_entity | string | trim %}
         {{ entity_id != '' and is_state(entity_id, 'on') }}
+      simulation_time_minutes_value: >-
+        {% set entity_id = simulation_time_entity | string | trim %}
+        {% if entity_id != '' and is_number(states(entity_id)) %}
+          {{ [1439, [states(entity_id) | int(360), 0] | max] | min }}
+        {% else %}
+          360
+        {% endif %}
+      simulation_step_minutes_value: >-
+        {% set entity_id = simulation_step_entity | string | trim %}
+        {% if entity_id != '' and is_number(states(entity_id)) %}
+          {{ [120, [states(entity_id) | int(15), 1] | max] | min }}
+        {% else %}
+          15
+        {% endif %}
       manual_override_requested: >-
         {% set entity_id = manual_override_switch_entity | string | trim %}
         {{ entity_id != '' and is_state(entity_id, 'on') }}
@@ -677,21 +735,41 @@ actions:
             action: tibber.get_prices
             data:
               start: >-
-                {{ now().replace(minute=0, second=0, microsecond=0).strftime('%Y-%m-%d %H:%M:%S') }}
+                {% if ((time_lapse_mode_active | string) | lower == 'true') %}
+                  {{ now().replace(hour=0, minute=0, second=0, microsecond=0).strftime('%Y-%m-%d %H:%M:%S') }}
+                {% else %}
+                  {{ now().replace(minute=0, second=0, microsecond=0).strftime('%Y-%m-%d %H:%M:%S') }}
+                {% endif %}
               end: >-
-                {{ (now().replace(minute=0, second=0, microsecond=0) + timedelta(hours=(price_lookahead_hours | int(24)))).strftime('%Y-%m-%d %H:%M:%S') }}
+                {% if ((time_lapse_mode_active | string) | lower == 'true') %}
+                  {{ (now().replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(hours=24)).strftime('%Y-%m-%d %H:%M:%S') }}
+                {% else %}
+                  {{ (now().replace(minute=0, second=0, microsecond=0) + timedelta(hours=(price_lookahead_hours | int(24)))).strftime('%Y-%m-%d %H:%M:%S') }}
+                {% endif %}
             response_variable: tibber_prices
 
   - alias: Zeitfenster aufbereiten
     variables:
-      shifted_minutes: >-
+      real_shifted_minutes: >-
         {% set total = now().hour * 60 + now().minute + (timezone_offset_minutes | int(0)) %}
         {{ ((total % 1440) + 1440) % 1440 }}
+      shifted_minutes: >-
+        {% if ((time_lapse_mode_active | string) | lower == 'true') %}
+          {{ simulation_time_minutes_value | int(360) }}
+        {% else %}
+          {{ real_shifted_minutes | int(0) }}
+        {% endif %}
       current_ts: >-
-        {{ as_timestamp(now()) }}
+        {% if ((time_lapse_mode_active | string) | lower == 'true') %}
+          {% set total = simulation_time_minutes_value | int(360) %}
+          {% set hour = (total // 60) | int(0) %}
+          {% set minute = (total % 60) | int(0) %}
+          {{ as_timestamp(now().replace(hour=hour, minute=minute, second=0, microsecond=0)) }}
+        {% else %}
+          {{ as_timestamp(now()) }}
+        {% endif %}
       shifted_clock: >-
-        {% set total = now().hour * 60 + now().minute + (timezone_offset_minutes | int(0)) %}
-        {% set wrapped = ((total % 1440) + 1440) % 1440 %}
+        {% set wrapped = shifted_minutes | int(0) %}
         {% set hour = (wrapped // 60) | int(0) %}
         {% set minute = (wrapped % 60) | int(0) %}
         {{ '%02d:%02d' | format(hour, minute) }}
@@ -843,7 +921,7 @@ actions:
       tibber_price_data_valid: >-
         {% set prices = tibber_prices.prices if tibber_prices is defined and tibber_prices.prices is defined else {} %}
         {% set home_prices = prices[tibber_selected_home] if tibber_selected_home in prices else [] %}
-        {% set now_ts = as_timestamp(now()) %}
+        {% set now_ts = current_ts | float(as_timestamp(now())) %}
         {% set default_slot_seconds = tibber_slot_seconds | int(3600) %}
         {% set ns = namespace(found=false) %}
         {% for item in home_prices %}
@@ -871,7 +949,7 @@ actions:
         {% else %}
           {% set prices = tibber_prices.prices if tibber_prices is defined and tibber_prices.prices is defined else {} %}
           {% set home_prices = prices[tibber_selected_home] if tibber_selected_home in prices else [] %}
-          {% set now_ts = as_timestamp(now()) %}
+          {% set now_ts = current_ts | float(as_timestamp(now())) %}
           {% set default_slot_seconds = tibber_slot_seconds | int(3600) %}
           {% set ns = namespace(found=false) %}
           {% for item in home_prices %}
@@ -895,7 +973,7 @@ actions:
         {% else %}
           {% set prices = tibber_prices.prices if tibber_prices is defined and tibber_prices.prices is defined else {} %}
           {% set home_prices = prices[tibber_selected_home] if tibber_selected_home in prices else [] %}
-          {% set now_ts = as_timestamp(now()) %}
+          {% set now_ts = current_ts | float(as_timestamp(now())) %}
           {% set default_slot_seconds = tibber_slot_seconds | int(3600) %}
           {% set ns = namespace(value=0) %}
           {% for item in home_prices %}
@@ -928,7 +1006,7 @@ actions:
         {% else %}
           {% set prices = tibber_prices.prices if tibber_prices is defined and tibber_prices.prices is defined else {} %}
           {% set home_prices = prices[tibber_selected_home] if tibber_selected_home in prices else [] %}
-          {% set now_ts = as_timestamp(now()) %}
+          {% set now_ts = current_ts | float(as_timestamp(now())) %}
           {% set default_slot_seconds = tibber_slot_seconds | int(3600) %}
           {% set ns = namespace(values=[]) %}
           {% for item in home_prices %}
@@ -965,7 +1043,7 @@ actions:
         {% else %}
           {% set prices = tibber_prices.prices if tibber_prices is defined and tibber_prices.prices is defined else {} %}
           {% set home_prices = prices[tibber_selected_home] if tibber_selected_home in prices else [] %}
-          {% set now_ts = as_timestamp(now()) %}
+          {% set now_ts = current_ts | float(as_timestamp(now())) %}
           {% set default_slot_seconds = tibber_slot_seconds | int(3600) %}
           {% set ns = namespace(values=[]) %}
           {% for item in home_prices %}
@@ -1003,7 +1081,7 @@ actions:
         {% else %}
           {% set prices = tibber_prices.prices if tibber_prices is defined and tibber_prices.prices is defined else {} %}
           {% set home_prices = prices[tibber_selected_home] if tibber_selected_home in prices else [] %}
-          {% set now_ts = as_timestamp(now()) %}
+          {% set now_ts = current_ts | float(as_timestamp(now())) %}
           {% set default_slot_seconds = tibber_slot_seconds | int(3600) %}
           {% set slot_count = tibber_cheapest_slot_count | int(1) %}
           {% set ns = namespace(relevant=[], current_start='') %}
@@ -1321,6 +1399,9 @@ actions:
           'price_max': max_price | float(0) | round(4),
           'cheap': ((current_slot_is_cheap | string) | lower == 'true'),
           'simulation': ((simulation_mode_active | string) | lower == 'true'),
+          'time_lapse': ((time_lapse_mode_active | string) | lower == 'true'),
+          'simulation_time_min': simulation_time_minutes_value | int(360),
+          'simulation_step_min': simulation_step_minutes_value | int(15),
           'maintenance': ((maintenance_mode_active | string) | lower == 'true'),
           'maintenance_remaining_min': maintenance_remaining_minutes | int(0),
           'manual': ((manual_override_active | string) | lower == 'true'),
@@ -1361,6 +1442,22 @@ actions:
   - choose:
       - conditions:
           - condition: template
+            value_template: >-
+              {{ ((time_lapse_mode_active | string) | lower == 'true')
+                 and (simulation_time_entity | string | trim) != ''
+                 and trigger.id is defined
+                 and trigger.id == 'minute_tick' }}
+        sequence:
+          - action: input_number.set_value
+            target:
+              entity_id: "{{ simulation_time_entity }}"
+            data:
+              value: >-
+                {{ ((simulation_time_minutes_value | int(360)) + (simulation_step_minutes_value | int(15))) % 1440 }}
+
+  - choose:
+      - conditions:
+          - condition: template
             value_template: "{{ (debug_notification | string) | lower == 'true' }}"
         sequence:
           - action: persistent_notification.create
@@ -1373,6 +1470,9 @@ actions:
                 | Sonnenaufgang: {{ sunrise_start_clock }}
                 | Sonnenuntergang: {{ sunset_start_clock }}
                 | Simulation: {{ simulation_mode_active }}
+                | Zeitraffer: {{ time_lapse_mode_active }}
+                | Sim-Zeit: {{ simulation_time_minutes_value | int(360) }} min
+                | Sim-Schritt: {{ simulation_step_minutes_value | int(15) }} min
                 | Wartung: {{ maintenance_mode_active }}
                 | Restminuten: {{ maintenance_remaining_minutes | int(0) }}
                 | Manuell: {{ manual_override_active }}

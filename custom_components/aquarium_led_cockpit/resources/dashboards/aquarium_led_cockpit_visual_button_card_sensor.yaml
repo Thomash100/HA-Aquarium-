@@ -110,6 +110,7 @@ custom_fields:
       const rgbw = Array.isArray(data.rgbw) ? data.rgbw : ['-', '-', '-', '-'];
       const cheap = data.cheap === true || String(data.cheap).toLowerCase() === 'true';
       const simulation = data.simulation === true || String(data.simulation).toLowerCase() === 'true';
+      const timeLapse = data.time_lapse === true || String(data.time_lapse).toLowerCase() === 'true';
 
       const row = (label, value, strong = false) => `
         <div style="display:flex;justify-content:space-between;gap:${isPhone ? 8 : 12}px;align-items:center;margin-top:6px;flex-wrap:${isPhone ? 'wrap' : 'nowrap'};">
@@ -207,7 +208,7 @@ custom_fields:
             <div style="display:flex;gap:8px;flex-wrap:wrap;flex:1 1 220px;">
               <span style="padding:${isPhone ? '6px 9px' : '7px 10px'};border-radius:999px;background:rgba(255,255,255,0.13);font-size:${badgeFont}px;font-weight:700;">Preis ${safe(data.price)}</span>
               <span style="padding:${isPhone ? '6px 9px' : '7px 10px'};border-radius:999px;background:rgba(255,255,255,0.13);font-size:${badgeFont}px;font-weight:700;">Cloud ${safe(data.cloudiness_pct, 0)}%</span>
-              ${simulation ? `<span style="padding:${isPhone ? '6px 9px' : '7px 10px'};border-radius:999px;background:rgba(156,210,255,0.24);font-size:${badgeFont}px;font-weight:700;">Simulation</span>` : ''}
+              ${simulation ? `<span style="padding:${isPhone ? '6px 9px' : '7px 10px'};border-radius:999px;background:rgba(156,210,255,0.24);font-size:${badgeFont}px;font-weight:700;">${timeLapse ? 'Zeitraffer' : 'Simulation'}</span>` : ''}
               <span style="padding:${isPhone ? '6px 9px' : '7px 10px'};border-radius:999px;background:${cheap ? 'rgba(135,255,196,0.22)' : 'rgba(255,255,255,0.13)'};font-size:${badgeFont}px;font-weight:700;">${cheap ? 'Guenstige Phase' : 'Normale Phase'}</span>
             </div>
             <div style="font-size:${badgeFont}px;opacity:0.74;flex:${isPhone ? '1 1 100%' : '0 0 auto'};text-align:${isPhone ? 'left' : 'right'};">Update ${safe(data.updated)}</div>

@@ -13,6 +13,16 @@ cards:
         name: Simulation ohne Lichtbefehle
         icon: mdi:test-tube
         secondary_info: last-changed
+      - entity: input_boolean.aquarium_led_time_lapse_mode
+        name: Zeitraffer-Simulation
+        icon: mdi:fast-forward
+        secondary_info: last-changed
+      - entity: input_number.aquarium_led_simulation_time_minutes
+        name: Simulationszeit Minute des Tages
+        icon: mdi:clock-fast
+      - entity: input_number.aquarium_led_simulation_step_minutes
+        name: Zeitraffer-Schritt je Minute
+        icon: mdi:debug-step-over
       - entity: input_number.aquarium_led_day_brightness_pct
         name: Taghelligkeit
         icon: mdi:weather-sunny

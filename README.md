@@ -97,6 +97,19 @@ For the visual variants, install `custom:button-card` through HACS.
 | Entity | Description |
 | --- | --- |
 | `sensor.aquarium_led_cockpit_status` | Live status entity used by the exported dashboard cards |
+| `input_boolean.aquarium_led_simulation_mode` | Calculates status without sending light commands |
+| `input_boolean.aquarium_led_time_lapse_mode` | Runs a safe time-lapse simulation without sending light commands |
+| `input_number.aquarium_led_simulation_time_minutes` | Simulated minute of day, where `360` means `06:00` |
+| `input_number.aquarium_led_simulation_step_minutes` | Minutes added to the simulated time on each real minute tick |
+
+### Time-Lapse Simulation
+
+Turn on `input_boolean.aquarium_led_time_lapse_mode` to test a full day without
+touching the real lights. The automation uses
+`input_number.aquarium_led_simulation_time_minutes` as the clock, writes the
+calculated phase, brightness and RGBW values to
+`sensor.aquarium_led_cockpit_status`, then advances the simulated time by
+`input_number.aquarium_led_simulation_step_minutes` once per real minute.
 
 ### Services
 

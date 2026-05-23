@@ -8,8 +8,29 @@ input_boolean:
   aquarium_led_simulation_mode:
     name: Aquarium LED Simulation
     icon: mdi:test-tube
+  aquarium_led_time_lapse_mode:
+    name: Aquarium LED Zeitraffer-Simulation
+    icon: mdi:fast-forward
 
 input_number:
+  aquarium_led_simulation_time_minutes:
+    name: Aquarium LED Simulationszeit
+    icon: mdi:clock-fast
+    min: 0
+    max: 1439
+    step: 1
+    mode: box
+    unit_of_measurement: min
+    initial: 360
+  aquarium_led_simulation_step_minutes:
+    name: Aquarium LED Zeitraffer-Schritt
+    icon: mdi:debug-step-over
+    min: 1
+    max: 120
+    step: 1
+    mode: slider
+    unit_of_measurement: min
+    initial: 15
   aquarium_led_day_brightness_pct:
     name: Aquarium LED Taghelligkeit
     icon: mdi:weather-sunny

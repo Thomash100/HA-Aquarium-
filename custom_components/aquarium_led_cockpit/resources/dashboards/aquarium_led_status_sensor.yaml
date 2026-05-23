@@ -6,6 +6,7 @@ content: >-
 
   **Phase:** {{ states(entity) }}
   **Simulation:** {{ 'Ja' if state_attr(entity, 'simulation') | default(false) else 'Nein' }}
+  **Zeitraffer:** {{ 'Ja' if state_attr(entity, 'time_lapse') | default(false) else 'Nein' }}
   **Zeit:** {{ state_attr(entity, 'time') | default('-') }}
   **Sonnenaufgang / Sonnenuntergang:** {{ state_attr(entity, 'sunrise') | default('-') }} / {{ state_attr(entity, 'sunset') | default('-') }}
 
