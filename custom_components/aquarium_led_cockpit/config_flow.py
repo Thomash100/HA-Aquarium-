@@ -5,6 +5,7 @@ import voluptuous as vol
 
 from homeassistant import config_entries
 from homeassistant.core import callback
+from homeassistant.helpers import selector
 
 from .const import (
     CONF_AUTO_INSTALL,
@@ -12,18 +13,62 @@ from .const import (
     CONF_EXPORT_LEGACY_FILES,
     CONF_INSTALL_BLUEPRINT,
     CONF_OVERWRITE_EXISTING,
+    CONF_PRICE_ENTITY,
+    CONF_RGBW_LIGHTS,
+    CONF_SUN_ENTITY,
+    CONF_TRANSITION_SECONDS,
+    CONF_WEATHER_ENTITY,
+    CONF_WHITE_LIGHTS,
     DEFAULT_AUTO_INSTALL,
     DEFAULT_EXPORT_DASHBOARD_SNIPPETS,
     DEFAULT_EXPORT_LEGACY_FILES,
     DEFAULT_INSTALL_BLUEPRINT,
     DEFAULT_OVERWRITE_EXISTING,
+    DEFAULT_SUN_ENTITY,
+    DEFAULT_TRANSITION_SECONDS,
     DOMAIN,
 )
 
 
-def _build_schema(defaults: dict[str, bool]) -> vol.Schema:
+def _build_schema(defaults: dict) -> vol.Schema:
     return vol.Schema(
         {
+            vol.Optional(
+                CONF_RGBW_LIGHTS,
+                default=defaults.get(CONF_RGBW_LIGHTS, []),
+            ): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="light", multiple=True)
+            ),
+            vol.Optional(
+                CONF_WHITE_LIGHTS,
+                default=defaults.get(CONF_WHITE_LIGHTS, []),
+            ): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="light", multiple=True)
+            ),
+            vol.Optional(
+                CONF_WEATHER_ENTITY,
+                default=defaults.get(CONF_WEATHER_ENTITY, ""),
+            ): selector.EntitySelector(selector.EntitySelectorConfig(domain="weather")),
+            vol.Optional(
+                CONF_SUN_ENTITY,
+                default=defaults.get(CONF_SUN_ENTITY, DEFAULT_SUN_ENTITY),
+            ): selector.EntitySelector(selector.EntitySelectorConfig(domain="sun")),
+            vol.Optional(
+                CONF_PRICE_ENTITY,
+                default=defaults.get(CONF_PRICE_ENTITY, ""),
+            ): selector.EntitySelector(selector.EntitySelectorConfig(domain="sensor")),
+            vol.Required(
+                CONF_TRANSITION_SECONDS,
+                default=defaults.get(CONF_TRANSITION_SECONDS, DEFAULT_TRANSITION_SECONDS),
+            ): selector.NumberSelector(
+                selector.NumberSelectorConfig(
+                    min=0,
+                    max=1800,
+                    step=5,
+                    mode=selector.NumberSelectorMode.BOX,
+                    unit_of_measurement="s",
+                )
+            ),
             vol.Required(
                 CONF_INSTALL_BLUEPRINT,
                 default=defaults.get(CONF_INSTALL_BLUEPRINT, DEFAULT_INSTALL_BLUEPRINT),

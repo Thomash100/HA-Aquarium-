@@ -2,16 +2,16 @@
 
 Aquarium LED Cockpit is a Home Assistant custom integration for aquarium lighting automation with price-aware dimming, weather-based cloud simulation, sunrise/sunset phases, and ready-to-use dashboard views.
 
-Release label: `V26.05.19.001_BETA.00`
+Release label: `V26.05.19.002_BETA.00`
 
-Home Assistant manifest version: `26.5.19-beta.1`
+Home Assistant manifest version: `26.5.19-beta.2`
 
 [![Open your Home Assistant instance and open this repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Thomash100&repository=HA-Aquarium-&category=integration)
 ![HACS Custom](https://img.shields.io/badge/HACS-Custom-orange.svg)
 ![GitHub Release](https://img.shields.io/github/v/release/Thomash100/HA-Aquarium-?sort=semver)
 ![License](https://img.shields.io/github/license/Thomash100/HA-Aquarium-)
 
-Transform your aquarium lighting into a dynamic day cycle that reacts to the sun, electricity prices, and weather conditions. The integration packages a complete blueprint, exports dashboard cards into the correct Home Assistant folders, and exposes a live status sensor for cockpit-style visualizations.
+Transform your aquarium lighting into a dynamic day cycle that reacts to the sun, electricity prices, and weather conditions. The integration can now be configured directly in Home Assistant, exposes control entities for everyday use, packages a complete blueprint as a compatibility path, exports dashboard cards, and exposes a live status sensor for cockpit-style visualizations.
 
 > Demo media and screenshots can be added here later. The repository is already structured for a polished HACS presentation.
 
@@ -30,6 +30,8 @@ Transform your aquarium lighting into a dynamic day cycle that reacts to the sun
 ## Features
 
 - Dynamic aquarium LED control for Shelly RGBW lights
+- UI-based setup for RGBW lights, optional white channels, weather, sun, price entity, and transition time
+- Built-in switch and number entities for normal operation, safe simulation, and time-lapse testing
 - Sunrise and sunset phases based on `sun.sun`
 - Daytime cloud simulation with weather-aware dimming
 - Simulation mode that updates the cockpit status without sending light commands
@@ -38,7 +40,7 @@ Transform your aquarium lighting into a dynamic day cycle that reacts to the sun
 - Optional legacy `input_text` export for older dashboard setups
 - Live dashboard entity: `sensor.aquarium_led_cockpit_status`
 - Visual dashboard cards for cockpit and technical panel layouts
-- One-click export of blueprint and dashboard files into Home Assistant config folders
+- One-click export of blueprint and dashboard files into Home Assistant config folders for legacy/manual workflows
 
 ## Installation
 
@@ -61,10 +63,10 @@ Use this direct HACS link:
 1. Install the integration through HACS.
 2. Restart Home Assistant.
 3. Add the integration in `Settings -> Devices & Services`.
-4. Leave `auto_install` enabled to export the included files automatically.
-5. Reload blueprints in Home Assistant.
-6. Create an automation from the exported aquarium blueprint.
-7. Add one of the exported dashboard cards to Lovelace.
+4. Select your RGBW lights and optional entities in the setup form.
+5. Use the created `switch.aquarium_led_steuerung`, simulation switches, and number entities from Home Assistant.
+6. Leave `auto_install` enabled if you also want the bundled blueprint and dashboard snippets exported.
+7. Add one of the exported dashboard cards to Lovelace if you want a cockpit view.
 
 After setup, the integration can export:
 
@@ -97,19 +99,19 @@ For the visual variants, install `custom:button-card` through HACS.
 | Entity | Description |
 | --- | --- |
 | `sensor.aquarium_led_cockpit_status` | Live status entity used by the exported dashboard cards |
-| `input_boolean.aquarium_led_simulation_mode` | Calculates status without sending light commands |
-| `input_boolean.aquarium_led_time_lapse_mode` | Runs a safe time-lapse simulation without sending light commands |
-| `input_number.aquarium_led_simulation_time_minutes` | Simulated minute of day, where `360` means `06:00` |
-| `input_number.aquarium_led_simulation_step_minutes` | Minutes added to the simulated time on each real minute tick |
+| `switch.aquarium_led_steuerung` | Enables direct light control from the integration |
+| `switch.aquarium_led_simulation` | Calculates status without sending light commands |
+| `switch.aquarium_led_zeitraffer` | Runs a safe time-lapse simulation without sending light commands |
+| `number.aquarium_led_simulationszeit` | Simulated minute of day, where `360` means `06:00` |
+| `number.aquarium_led_zeitraffer_schritt` | Minutes added to the simulated time on each real minute tick |
 
 ### Time-Lapse Simulation
 
-Turn on `input_boolean.aquarium_led_time_lapse_mode` to test a full day without
-touching the real lights. The automation uses
-`input_number.aquarium_led_simulation_time_minutes` as the clock, writes the
+Turn on the time-lapse switch to test a full day without touching the real
+lights. The integration uses the simulation-time number as the clock, writes the
 calculated phase, brightness and RGBW values to
-`sensor.aquarium_led_cockpit_status`, then advances the simulated time by
-`input_number.aquarium_led_simulation_step_minutes` once per real minute.
+`sensor.aquarium_led_cockpit_status`, then advances the simulated time by the
+time-lapse step once per real minute.
 
 ### Services
 

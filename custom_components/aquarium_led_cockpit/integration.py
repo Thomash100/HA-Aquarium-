@@ -199,8 +199,10 @@ async def async_setup_entry_integration(hass: HomeAssistant, entry: ConfigEntry)
     from .installer import async_install_resources
     from .runtime import async_get_runtime
 
-    await async_get_runtime(hass)
+    runtime = await async_get_runtime(hass)
+    await runtime.async_configure_entry(entry)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    entry.async_on_unload(entry.add_update_listener(_async_options_updated))
 
     settings = _merged_entry_settings(entry)
     if settings.get(CONF_AUTO_INSTALL, DEFAULT_AUTO_INSTALL):
@@ -226,6 +228,17 @@ async def async_setup_entry_integration(hass: HomeAssistant, entry: ConfigEntry)
     return True
 
 
+async def _async_options_updated(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Reload the entry when options change."""
+    await hass.config_entries.async_reload(entry.entry_id)
+
+
 async def async_unload_entry_integration(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload Aquarium LED Cockpit."""
-    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    from .runtime import async_get_runtime
+
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    if unload_ok:
+        runtime = await async_get_runtime(hass)
+        await runtime.async_unload()
+    return unload_ok
