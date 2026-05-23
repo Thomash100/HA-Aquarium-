@@ -44,18 +44,18 @@ def _resolve_entry(hass: HomeAssistant, entry_id: str | None) -> ConfigEntry:
     entries = hass.config_entries.async_entries(DOMAIN)
 
     if not entries:
-        raise HomeAssistantError("Aquarium LED Cockpit is not configured yet.")
+        raise HomeAssistantError("Aquarium LED Cockpit ist noch nicht konfiguriert.")
 
     if entry_id is None:
         if len(entries) == 1:
             return entries[0]
-        raise HomeAssistantError("Please provide config_entry_id when multiple entries exist.")
+        raise HomeAssistantError("Bitte config_entry_id angeben, wenn mehrere Eintraege existieren.")
 
     for entry in entries:
         if entry.entry_id == entry_id:
             return entry
 
-    raise HomeAssistantError(f"Unknown config_entry_id: {entry_id}")
+    raise HomeAssistantError(f"Unbekannte config_entry_id: {entry_id}")
 
 
 async def _async_notify_installation(
@@ -72,33 +72,33 @@ async def _async_notify_installation(
         return
 
     lines = [
-        "Aquarium LED Cockpit has exported the selected resources.",
+        "Aquarium LED Cockpit hat die ausgewaehlten Ressourcen exportiert.",
         "",
     ]
 
     if created:
-        lines.append("Created:")
+        lines.append("Erstellt:")
         lines.extend([f"- {item['description']}: {item['target']}" for item in created])
         lines.append("")
 
     if updated:
-        lines.append("Updated:")
+        lines.append("Aktualisiert:")
         lines.extend([f"- {item['description']}: {item['target']}" for item in updated])
         lines.append("")
 
     if skipped:
-        lines.append("Skipped:")
+        lines.append("Uebersprungen:")
         lines.extend([f"- {item['description']}: {item['target']}" for item in skipped])
         lines.append("")
 
     lines.extend(
         [
-            "Next steps:",
-            "- Reload blueprints if the automation blueprint was exported.",
-            "- Add the exported dashboard YAML snippets from /config/aquarium_led_cockpit/dashboard/ to Lovelace.",
-            "- Enable Home Assistant packages if you want to use the exported control helpers from /config/packages/.",
-            "- Install custom:button-card through HACS if you want the visual cards.",
-            "- The live status entity is sensor.aquarium_led_cockpit_status.",
+            "Naechste Schritte:",
+            "- Blueprints neu laden, wenn die Automation-Blueprint exportiert wurde.",
+            "- Exportierte Dashboard-YAML-Snippets aus /config/aquarium_led_cockpit/dashboard/ zu Lovelace hinzufuegen.",
+            "- Home-Assistant-Packages aktivieren, wenn die exportierten Steuerhelfer aus /config/packages/ genutzt werden sollen.",
+            "- custom:button-card ueber HACS installieren, wenn die visuellen Karten genutzt werden sollen.",
+            "- Die Live-Status-Entitaet ist sensor.aquarium_led_cockpit_status.",
         ]
     )
 
@@ -171,10 +171,10 @@ async def async_setup_integration(hass: HomeAssistant, config: dict[str, Any]) -
         try:
             payload = json.loads(call.data[CONF_STATUS_JSON])
         except json.JSONDecodeError as err:
-            raise HomeAssistantError("status_json must contain valid JSON.") from err
+            raise HomeAssistantError("status_json muss gueltiges JSON enthalten.") from err
 
         if not isinstance(payload, dict):
-            raise HomeAssistantError("status_json must decode to a JSON object.")
+            raise HomeAssistantError("status_json muss ein JSON-Objekt ergeben.")
 
         await runtime.async_set_status(payload)
 

@@ -1,159 +1,149 @@
 # Aquarium LED Cockpit
 
-Aquarium LED Cockpit is a Home Assistant custom integration for aquarium lighting automation with price-aware dimming, weather-based cloud simulation, sunrise/sunset phases, and ready-to-use dashboard views.
+Aquarium LED Cockpit ist eine Home-Assistant-Custom-Integration fuer eine dynamische Aquarium-Beleuchtung mit strompreisabhaengiger Dimmung, wetterbasierter Wolkensimulation, Sonnenaufgangs-/Sonnenuntergangsphasen und vorbereiteten Dashboard-Ansichten.
 
-Release label: `V260523.000_BETA.00`
+Veroeffentlichungskennzeichen: `V260523.001_BETA.00`
 
-Home Assistant manifest version: `26.5.23-beta.0`
+Home-Assistant-Manifest-Version: `26.5.23-beta.1`
 
-[![Open your Home Assistant instance and open this repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Thomash100&repository=HA-Aquarium-&category=integration)
+[![Home Assistant oeffnen und dieses Repository in HACS anzeigen.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Thomash100&repository=HA-Aquarium-&category=integration)
 ![HACS Custom](https://img.shields.io/badge/HACS-Custom-orange.svg)
-![GitHub Release](https://img.shields.io/github/v/release/Thomash100/HA-Aquarium-?sort=semver)
-![License](https://img.shields.io/github/license/Thomash100/HA-Aquarium-)
+![GitHub-Veroeffentlichung](https://img.shields.io/github/v/release/Thomash100/HA-Aquarium-?sort=semver)
+![Lizenz](https://img.shields.io/github/license/Thomash100/HA-Aquarium-)
 
-Transform your aquarium lighting into a dynamic day cycle that reacts to the sun, electricity prices, and weather conditions. The integration can now be configured directly in Home Assistant, exposes control entities for everyday use, packages a complete blueprint as a compatibility path, exports dashboard cards, and exposes a live status sensor for cockpit-style visualizations.
+Die Integration verwandelt deine Aquarium-Beleuchtung in einen dynamischen Tagesverlauf, der auf Sonne, Strompreise und Wetter reagieren kann. Sie kann direkt in Home Assistant konfiguriert werden, stellt eigene Steuer-Entitaeten fuer den Alltag bereit, bringt den Blueprint als Kompatibilitaetsweg mit, exportiert Dashboard-Karten und liefert einen Live-Statussensor fuer Cockpit-Ansichten.
 
-> Demo media and screenshots can be added here later. The repository is already structured for a polished HACS presentation.
+> Demo-Medien und Screenshots koennen spaeter ergaenzt werden. Die Repository-Struktur ist bereits fuer eine HACS-Praesentation vorbereitet.
 
-## Table of Contents
+## Inhaltsverzeichnis
 
-- [Features](#features)
+- [Funktionen](#funktionen)
 - [Installation](#installation)
-- [Quick Start](#quick-start)
-- [Dashboard Variants](#dashboard-variants)
-- [Entities and Services](#entities-and-services)
-- [Release History](#release-history)
-- [Versioning](#versioning)
-- [Exported Files](#exported-files)
-- [Troubleshooting](#troubleshooting)
-- [Repository Structure](#repository-structure)
-- [License](#license)
+- [Schnellstart](#schnellstart)
+- [Dashboard-Varianten](#dashboard-varianten)
+- [Entitaeten und Dienste](#entitaeten-und-dienste)
+- [Veroeffentlichungshistorie](#veroeffentlichungshistorie)
+- [Versionierung](#versionierung)
+- [Exportierte Dateien](#exportierte-dateien)
+- [Fehlerbehebung](#fehlerbehebung)
+- [Repository-Struktur](#repository-struktur)
+- [Lizenz](#lizenz)
 
-## Features
+## Funktionen
 
-- Dynamic aquarium LED control for Shelly RGBW lights
-- UI-based setup for RGBW lights, optional white channels, weather, sun, price entity, and transition time
-- Built-in switch and number entities for normal operation, safe simulation, and time-lapse testing
-- Sunrise and sunset phases based on `sun.sun`
-- Daytime cloud simulation with weather-aware dimming
-- Simulation mode that updates the cockpit status without sending light commands
-- Tibber spot-price support and generic price entities for other providers
-- Price-aware dimming where cheap-hour bonus is limited to genuinely low-price ranges
-- Optional legacy `input_text` export for older dashboard setups
-- Live dashboard entity: `sensor.aquarium_led_cockpit_status`
-- Visual dashboard cards for cockpit and technical panel layouts
-- One-click export of blueprint and dashboard files into Home Assistant config folders for legacy/manual workflows
+- Dynamische Aquarium-LED-Steuerung fuer Shelly-RGBW-Lichter
+- Einrichtung per Home-Assistant-Oberflaeche fuer RGBW-Lichter, optionale Weisskanaele, Wetter, Sonne, Preis-Entitaet und Uebergangszeit
+- Eigene Switch- und Number-Entitaeten fuer Normalbetrieb, sichere Simulation und Zeitraffer-Test
+- Sonnenaufgangs- und Sonnenuntergangsphasen auf Basis von `sun.sun`
+- Wolkensimulation tagsueber mit wetterabhaengiger Dimmung
+- Simulationsmodus, der den Cockpit-Status aktualisiert, ohne Lichtbefehle zu senden
+- Tibber-Unterstuetzung und generische Preis-Entitaeten fuer andere Anbieter
+- Strompreisabhaengige Dimmung mit Begrenzung auf guenstige Preisbereiche
+- Optionaler Legacy-`input_text`-Export fuer aeltere Dashboard-Setups
+- Live-Dashboard-Entitaet: `sensor.aquarium_led_cockpit_status`
+- Visuelle Dashboard-Karten fuer Cockpit- und Technikpanel-Ansichten
+- Ein-Klick-Export von Blueprint- und Dashboard-Dateien fuer Legacy- oder manuelle Workflows
 
 ## Installation
 
 ### HACS
 
-1. Add this repository to HACS as a custom repository with category `Integration`.
-2. Install `Aquarium LED Cockpit`.
-3. Restart Home Assistant.
-4. Go to `Settings -> Devices & Services`.
-5. Add the `Aquarium LED Cockpit` integration.
+1. Fuege dieses Repository in HACS als benutzerdefiniertes Repository mit Kategorie `Integration` hinzu.
+2. Installiere `Aquarium LED Cockpit`.
+3. Starte Home Assistant neu.
+4. Oeffne `Einstellungen -> Geraete & Dienste`.
+5. Fuege die Integration `Aquarium LED Cockpit` hinzu.
 
-### Home Assistant My Link
+### Home-Assistant-My-Link
 
-Use this direct HACS link:
+Direkter HACS-Link:
 
-[Open in HACS](https://my.home-assistant.io/redirect/hacs_repository/?owner=Thomash100&repository=HA-Aquarium-&category=integration)
+[In HACS oeffnen](https://my.home-assistant.io/redirect/hacs_repository/?owner=Thomash100&repository=HA-Aquarium-&category=integration)
 
-## Quick Start
+## Schnellstart
 
-1. Install the integration through HACS.
-2. Restart Home Assistant.
-3. Add the integration in `Settings -> Devices & Services`.
-4. Select your RGBW lights and optional entities in the setup form.
-5. Use the created `switch.aquarium_led_steuerung`, simulation switches, and number entities from Home Assistant.
-6. Leave `auto_install` enabled if you also want the bundled blueprint and dashboard snippets exported.
-7. Add one of the exported dashboard cards to Lovelace if you want a cockpit view.
+1. Installiere die Integration ueber HACS.
+2. Starte Home Assistant neu.
+3. Fuege die Integration unter `Einstellungen -> Geraete & Dienste` hinzu.
+4. Waehle RGBW-Lichter und optionale Entitaeten im Einrichtungsformular aus.
+5. Nutze die erzeugten Switches, Simulationsschalter und Number-Entitaeten in Home Assistant.
+6. Lasse `auto_install` aktiviert, wenn Blueprint und Dashboard-Snippets zusaetzlich exportiert werden sollen.
+7. Fuege bei Bedarf eine der exportierten Dashboard-Karten zu Lovelace hinzu.
 
-After setup, the integration can export:
+Nach der Einrichtung kann die Integration exportieren:
 
-- the aquarium blueprint to `/config/blueprints/automation/aquarium_led_cockpit/`
-- sensor-based dashboard cards to `/config/aquarium_led_cockpit/dashboard/`
-- dashboard control helpers to `/config/packages/aquarium_led_cockpit_controls.yaml`
-- optional legacy helper/card files for older setups
+- den Aquarium-Blueprint nach `/config/blueprints/automation/aquarium_led_cockpit/`
+- sensorbasierte Dashboard-Karten nach `/config/aquarium_led_cockpit/dashboard/`
+- Dashboard-Steuerhelfer nach `/config/packages/aquarium_led_cockpit_controls.yaml`
+- optionale Legacy-Helfer und Legacy-Karten fuer aeltere Setups
 
-The helper package requires Home Assistant packages to be enabled, for example
+Das Helper-Paket benoetigt aktivierte Home-Assistant-Packages, zum Beispiel
 `homeassistant: packages: !include_dir_named packages` in `configuration.yaml`.
 
-## Dashboard Variants
+## Dashboard-Varianten
 
-The integration currently ships with five dashboard snippets:
+Die Integration liefert derzeit fuenf Dashboard-Snippets:
 
-| Variant | File | Purpose |
+| Variante | Datei | Zweck |
 | --- | --- | --- |
-| Markdown status | `aquarium_led_status_sensor.yaml` | Lightweight status overview without custom cards |
-| Visual cockpit | `aquarium_led_cockpit_visual_button_card_sensor.yaml` | Single-card glass cockpit with RGBW, price, weather, and phase status |
-| Technical panel | `aquarium_led_technikpanel_sensor.yaml` | Multi-panel control-room view with separate lighting, price, weather, and timing sections |
-| Controls panel | `aquarium_led_controls_panel.yaml` | Entity controls for brightness, cloud strength, maintenance, simulation, and manual RGBW |
-| 24h status | `aquarium_led_power_price_24h.yaml` | 24h history card using the built-in cockpit status sensor, ready for optional power and price sensors |
+| Markdown-Status | `aquarium_led_status_sensor.yaml` | Schlanke Statusuebersicht ohne Custom Cards |
+| Visuelles Cockpit | `aquarium_led_cockpit_visual_button_card_sensor.yaml` | Einzelkarte mit RGBW-, Preis-, Wetter- und Phasenstatus |
+| Technikpanel | `aquarium_led_technikpanel_sensor.yaml` | Mehrteilige Technikansicht mit Licht-, Preis-, Wetter- und Zeitbereichen |
+| Steuerpanel | `aquarium_led_controls_panel.yaml` | Entitaetssteuerung fuer Helligkeit, Wolkenstaerke, Wartung, Simulation und manuelles RGBW |
+| 24h-Status | `aquarium_led_power_price_24h.yaml` | 24h-Verlaufskarte mit dem eingebauten Cockpit-Statussensor, bereit fuer optionale Leistungs- und Preissensoren |
 
-For the visual variants, install `custom:button-card` through HACS.
+Fuer die visuellen Varianten wird `custom:button-card` ueber HACS benoetigt.
 
-## Entities and Services
+## Entitaeten und Dienste
 
-### Live Entity
+### Live-Entitaeten
 
-| Entity | Description |
+| Entitaet | Beschreibung |
 | --- | --- |
-| `sensor.aquarium_led_cockpit_status` | Live status entity used by the exported dashboard cards |
-| `switch.aquarium_led_steuerung` | Enables direct light control from the integration |
-| `switch.aquarium_led_simulation` | Calculates status without sending light commands |
-| `switch.aquarium_led_zeitraffer` | Runs a safe time-lapse simulation without sending light commands |
-| `number.aquarium_led_simulationszeit` | Simulated minute of day, where `360` means `06:00` |
-| `number.aquarium_led_zeitraffer_schritt` | Minutes added to the simulated time on each real minute tick |
+| `sensor.aquarium_led_cockpit_status` | Live-Statussensor fuer die exportierten Dashboard-Karten |
+| `switch.aquarium_led_steuerung` | Aktiviert die direkte Lichtsteuerung durch die Integration |
+| `switch.aquarium_led_simulation` | Berechnet den Status, ohne Lichtbefehle zu senden |
+| `switch.aquarium_led_zeitraffer` | Fuehrt eine sichere Zeitraffer-Simulation ohne Lichtbefehle aus |
+| `number.aquarium_led_simulationszeit` | Simulierte Minute des Tages, wobei `360` fuer `06:00` steht |
+| `number.aquarium_led_zeitraffer_schritt` | Minuten, die pro echtem Minuten-Takt zur Simulationszeit addiert werden |
 
-### Time-Lapse Simulation
+### Zeitraffer-Simulation
 
-Turn on the time-lapse switch to test a full day without touching the real
-lights. The integration uses the simulation-time number as the clock, writes the
-calculated phase, brightness and RGBW values to
-`sensor.aquarium_led_cockpit_status`, then advances the simulated time by the
-time-lapse step once per real minute.
+Aktiviere den Zeitraffer-Schalter, um einen ganzen Tag zu testen, ohne echte Lichter zu veraendern. Die Integration nutzt die Simulationszeit als Uhr, schreibt Phase, Helligkeit und RGBW-Zielwerte nach `sensor.aquarium_led_cockpit_status` und verschiebt die simulierte Zeit einmal pro echter Minute um den eingestellten Zeitraffer-Schritt.
 
-## Release History
+## Veroeffentlichungshistorie
 
-Releases are published from version tags and documented in `CHANGELOG.md`, so
-HACS can show selectable versions with release notes in the update dialog.
+Veroeffentlichungen werden aus Versions-Tags erstellt und in `CHANGELOG.md` dokumentiert, damit HACS auswaehlbare Versionen mit Versionshinweisen anzeigen kann.
 
-## Versioning
+## Versionierung
 
-Visible release labels use `VYYMMDD.NNN_BETA.xx` while the project is in beta.
-`YYMMDD` is the release date for fundamental changes, `NNN` is the adjustment
-index for compatible follow-up changes on that release line, and `xx` is the
-beta iteration. Once the release line is stable, the `_BETA.xx` suffix is
-removed. Home Assistant still receives a compatible manifest version such as
-`26.5.23-beta.0`.
+Sichtbare Veroeffentlichungskennzeichen verwenden waehrend der Beta-Phase `VYYMMDD.NNN_BETA.xx`. `YYMMDD` ist das Erscheinungsdatum bei grundlegenden Aenderungen, `NNN` ist der Anpassungsindex fuer kompatible Folgeaenderungen innerhalb dieser Veroeffentlichungslinie und `xx` ist die Beta-Iteration. Sobald eine Veroeffentlichungslinie stabil ist, wird der `_BETA.xx`-Suffix entfernt. Home Assistant erhaelt parallel eine kompatible Manifest-Version wie `26.5.23-beta.1`.
 
-### Services
+### Dienste
 
 #### `aquarium_led_cockpit.install_resources`
 
-Copies the packaged blueprint and dashboard resources into the Home Assistant config directory.
+Kopiert die mitgelieferten Blueprint- und Dashboard-Ressourcen in die Home-Assistant-Konfiguration.
 
-| Field | Required | Description |
+| Feld | Erforderlich | Beschreibung |
 | --- | --- | --- |
-| `config_entry_id` | No | Optional config entry id if multiple entries exist |
-| `install_blueprint` | No | Export the aquarium blueprint |
-| `export_dashboard_snippets` | No | Export the sensor-based dashboard snippets |
-| `export_legacy_files` | No | Export legacy helper and dashboard variants |
-| `overwrite_existing` | No | Replace already existing files |
+| `config_entry_id` | Nein | Optionale Config-Entry-ID, falls mehrere Eintraege existieren |
+| `install_blueprint` | Nein | Aquarium-Blueprint exportieren |
+| `export_dashboard_snippets` | Nein | Sensorbasierte Dashboard-Snippets exportieren |
+| `export_legacy_files` | Nein | Legacy-Helfer und Legacy-Karten exportieren |
+| `overwrite_existing` | Nein | Bereits vorhandene Dateien ersetzen |
 
 #### `aquarium_led_cockpit.set_dashboard_status`
 
-Updates the live status sensor from an automation or script.
+Aktualisiert den Live-Statussensor aus einer Automation oder einem Skript.
 
-| Field | Required | Description |
+| Feld | Erforderlich | Beschreibung |
 | --- | --- | --- |
-| `status_json` | Yes | Compact JSON object with the aquarium lighting status |
+| `status_json` | Ja | Kompaktes JSON-Objekt mit dem Aquarium-Lichtstatus |
 
-## Exported Files
+## Exportierte Dateien
 
-| File | Destination |
+| Datei | Ziel |
 | --- | --- |
 | `aquarium_led_tibber_weather_shelly_rgbw.yaml` | `/config/blueprints/automation/aquarium_led_cockpit/` |
 | `aquarium_led_status_sensor.yaml` | `/config/aquarium_led_cockpit/dashboard/` |
@@ -162,31 +152,31 @@ Updates the live status sensor from an automation or script.
 | `aquarium_led_controls_panel.yaml` | `/config/aquarium_led_cockpit/dashboard/` |
 | `aquarium_led_power_price_24h.yaml` | `/config/aquarium_led_cockpit/dashboard/` |
 | `aquarium_led_cockpit_controls.yaml` | `/config/packages/` |
-| `aquarium_led_dashboard_status_helper.yaml` | optional legacy export into `/config/packages/` |
+| `aquarium_led_dashboard_status_helper.yaml` | optionaler Legacy-Export nach `/config/packages/` |
 
-## Troubleshooting
+## Fehlerbehebung
 
-### The integration does not show up after HACS installation
+### Die Integration erscheint nach der HACS-Installation nicht
 
-- Restart Home Assistant after the HACS install
-- Check that the repository category in HACS is `Integration`
-- Confirm that `custom_components/aquarium_led_cockpit/` exists in your Home Assistant config
+- Starte Home Assistant nach der HACS-Installation neu.
+- Pruefe, ob die Repository-Kategorie in HACS `Integration` ist.
+- Pruefe, ob `custom_components/aquarium_led_cockpit/` in deiner Home-Assistant-Konfiguration vorhanden ist.
 
-### The config flow fails during setup
+### Der Config Flow schlaegt beim Einrichten fehl
 
-- Remove and reinstall the integration from HACS
-- Restart Home Assistant fully before retrying
-- Check `Settings -> System -> Logs` for the traceback
+- Entferne die Integration und installiere sie ueber HACS erneut.
+- Starte Home Assistant vollstaendig neu und versuche es danach erneut.
+- Pruefe `Einstellungen -> System -> Protokolle` auf den Fehler.
 
-### Dashboard cards show no data
+### Dashboard-Karten zeigen keine Daten
 
-- Verify that `sensor.aquarium_led_cockpit_status` exists
-- Use the exported blueprint or call `aquarium_led_cockpit.set_dashboard_status`
-- For visual cards, ensure `custom:button-card` is installed
+- Pruefe, ob `sensor.aquarium_led_cockpit_status` existiert.
+- Nutze den exportierten Blueprint oder rufe `aquarium_led_cockpit.set_dashboard_status` auf.
+- Stelle fuer visuelle Karten sicher, dass `custom:button-card` installiert ist.
 
-### Blueprint or dashboard files were not exported
+### Blueprint- oder Dashboard-Dateien wurden nicht exportiert
 
-Run the export service manually:
+Fuehre den Export-Dienst manuell aus:
 
 ```yaml
 service: aquarium_led_cockpit.install_resources
@@ -197,16 +187,16 @@ data:
   overwrite_existing: false
 ```
 
-## Repository Structure
+## Repository-Struktur
 
-- `custom_components/aquarium_led_cockpit/` contains the integration code
-- `custom_components/aquarium_led_cockpit/resources/` contains the packaged blueprint and dashboard files
-- `.github/workflows/` contains HACS and hassfest validation workflows
-- `info.md` is the short HACS-facing repository description
+- `custom_components/aquarium_led_cockpit/` enthaelt den Integrationscode.
+- `custom_components/aquarium_led_cockpit/resources/` enthaelt Blueprint- und Dashboard-Dateien.
+- `.github/workflows/` enthaelt HACS-, Hassfest- und Veroeffentlichungsablaeufe.
+- `info.md` ist die kurze Beschreibung fuer HACS.
 
-## License
+## Lizenz
 
-This project is licensed under the MIT License. See [LICENSE](LICENSE).
+Dieses Projekt steht unter der MIT-Lizenz. Siehe [LICENSE](LICENSE).
 <!-- SYSTEMMEDIA_LEGAL_START -->
 ## Rechtliche Hinweise
 
@@ -214,7 +204,7 @@ This project is licensed under the MIT License. See [LICENSE](LICENSE).
 - Datenschutz / DSGVO-Hinweise: https://systemmedia.de/datenschutz/
 - Nutzungsbedingungen und Haftungsausschluss: https://systemmedia.de/nutzungsbedingungen/
 
-Dieses Repository enthält, sofern nicht ausdrücklich anders gekennzeichnet, Test-, Entwicklungs-, Demonstrations- oder Evaluierungsinhalte. Nutzung auf eigene Verantwortung.
+Dieses Repository enthaelt, sofern nicht ausdruecklich anders gekennzeichnet, Test-, Entwicklungs-, Demonstrations- oder Evaluierungsinhalte. Nutzung auf eigene Verantwortung.
 
-Soweit eine `LICENSE`-Datei vorhanden ist, gelten die dort genannten Lizenzbedingungen für die eingeräumten Nutzungsrechte. Ergänzend gelten die Status-, Gewährleistungs- und Haftungshinweise in `LEGAL.md`.
+Soweit eine `LICENSE`-Datei vorhanden ist, gelten die dort genannten Lizenzbedingungen fuer die eingeraeumten Nutzungsrechte. Ergaenzend gelten die Status-, Gewaehrleistungs- und Haftungshinweise in `LEGAL.md`.
 <!-- SYSTEMMEDIA_LEGAL_END -->

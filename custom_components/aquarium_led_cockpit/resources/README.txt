@@ -1,31 +1,30 @@
-Aquarium LED Cockpit exported files
-===================================
+Exportierte Dateien von Aquarium LED Cockpit
+============================================
 
-This folder contains the files exported by the HACS integration.
+Dieser Ordner enthaelt die Dateien, die von der HACS-Integration exportiert werden.
 
 Blueprint
 - /config/blueprints/automation/aquarium_led_cockpit/aquarium_led_tibber_weather_shelly_rgbw.yaml
 
-Dashboard snippets
+Dashboard-Snippets
 - /config/aquarium_led_cockpit/dashboard/aquarium_led_status_sensor.yaml
 - /config/aquarium_led_cockpit/dashboard/aquarium_led_cockpit_visual_button_card_sensor.yaml
 - /config/aquarium_led_cockpit/dashboard/aquarium_led_technikpanel_sensor.yaml
 - /config/aquarium_led_cockpit/dashboard/aquarium_led_controls_panel.yaml
 - /config/aquarium_led_cockpit/dashboard/aquarium_led_power_price_24h.yaml
 
-Dashboard helpers
+Dashboard-Helfer
 - /config/packages/aquarium_led_cockpit_controls.yaml
 
-Live status entity
+Live-Status-Entitaet
 - sensor.aquarium_led_cockpit_status
 
-Automation service
+Automation-Dienst
 - aquarium_led_cockpit.set_dashboard_status
 
-Notes
-- Install custom:button-card through HACS if you want the visual cards.
-- Enable Home Assistant packages if you want the exported dashboard helpers to load.
-- The simulation helper lets the blueprint calculate status values without sending light commands.
-- Legacy helper and cards are optional and are only exported when enabled in the integration options.
+Hinweise
+- Installiere custom:button-card ueber HACS, wenn du die visuellen Karten nutzen moechtest.
+- Aktiviere Home-Assistant-Packages, wenn die exportierten Dashboard-Helfer geladen werden sollen.
+- Der Simulationshelfer laesst die Blueprint Statuswerte berechnen, ohne Lichtbefehle zu senden.
+- Legacy-Helfer und Legacy-Karten sind optional und werden nur exportiert, wenn sie in den Integrationsoptionen aktiviert sind.
 - Repository: https://github.com/Thomash100/HA-Aquarium-
-

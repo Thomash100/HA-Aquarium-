@@ -1,34 +1,36 @@
 # Aquarium LED Cockpit
 
-Aquarium LED Cockpit is a HACS-installable Home Assistant custom integration for dynamic aquarium lighting.
+Aquarium LED Cockpit ist eine ueber HACS installierbare Home-Assistant-Custom-Integration fuer dynamische Aquarium-Beleuchtung.
 
-Release label: `V260523.000_BETA.00`
+Veroeffentlichungskennzeichen: `V260523.001_BETA.00`
 
-Home Assistant manifest version: `26.5.23-beta.0`
+Home-Assistant-Manifest-Version: `26.5.23-beta.1`
 
-It combines:
+Die Integration kombiniert:
 
-- sun-based sunrise and sunset phases
-- Tibber or generic electricity price inputs
-- weather-aware dimming and cloud simulation
-- simulation mode without sending light commands
-- exported dashboard cards for a cockpit-style UI
-- a live entity: `sensor.aquarium_led_cockpit_status`
+- sonnenbasierte Sonnenaufgangs- und Sonnenuntergangsphasen
+- Tibber oder generische Strompreis-Entitaeten
+- wetterabhaengige Dimmung und Wolkensimulation
+- Simulationsmodus ohne Lichtbefehle
+- Zeitraffer-Simulation zum Testen der Tageslogik
+- exportierte Dashboard-Karten fuer eine Cockpit-Ansicht
+- eine Live-Entitaet: `sensor.aquarium_led_cockpit_status`
 
-## Install
+## Installation
 
-1. Add this repository to HACS as a custom repository with category `Integration`.
-2. Install `Aquarium LED Cockpit`.
-3. Restart Home Assistant.
-4. Add the integration in `Settings -> Devices & Services`.
-5. Let the integration export the blueprint and dashboard files.
+1. Fuege dieses Repository in HACS als benutzerdefiniertes Repository mit Kategorie `Integration` hinzu.
+2. Installiere `Aquarium LED Cockpit`.
+3. Starte Home Assistant neu.
+4. Fuege die Integration unter `Einstellungen -> Geraete & Dienste` hinzu.
+5. Waehle deine Licht-, Wetter-, Sonnen- und optionalen Preis-Entitaeten aus.
 
-## Included
+## Enthalten
 
-- Aquarium lighting blueprint
-- Sensor-based markdown dashboard card
-- Visual cockpit dashboard card
-- Technical panel dashboard card
-- Optional legacy helper export
+- Aquarium-Lichtsteuerung direkt in der Integration
+- Aquarium-Licht-Blueprint als Kompatibilitaetsweg
+- Sensorbasierte Markdown-Dashboard-Karte
+- Visuelle Cockpit-Dashboard-Karte
+- Technikpanel-Dashboard-Karte
+- Optionaler Legacy-Helfer-Export
 
 Repository: https://github.com/Thomash100/HA-Aquarium-

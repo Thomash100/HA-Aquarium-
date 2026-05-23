@@ -1,40 +1,40 @@
 install_resources:
-  name: Install or export resources
-  description: Copy blueprint and dashboard resources from the integration into the Home Assistant config directory.
+  name: Ressourcen installieren oder exportieren
+  description: Kopiert Blueprint- und Dashboard-Ressourcen der Integration in die Home-Assistant-Konfiguration.
   fields:
     config_entry_id:
-      name: Config entry id
-      description: Optional config entry id when you need to target a specific entry.
+      name: Config-Entry-ID
+      description: Optionale Config-Entry-ID, wenn ein bestimmter Eintrag angesprochen werden soll.
       selector:
         text:
     install_blueprint:
-      name: Install blueprint
-      description: Export the automation blueprint into the blueprints folder.
+      name: Blueprint installieren
+      description: Exportiert die Automation-Blueprint in den Blueprints-Ordner.
       selector:
         boolean:
     export_dashboard_snippets:
-      name: Export dashboard snippets
-      description: Export the dashboard card YAML snippets into /config/aquarium_led_cockpit/dashboard/.
+      name: Dashboard-Snippets exportieren
+      description: Exportiert die YAML-Snippets der Dashboard-Karten nach /config/aquarium_led_cockpit/dashboard/.
       selector:
         boolean:
     export_legacy_files:
-      name: Export legacy files
-      description: Export the input_text helper package and the older dashboard variants.
+      name: Legacy-Dateien exportieren
+      description: Exportiert das input_text-Helferpaket und die aelteren Dashboard-Varianten.
       selector:
         boolean:
     overwrite_existing:
-      name: Overwrite existing files
-      description: Replace files that already exist at the target path.
+      name: Vorhandene Dateien ueberschreiben
+      description: Ersetzt Dateien, die am Zielpfad bereits vorhanden sind.
       selector:
         boolean:
 
 set_dashboard_status:
-  name: Set dashboard status
-  description: Update the live Aquarium LED Cockpit status sensor from an automation.
+  name: Dashboard-Status setzen
+  description: Aktualisiert den Live-Statussensor von Aquarium LED Cockpit aus einer Automation.
   fields:
     status_json:
-      name: Status JSON
-      description: Compact JSON object with the aquarium lighting status.
+      name: Status-JSON
+      description: Kompaktes JSON-Objekt mit dem Aquarium-Lichtstatus.
       required: true
       selector:
         text:

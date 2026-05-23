@@ -1,36 +1,45 @@
-# Changelog
+# Aenderungsprotokoll
+
+## V260523.001_BETA.00
+
+Deutschsprachige Texte fuer Projekt, HACS und Home Assistant.
+
+- Stellt README, HACS-Info und Aenderungsprotokoll auf Deutsch um.
+- Stellt Service-Beschreibungen, Integrationsmeldungen und exportierte Hinweise auf Deutsch um.
+- Stellt den Versionshinweis-Generator und den GitHub-Veroeffentlichungsablauf auf deutsche Ausgaben um.
+- Erhoeht die Home-Assistant-Manifest-Version auf `26.5.23-beta.1`.
 
 ## V260523.000_BETA.00
 
-Fundamental UI-control release line.
+Grundlegende Veroeffentlichungslinie fuer die UI-gesteuerte Lichtsteuerung.
 
-- Adopts the visible release-label scheme `VYYMMDD.NNN_BETA.xx`.
-- Moves the release date forward because UI-driven control is a fundamental change.
-- Keeps Home Assistant compatibility through manifest version `26.5.23-beta.0`.
-- Includes UI-driven light control, time-lapse simulation, and automated GitHub release notes.
+- Fuehrt das sichtbare Veroeffentlichungskennzeichen-Schema `VYYMMDD.NNN_BETA.xx` ein.
+- Verschiebt das Erscheinungsdatum, weil die UI-gesteuerte Steuerung eine grundlegende Aenderung ist.
+- Behaelt die Home-Assistant-Kompatibilitaet ueber Manifest-Version `26.5.23-beta.0` bei.
+- Enthaelt UI-gesteuerte Lichtsteuerung, Zeitraffer-Simulation und automatische GitHub-Versionshinweise.
 
 ## V260519.003_BETA.00
 
-Release management for HACS-style update dialogs.
+Veroeffentlichungsverwaltung fuer HACS-Update-Dialoge.
 
-- Adds an automated GitHub Release workflow for version tags.
-- Adds release notes generation from this changelog.
-- Keeps semantic Home Assistant manifest versions separate from the visible release label.
+- Fuegt einen automatischen GitHub-Veroeffentlichungsablauf fuer Versions-Tags hinzu.
+- Erzeugt Versionshinweise aus diesem Aenderungsprotokoll.
+- Trennt die semver-kompatible Home-Assistant-Manifest-Version vom sichtbaren Veroeffentlichungskennzeichen.
 
 ## V260519.002_BETA.00
 
-UI-driven aquarium light control inspired by Adaptive Lighting.
+UI-gesteuerte Aquarium-Lichtsteuerung in Anlehnung an Adaptive Lighting.
 
-- Adds setup options for RGBW lights, optional white channels, weather, sun, price entity, and transition time.
-- Adds switch entities for control, simulation, and time-lapse mode.
-- Adds number entities for brightness, price dimming, cloud strength, simulation time, and time-lapse speed.
-- Adds an internal Python calculation engine for phase, brightness, RGBW, weather, cloud, and price factors.
+- Fuegt Einrichtungsoptionen fuer RGBW-Lichter, optionale Weisskanaele, Wetter, Sonne, Preis-Entitaet und Uebergangszeit hinzu.
+- Fuegt Switch-Entitaeten fuer Steuerung, Simulation und Zeitraffer hinzu.
+- Fuegt Number-Entitaeten fuer Helligkeit, Preisdimmung, Wolkenstaerke, Simulationszeit und Zeitraffer-Geschwindigkeit hinzu.
+- Fuegt eine interne Python-Berechnungsengine fuer Phase, Helligkeit, RGBW, Wetter, Wolken und Preisfaktoren hinzu.
 
 ## V260519.001_BETA.00
 
-Blueprint and dashboard foundation.
+Grundlage fuer Blueprint und Dashboard.
 
-- Adds the HACS custom integration skeleton.
-- Adds the live cockpit status sensor.
-- Exports blueprint, helper package, and dashboard snippets.
-- Fixes Home Assistant manifest version compatibility.
+- Fuegt das Grundgeruest der HACS-Custom-Integration hinzu.
+- Fuegt den Live-Cockpit-Statussensor hinzu.
+- Exportiert Blueprint, Helper-Paket und Dashboard-Snippets.
+- Korrigiert die Home-Assistant-Manifest-Version.

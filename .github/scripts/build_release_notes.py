@@ -1,4 +1,4 @@
-"""Build GitHub release notes from CHANGELOG.md."""
+"""Erzeuge GitHub-Versionshinweise aus CHANGELOG.md."""
 from __future__ import annotations
 
 import json
@@ -39,15 +39,15 @@ def main() -> int:
 
     print(f"# {title}")
     print()
-    print(f"Home Assistant manifest version: `{version}`")
+    print(f"Home-Assistant-Manifest-Version: `{version}`")
     print()
     if body:
         print(body)
         print()
     else:
-        print("Automated release for Aquarium LED Cockpit.")
+        print("Automatisch erstellte Veroeffentlichung fuer Aquarium LED Cockpit.")
         print()
-    print("Install or update through HACS, then restart Home Assistant.")
+    print("Installation oder Aktualisierung ueber HACS ausfuehren und danach Home Assistant neu starten.")
     return 0
 
 

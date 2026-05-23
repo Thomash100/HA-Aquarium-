@@ -37,7 +37,7 @@ def _build_install_plan(
             key="readme",
             source=RESOURCE_ROOT / "README.txt",
             target=config_root / EXPORT_FOLDER / "README.txt",
-            description="Installation notes",
+            description="Installationshinweise",
         )
     ]
 
@@ -59,7 +59,7 @@ def _build_install_plan(
                     / DOMAIN
                     / "aquarium_led_tibber_weather_shelly_rgbw.yaml"
                 ),
-                description="Aquarium LED automation blueprint",
+                description="Aquarium LED Automation-Blueprint",
             )
         )
 
@@ -69,7 +69,7 @@ def _build_install_plan(
                 key="dashboard_controls_package",
                 source=RESOURCE_ROOT / "packages" / "aquarium_led_cockpit_controls.yaml",
                 target=config_root / "packages" / "aquarium_led_cockpit_controls.yaml",
-                description="Dashboard control helper package",
+                description="Dashboard-Steuerhelfer-Paket",
             )
         )
 
@@ -81,7 +81,7 @@ def _build_install_plan(
                     key="dashboard_markdown",
                     source=RESOURCE_ROOT / "dashboards" / "aquarium_led_status_sensor.yaml",
                     target=dashboard_root / "aquarium_led_status_sensor.yaml",
-                    description="Dashboard markdown card",
+                    description="Dashboard-Markdown-Karte",
                 ),
                 InstallItem(
                     key="dashboard_cockpit",
@@ -91,25 +91,25 @@ def _build_install_plan(
                         / "aquarium_led_cockpit_visual_button_card_sensor.yaml"
                     ),
                     target=dashboard_root / "aquarium_led_cockpit_visual_button_card_sensor.yaml",
-                    description="Visual cockpit dashboard card",
+                    description="Visuelle Cockpit-Dashboard-Karte",
                 ),
                 InstallItem(
                     key="dashboard_panel",
                     source=RESOURCE_ROOT / "dashboards" / "aquarium_led_technikpanel_sensor.yaml",
                     target=dashboard_root / "aquarium_led_technikpanel_sensor.yaml",
-                    description="Technical panel dashboard card",
+                    description="Technikpanel-Dashboard-Karte",
                 ),
                 InstallItem(
                     key="dashboard_controls",
                     source=RESOURCE_ROOT / "dashboards" / "aquarium_led_controls_panel.yaml",
                     target=dashboard_root / "aquarium_led_controls_panel.yaml",
-                    description="Dashboard controls panel",
+                    description="Dashboard-Steuerpanel",
                 ),
                 InstallItem(
                     key="dashboard_power_price_24h",
                     source=RESOURCE_ROOT / "dashboards" / "aquarium_led_power_price_24h.yaml",
                     target=dashboard_root / "aquarium_led_power_price_24h.yaml",
-                    description="24h power and Tibber price chart",
+                    description="24h-Status- und Preisverlauf",
                 ),
             ]
         )
@@ -122,25 +122,25 @@ def _build_install_plan(
                     key="legacy_helper",
                     source=RESOURCE_ROOT / "legacy" / "aquarium_led_dashboard_status_helper.yaml",
                     target=config_root / "packages" / "aquarium_led_dashboard_status_helper.yaml",
-                    description="Legacy input_text helper package",
+                    description="Legacy-input_text-Helferpaket",
                 ),
                 InstallItem(
                     key="legacy_markdown",
                     source=RESOURCE_ROOT / "legacy" / "aquarium_led_status_markdown_legacy.yaml",
                     target=legacy_root / "aquarium_led_status_markdown_legacy.yaml",
-                    description="Legacy markdown dashboard card",
+                    description="Legacy-Markdown-Dashboard-Karte",
                 ),
                 InstallItem(
                     key="legacy_cockpit",
                     source=RESOURCE_ROOT / "legacy" / "aquarium_led_cockpit_visual_button_card_legacy.yaml",
                     target=legacy_root / "aquarium_led_cockpit_visual_button_card_legacy.yaml",
-                    description="Legacy visual cockpit card",
+                    description="Legacy-Cockpit-Karte",
                 ),
                 InstallItem(
                     key="legacy_panel",
                     source=RESOURCE_ROOT / "legacy" / "aquarium_led_technikpanel_legacy.yaml",
                     target=legacy_root / "aquarium_led_technikpanel_legacy.yaml",
-                    description="Legacy technical panel card",
+                    description="Legacy-Technikpanel-Karte",
                 ),
             ]
         )

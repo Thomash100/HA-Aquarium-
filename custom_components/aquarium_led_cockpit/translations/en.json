@@ -3,19 +3,19 @@
     "step": {
       "user": {
         "title": "Aquarium LED Cockpit",
-        "description": "Install the aquarium blueprint and export dashboard snippets into your Home Assistant configuration.",
+        "description": "Installiert die Aquarium-Blueprint und exportiert Dashboard-Snippets in deine Home-Assistant-Konfiguration.",
         "data": {
-          "rgbw_lights": "RGBW lights",
-          "white_lights": "Optional white lights",
-          "weather_entity": "Weather entity",
-          "sun_entity": "Sun entity",
-          "price_entity": "Optional price entity",
-          "transition_seconds": "Transition time",
-          "install_blueprint": "Install blueprint",
-          "export_dashboard_snippets": "Export dashboard snippets",
-          "export_legacy_files": "Export legacy helper and cards",
-          "overwrite_existing": "Overwrite existing files",
-          "auto_install": "Export resources automatically after setup"
+          "rgbw_lights": "RGBW-Lichter",
+          "white_lights": "Optionale Weiss-Lichter",
+          "weather_entity": "Wetter-Entitaet",
+          "sun_entity": "Sonnen-Entitaet",
+          "price_entity": "Preis-Entitaet optional",
+          "transition_seconds": "Uebergangszeit",
+          "install_blueprint": "Blueprint installieren",
+          "export_dashboard_snippets": "Dashboard-Snippets exportieren",
+          "export_legacy_files": "Legacy-Helper und Karten exportieren",
+          "overwrite_existing": "Vorhandene Dateien ueberschreiben",
+          "auto_install": "Ressourcen nach dem Setup automatisch exportieren"
         }
       }
     }
@@ -23,20 +23,20 @@
   "options": {
     "step": {
       "init": {
-        "title": "Aquarium LED Cockpit options",
-        "description": "Choose which files should be exported automatically.",
+        "title": "Aquarium LED Cockpit Optionen",
+        "description": "Waehle aus, welche Dateien automatisch exportiert werden sollen.",
         "data": {
-          "rgbw_lights": "RGBW lights",
-          "white_lights": "Optional white lights",
-          "weather_entity": "Weather entity",
-          "sun_entity": "Sun entity",
-          "price_entity": "Optional price entity",
-          "transition_seconds": "Transition time",
-          "install_blueprint": "Install blueprint",
-          "export_dashboard_snippets": "Export dashboard snippets",
-          "export_legacy_files": "Export legacy helper and cards",
-          "overwrite_existing": "Overwrite existing files",
-          "auto_install": "Export resources automatically after setup"
+          "rgbw_lights": "RGBW-Lichter",
+          "white_lights": "Optionale Weiss-Lichter",
+          "weather_entity": "Wetter-Entitaet",
+          "sun_entity": "Sonnen-Entitaet",
+          "price_entity": "Preis-Entitaet optional",
+          "transition_seconds": "Uebergangszeit",
+          "install_blueprint": "Blueprint installieren",
+          "export_dashboard_snippets": "Dashboard-Snippets exportieren",
+          "export_legacy_files": "Legacy-Helper und Karten exportieren",
+          "overwrite_existing": "Vorhandene Dateien ueberschreiben",
+          "auto_install": "Ressourcen nach dem Setup automatisch exportieren"
         }
       }
     }
