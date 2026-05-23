@@ -2,16 +2,16 @@
 
 Aquarium LED Cockpit ist eine Home-Assistant-Custom-Integration fuer eine dynamische Aquarium-Beleuchtung mit strompreisabhaengiger Dimmung, wetterbasierter Wolkensimulation, Sonnenaufgangs-/Sonnenuntergangsphasen und vorbereiteten Dashboard-Ansichten.
 
-Veroeffentlichungskennzeichen: `V260523.002_BETA.00`
+Veroeffentlichungskennzeichen: `V260523.003_BETA.00`
 
-Home-Assistant-Manifest-Version: `26.5.23-beta.2`
+Home-Assistant-Manifest-Version: `26.5.23-beta.3`
 
 [![Home Assistant oeffnen und dieses Repository in HACS anzeigen.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Thomash100&repository=HA-Aquarium-&category=integration)
 ![HACS Custom](https://img.shields.io/badge/HACS-Custom-orange.svg)
 ![GitHub-Veroeffentlichung](https://img.shields.io/github/v/release/Thomash100/HA-Aquarium-?sort=semver)
 ![Lizenz](https://img.shields.io/github/license/Thomash100/HA-Aquarium-)
 
-Die Integration verwandelt deine Aquarium-Beleuchtung in einen dynamischen Tagesverlauf, der auf Sonne, Strompreise und Wetter reagieren kann. Sie kann direkt in Home Assistant konfiguriert werden, unterstuetzt mehrere Aquarien als getrennte Eintraege, stellt eigene Steuer-Entitaeten fuer den Alltag bereit, bringt den Blueprint als Kompatibilitaetsweg mit, exportiert Dashboard-Karten und liefert einen Live-Statussensor fuer Cockpit-Ansichten.
+Die Integration verwandelt deine Aquarium-Beleuchtung in einen dynamischen Tagesverlauf, der auf Sonne, Strompreise und Wetter reagieren kann. Sie kann direkt in Home Assistant konfiguriert werden, unterstuetzt mehrere Aquarien als getrennte Eintraege, stellt eigene Steuer-Entitaeten fuer den Alltag bereit, bringt den Blueprint als Kompatibilitaetsweg mit, exportiert Dashboard-Karten und liefert je Aquarium einen eigenen Live-Statussensor fuer Cockpit-Ansichten.
 
 > Demo-Medien und Screenshots koennen spaeter ergaenzt werden. Die Repository-Struktur ist bereits fuer eine HACS-Praesentation vorbereitet.
 
@@ -35,6 +35,7 @@ Die Integration verwandelt deine Aquarium-Beleuchtung in einen dynamischen Tages
 - Einrichtung per Home-Assistant-Oberflaeche fuer RGBW-Lichter, optionale Weisskanaele, Wetter, Sonne, Preis-Entitaet und Uebergangszeit
 - Eigene Switch- und Number-Entitaeten fuer Normalbetrieb, sichere Simulation und Zeitraffer-Test
 - Mehrere Aquarien mit eigenem Namen, eigener Runtime und eigenen Entitaeten
+- Dienste mit Aquarium-Auswahl, damit Status und Ressourcen gezielt einem Aquarium zugeordnet werden
 - Sonnenaufgangs- und Sonnenuntergangsphasen auf Basis von `sun.sun`
 - Wolkensimulation tagsueber mit wetterabhaengiger Dimmung
 - Simulationsmodus, der den Cockpit-Status aktualisiert, ohne Lichtbefehle zu senden
@@ -121,7 +122,7 @@ Veroeffentlichungen werden aus Versions-Tags erstellt und in `CHANGELOG.md` doku
 
 ## Versionierung
 
-Sichtbare Veroeffentlichungskennzeichen verwenden waehrend der Beta-Phase `VYYMMDD.NNN_BETA.xx`. `YYMMDD` ist das Erscheinungsdatum bei grundlegenden Aenderungen, `NNN` ist der Anpassungsindex fuer kompatible Folgeaenderungen innerhalb dieser Veroeffentlichungslinie und `xx` ist die Beta-Iteration. Sobald eine Veroeffentlichungslinie stabil ist, wird der `_BETA.xx`-Suffix entfernt. Home Assistant erhaelt parallel eine kompatible Manifest-Version wie `26.5.23-beta.2`.
+Sichtbare Veroeffentlichungskennzeichen verwenden waehrend der Beta-Phase `VYYMMDD.NNN_BETA.xx`. `YYMMDD` ist das Erscheinungsdatum bei grundlegenden Aenderungen, `NNN` ist der Anpassungsindex fuer kompatible Folgeaenderungen innerhalb dieser Veroeffentlichungslinie und `xx` ist die Beta-Iteration. Sobald eine Veroeffentlichungslinie stabil ist, wird der `_BETA.xx`-Suffix entfernt. Home Assistant erhaelt parallel eine kompatible Manifest-Version wie `26.5.23-beta.3`.
 
 ### Dienste
 
@@ -131,7 +132,7 @@ Kopiert die mitgelieferten Blueprint- und Dashboard-Ressourcen in die Home-Assis
 
 | Feld | Erforderlich | Beschreibung |
 | --- | --- | --- |
-| `config_entry_id` | Nein | Optionale Config-Entry-ID, falls mehrere Eintraege existieren |
+| `config_entry_id` | Nein | Aquarium-Konfiguration, deren Exportoptionen genutzt werden sollen. Bei mehreren Eintraegen gezielt auswaehlen |
 | `install_blueprint` | Nein | Aquarium-Blueprint exportieren |
 | `export_dashboard_snippets` | Nein | Sensorbasierte Dashboard-Snippets exportieren |
 | `export_legacy_files` | Nein | Legacy-Helfer und Legacy-Karten exportieren |
@@ -143,8 +144,10 @@ Aktualisiert den Live-Statussensor aus einer Automation oder einem Skript.
 
 | Feld | Erforderlich | Beschreibung |
 | --- | --- | --- |
-| `config_entry_id` | Nein | Optionale Config-Entry-ID, falls mehrere Eintraege existieren |
+| `config_entry_id` | Nein | Aquarium-Konfiguration, deren Live-Status aktualisiert werden soll. Bei mehreren Eintraegen erforderlich |
 | `status_json` | Ja | Kompaktes JSON-Objekt mit dem Aquarium-Lichtstatus |
+
+Wenn mehrere Aquarien eingerichtet sind, trennt die Integration Runtime, Speicher, Sensoren, Schalter, Zahlen und Dienstaufrufe pro Config-Entry. Dadurch koennen unterschiedliche Aquarium-Lichtsteuerungen parallel laufen, ohne sich gegenseitig Status oder Simulation zu ueberschreiben.
 
 ## Exportierte Dateien
 

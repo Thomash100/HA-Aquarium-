@@ -3,10 +3,11 @@ install_resources:
   description: Kopiert Blueprint- und Dashboard-Ressourcen der Integration in die Home-Assistant-Konfiguration.
   fields:
     config_entry_id:
-      name: Config-Entry-ID
-      description: Optionale Config-Entry-ID, wenn ein bestimmter Eintrag angesprochen werden soll.
+      name: Aquarium-Konfiguration
+      description: Waehlt das Aquarium aus, dessen Einstellungen fuer den Export genutzt werden. Bei mehreren Aquarien bitte gezielt auswaehlen.
       selector:
-        text:
+        config_entry:
+          integration: aquarium_led_cockpit
     install_blueprint:
       name: Blueprint installieren
       description: Exportiert die Automation-Blueprint in den Blueprints-Ordner.
@@ -33,10 +34,11 @@ set_dashboard_status:
   description: Aktualisiert den Live-Statussensor von Aquarium LED Cockpit aus einer Automation.
   fields:
     config_entry_id:
-      name: Config-Entry-ID
-      description: Optionale Config-Entry-ID, wenn ein bestimmtes Aquarium angesprochen werden soll.
+      name: Aquarium-Konfiguration
+      description: Waehlt das Aquarium aus, dessen Live-Status aktualisiert werden soll. Bei mehreren Aquarien ist diese Auswahl erforderlich.
       selector:
-        text:
+        config_entry:
+          integration: aquarium_led_cockpit
     status_json:
       name: Status-JSON
       description: Kompaktes JSON-Objekt mit dem Aquarium-Lichtstatus.

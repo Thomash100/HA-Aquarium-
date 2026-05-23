@@ -1,5 +1,13 @@
 # Aenderungsprotokoll
 
+## V260523.003_BETA.00
+
+Mehr-Aquarium-Dienste fuer getrennte Lichtsteuerungen.
+
+- Stellt die Service-Felder fuer `install_resources` und `set_dashboard_status` auf eine Aquarium-Konfigurationsauswahl um.
+- Dokumentiert klar, dass bei mehreren Aquarien der Ziel-Config-Entry gewaehlt werden muss.
+- Erhoeht die Home-Assistant-Manifest-Version auf `26.5.23-beta.3`.
+
 ## V260523.002_BETA.00
 
 Lovelace-Simulator-Karte und einfache Mehr-Aquarium-Konfiguration.
