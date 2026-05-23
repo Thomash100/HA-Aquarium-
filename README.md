@@ -2,9 +2,9 @@
 
 Aquarium LED Cockpit is a Home Assistant custom integration for aquarium lighting automation with price-aware dimming, weather-based cloud simulation, sunrise/sunset phases, and ready-to-use dashboard views.
 
-Release label: `V26.05.19.003_BETA.00`
+Release label: `V260523.000_BETA.00`
 
-Home Assistant manifest version: `26.5.19-beta.3`
+Home Assistant manifest version: `26.5.23-beta.0`
 
 [![Open your Home Assistant instance and open this repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Thomash100&repository=HA-Aquarium-&category=integration)
 ![HACS Custom](https://img.shields.io/badge/HACS-Custom-orange.svg)
@@ -23,6 +23,7 @@ Transform your aquarium lighting into a dynamic day cycle that reacts to the sun
 - [Dashboard Variants](#dashboard-variants)
 - [Entities and Services](#entities-and-services)
 - [Release History](#release-history)
+- [Versioning](#versioning)
 - [Exported Files](#exported-files)
 - [Troubleshooting](#troubleshooting)
 - [Repository Structure](#repository-structure)
@@ -118,6 +119,15 @@ time-lapse step once per real minute.
 
 Releases are published from version tags and documented in `CHANGELOG.md`, so
 HACS can show selectable versions with release notes in the update dialog.
+
+## Versioning
+
+Visible release labels use `VYYMMDD.NNN_BETA.xx` while the project is in beta.
+`YYMMDD` is the release date for fundamental changes, `NNN` is the adjustment
+index for compatible follow-up changes on that release line, and `xx` is the
+beta iteration. Once the release line is stable, the `_BETA.xx` suffix is
+removed. Home Assistant still receives a compatible manifest version such as
+`26.5.23-beta.0`.
 
 ### Services
 

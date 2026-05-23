@@ -1,6 +1,15 @@
 # Changelog
 
-## V26.05.19.003_BETA.00
+## V260523.000_BETA.00
+
+Fundamental UI-control release line.
+
+- Adopts the visible release-label scheme `VYYMMDD.NNN_BETA.xx`.
+- Moves the release date forward because UI-driven control is a fundamental change.
+- Keeps Home Assistant compatibility through manifest version `26.5.23-beta.0`.
+- Includes UI-driven light control, time-lapse simulation, and automated GitHub release notes.
+
+## V260519.003_BETA.00
 
 Release management for HACS-style update dialogs.
 
@@ -8,7 +17,7 @@ Release management for HACS-style update dialogs.
 - Adds release notes generation from this changelog.
 - Keeps semantic Home Assistant manifest versions separate from the visible release label.
 
-## V26.05.19.002_BETA.00
+## V260519.002_BETA.00
 
 UI-driven aquarium light control inspired by Adaptive Lighting.
 
@@ -17,7 +26,7 @@ UI-driven aquarium light control inspired by Adaptive Lighting.
 - Adds number entities for brightness, price dimming, cloud strength, simulation time, and time-lapse speed.
 - Adds an internal Python calculation engine for phase, brightness, RGBW, weather, cloud, and price factors.
 
-## V26.05.19.001_BETA.00
+## V260519.001_BETA.00
 
 Blueprint and dashboard foundation.
 
