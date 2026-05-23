@@ -32,6 +32,11 @@ set_dashboard_status:
   name: Dashboard-Status setzen
   description: Aktualisiert den Live-Statussensor von Aquarium LED Cockpit aus einer Automation.
   fields:
+    config_entry_id:
+      name: Config-Entry-ID
+      description: Optionale Config-Entry-ID, wenn ein bestimmtes Aquarium angesprochen werden soll.
+      selector:
+        text:
     status_json:
       name: Status-JSON
       description: Kompaktes JSON-Objekt mit dem Aquarium-Lichtstatus.

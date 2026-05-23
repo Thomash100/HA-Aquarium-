@@ -96,9 +96,10 @@ async def _async_notify_installation(
             "Naechste Schritte:",
             "- Blueprints neu laden, wenn die Automation-Blueprint exportiert wurde.",
             "- Exportierte Dashboard-YAML-Snippets aus /config/aquarium_led_cockpit/dashboard/ zu Lovelace hinzufuegen.",
+            "- Lovelace-Ressource /local/aquarium_led_cockpit/aquarium-led-simulator-card.js hinzufuegen, wenn die Simulator-Karte genutzt wird.",
             "- Home-Assistant-Packages aktivieren, wenn die exportierten Steuerhelfer aus /config/packages/ genutzt werden sollen.",
             "- custom:button-card ueber HACS installieren, wenn die visuellen Karten genutzt werden sollen.",
-            "- Die Live-Status-Entitaet ist sensor.aquarium_led_cockpit_status.",
+            "- Die Live-Status-Entitaet wird aus dem Aquarium-Namen gebildet, zum Beispiel sensor.aquarium_status.",
         ]
     )
 
@@ -126,11 +127,11 @@ async def async_setup_integration(hass: HomeAssistant, config: dict[str, Any]) -
     )
     set_dashboard_status_schema = vol.Schema(
         {
+            vol.Optional(CONF_CONFIG_ENTRY_ID): cv.string,
             vol.Required(CONF_STATUS_JSON): cv.string,
         }
     )
 
-    await async_get_runtime(hass)
     domain_data = hass.data.setdefault(DOMAIN, {})
 
     if domain_data.get(DATA_SERVICES_REGISTERED):
@@ -166,7 +167,8 @@ async def async_setup_integration(hass: HomeAssistant, config: dict[str, Any]) -
         await _async_notify_installation(hass, results, automatic=False)
 
     async def async_handle_set_dashboard_status(call: ServiceCall) -> None:
-        runtime = await async_get_runtime(hass)
+        entry = _resolve_entry(hass, call.data.get(CONF_CONFIG_ENTRY_ID))
+        runtime = await async_get_runtime(hass, entry.entry_id)
 
         try:
             payload = json.loads(call.data[CONF_STATUS_JSON])
@@ -199,7 +201,7 @@ async def async_setup_entry_integration(hass: HomeAssistant, entry: ConfigEntry)
     from .installer import async_install_resources
     from .runtime import async_get_runtime
 
-    runtime = await async_get_runtime(hass)
+    runtime = await async_get_runtime(hass, entry.entry_id)
     await runtime.async_configure_entry(entry)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_options_updated))
@@ -235,10 +237,11 @@ async def _async_options_updated(hass: HomeAssistant, entry: ConfigEntry) -> Non
 
 async def async_unload_entry_integration(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload Aquarium LED Cockpit."""
-    from .runtime import async_get_runtime
+    from .runtime import async_get_runtime, async_remove_runtime
 
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
-        runtime = await async_get_runtime(hass)
+        runtime = await async_get_runtime(hass, entry.entry_id)
         await runtime.async_unload()
+        async_remove_runtime(hass, entry.entry_id)
     return unload_ok

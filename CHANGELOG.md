@@ -1,5 +1,15 @@
 # Aenderungsprotokoll
 
+## V260523.002_BETA.00
+
+Lovelace-Simulator-Karte und einfache Mehr-Aquarium-Konfiguration.
+
+- Erlaubt mehrere Aquarium-LED-Cockpit-Konfigurationen mit eigenem Aquarium-Namen.
+- Trennt Runtime, Statussensor, Schalter und Zahlen je Aquarium.
+- Fuegt eine eigene Lovelace-Simulator-Karte mit Horizont, Tageskurve, Zielhelligkeit und Teststeuerung hinzu.
+- Exportiert die Simulator-Karte nach `/config/www/aquarium_led_cockpit/` und ein Beispiel-Snippet nach `/config/aquarium_led_cockpit/dashboard/`.
+- Erhoeht die Home-Assistant-Manifest-Version auf `26.5.23-beta.2`.
+
 ## V260523.001_BETA.00
 
 Deutschsprachige Texte fuer Projekt, HACS und Home Assistant.

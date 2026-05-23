@@ -7,6 +7,7 @@ from homeassistant.components.number import NumberEntity, NumberMode
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import PERCENTAGE, UnitOfTime
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
@@ -38,7 +39,7 @@ class NumberDescription:
 NUMBERS = (
     NumberDescription(
         CONTROL_DAY_BRIGHTNESS,
-        "Aquarium LED Taghelligkeit",
+        "Taghelligkeit",
         "mdi:weather-sunny",
         1,
         100,
@@ -48,7 +49,7 @@ NUMBERS = (
     ),
     NumberDescription(
         CONTROL_NIGHT_BRIGHTNESS,
-        "Aquarium LED Nachtlicht",
+        "Nachtlicht",
         "mdi:weather-night",
         0,
         30,
@@ -58,7 +59,7 @@ NUMBERS = (
     ),
     NumberDescription(
         CONTROL_PRICE_DIMMING,
-        "Aquarium LED Preisdimmung",
+        "Preisdimmung",
         "mdi:cash-remove",
         0,
         90,
@@ -68,7 +69,7 @@ NUMBERS = (
     ),
     NumberDescription(
         CONTROL_CLOUD_STRENGTH,
-        "Aquarium LED Wolkenstaerke",
+        "Wolkenstaerke",
         "mdi:weather-cloudy-arrow-right",
         0,
         100,
@@ -78,7 +79,7 @@ NUMBERS = (
     ),
     NumberDescription(
         CONTROL_SIMULATION_TIME,
-        "Aquarium LED Simulationszeit",
+        "Simulationszeit",
         "mdi:clock-fast",
         0,
         1439,
@@ -88,7 +89,7 @@ NUMBERS = (
     ),
     NumberDescription(
         CONTROL_SIMULATION_STEP,
-        "Aquarium LED Zeitraffer-Schritt",
+        "Zeitraffer-Schritt",
         "mdi:debug-step-over",
         1,
         120,
@@ -105,8 +106,14 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up numbers from a config entry."""
-    runtime = await async_get_runtime(hass)
-    async_add_entities([AquariumLedCockpitNumber(runtime, description) for description in NUMBERS], True)
+    runtime = await async_get_runtime(hass, entry.entry_id)
+    async_add_entities(
+        [
+            AquariumLedCockpitNumber(runtime, entry, description)
+            for description in NUMBERS
+        ],
+        True,
+    )
 
 
 class AquariumLedCockpitNumber(NumberEntity):
@@ -117,18 +124,24 @@ class AquariumLedCockpitNumber(NumberEntity):
     def __init__(
         self,
         runtime: AquariumLedCockpitRuntime,
+        entry: ConfigEntry,
         description: NumberDescription,
     ) -> None:
         self._runtime = runtime
         self._description = description
-        self._attr_name = description.name
+        self._attr_name = f"{entry.title} {description.name}"
         self._attr_icon = description.icon
-        self._attr_unique_id = f"{DOMAIN}_{description.key}"
+        self._attr_unique_id = f"{DOMAIN}_{entry.entry_id}_{description.key}"
         self._attr_native_min_value = description.minimum
         self._attr_native_max_value = description.maximum
         self._attr_native_step = description.step
         self._attr_native_unit_of_measurement = description.unit
         self._attr_mode = description.mode
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, entry.entry_id)},
+            name=entry.title,
+            manufacturer="Aquarium LED Cockpit",
+        )
 
     @property
     def native_value(self) -> float:

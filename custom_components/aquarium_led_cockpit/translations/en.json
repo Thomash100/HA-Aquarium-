@@ -5,6 +5,7 @@
         "title": "Aquarium LED Cockpit",
         "description": "Installiert die Aquarium-Blueprint und exportiert Dashboard-Snippets in deine Home-Assistant-Konfiguration.",
         "data": {
+          "name": "Aquarium-Name",
           "rgbw_lights": "RGBW-Lichter",
           "white_lights": "Optionale Weiss-Lichter",
           "weather_entity": "Wetter-Entitaet",
@@ -26,6 +27,7 @@
         "title": "Aquarium LED Cockpit Optionen",
         "description": "Waehle aus, welche Dateien automatisch exportiert werden sollen.",
         "data": {
+          "name": "Aquarium-Name",
           "rgbw_lights": "RGBW-Lichter",
           "white_lights": "Optionale Weiss-Lichter",
           "weather_entity": "Wetter-Entitaet",

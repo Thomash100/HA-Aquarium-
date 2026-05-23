@@ -24,7 +24,7 @@ from .const import (
     CONTROL_SIMULATION_STEP,
     CONTROL_SIMULATION_TIME,
     CONTROL_TIME_LAPSE,
-    DATA_RUNTIME,
+    DATA_RUNTIMES,
     DEFAULT_CLOUD_STRENGTH,
     DEFAULT_DAY_BRIGHTNESS,
     DEFAULT_NIGHT_BRIGHTNESS,
@@ -33,7 +33,7 @@ from .const import (
     DEFAULT_SIMULATION_TIME,
     DEFAULT_TRANSITION_SECONDS,
     DOMAIN,
-    STORAGE_KEY,
+    STORAGE_KEY_PREFIX,
     STORAGE_VERSION,
 )
 from .engine import calculate_target
@@ -54,12 +54,18 @@ DEFAULT_CONTROLS = {
 class AquariumLedCockpitRuntime:
     """Keep the latest dashboard payload and notify listeners."""
 
-    def __init__(self, hass: HomeAssistant) -> None:
+    def __init__(self, hass: HomeAssistant, entry_id: str) -> None:
         self.hass = hass
+        self.entry_id = entry_id
+        self.entry_title = "Aquarium"
         self._status: dict[str, Any] = {}
         self._controls: dict[str, Any] = dict(DEFAULT_CONTROLS)
         self._listeners: list[Callable[[], None]] = []
-        self._store: Store[dict[str, Any]] = Store(hass, STORAGE_VERSION, STORAGE_KEY)
+        self._store: Store[dict[str, Any]] = Store(
+            hass,
+            STORAGE_VERSION,
+            f"{STORAGE_KEY_PREFIX}_{entry_id}",
+        )
         self._settings: dict[str, Any] = {}
         self._unsub_interval: Callable[[], None] | None = None
 
@@ -97,6 +103,7 @@ class AquariumLedCockpitRuntime:
     async def async_configure_entry(self, entry: ConfigEntry) -> None:
         """Configure the runtime from a config entry."""
         self._settings = {**entry.data, **entry.options}
+        self.entry_title = entry.title
         await self.async_update_target(apply_lights=False)
         if self._unsub_interval is None:
             self._unsub_interval = async_track_time_interval(
@@ -194,12 +201,20 @@ class AquariumLedCockpitRuntime:
         return _unsubscribe
 
 
-async def async_get_runtime(hass: HomeAssistant) -> AquariumLedCockpitRuntime:
-    """Return the shared integration runtime."""
+async def async_get_runtime(hass: HomeAssistant, entry_id: str) -> AquariumLedCockpitRuntime:
+    """Return the runtime for a config entry."""
     domain_data = hass.data.setdefault(DOMAIN, {})
-    runtime = domain_data.get(DATA_RUNTIME)
+    runtimes = domain_data.setdefault(DATA_RUNTIMES, {})
+    runtime = runtimes.get(entry_id)
     if runtime is None:
-        runtime = AquariumLedCockpitRuntime(hass)
+        runtime = AquariumLedCockpitRuntime(hass, entry_id)
         await runtime.async_load()
-        domain_data[DATA_RUNTIME] = runtime
+        runtimes[entry_id] = runtime
     return runtime
+
+
+def async_remove_runtime(hass: HomeAssistant, entry_id: str) -> None:
+    """Remove a runtime from Home Assistant data."""
+    domain_data = hass.data.setdefault(DOMAIN, {})
+    runtimes = domain_data.setdefault(DATA_RUNTIMES, {})
+    runtimes.pop(entry_id, None)

@@ -1,5 +1,5 @@
 type: custom:button-card
-entity: sensor.aquarium_led_cockpit_status
+entity: sensor.aquarium_status
 show_name: false
 show_state: false
 show_icon: false

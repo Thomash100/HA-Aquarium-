@@ -2,9 +2,9 @@
 
 Aquarium LED Cockpit ist eine ueber HACS installierbare Home-Assistant-Custom-Integration fuer dynamische Aquarium-Beleuchtung.
 
-Veroeffentlichungskennzeichen: `V260523.001_BETA.00`
+Veroeffentlichungskennzeichen: `V260523.002_BETA.00`
 
-Home-Assistant-Manifest-Version: `26.5.23-beta.1`
+Home-Assistant-Manifest-Version: `26.5.23-beta.2`
 
 Die Integration kombiniert:
 
@@ -13,8 +13,9 @@ Die Integration kombiniert:
 - wetterabhaengige Dimmung und Wolkensimulation
 - Simulationsmodus ohne Lichtbefehle
 - Zeitraffer-Simulation zum Testen der Tageslogik
-- exportierte Dashboard-Karten fuer eine Cockpit-Ansicht
-- eine Live-Entitaet: `sensor.aquarium_led_cockpit_status`
+- mehrere Aquarien mit eigener Konfiguration
+- exportierte Dashboard-Karten fuer Cockpit-, Technikpanel- und Simulator-Ansichten
+- eine Live-Entitaet pro Aquarium, zum Beispiel `sensor.aquarium_status`
 
 ## Installation
 
@@ -31,6 +32,7 @@ Die Integration kombiniert:
 - Sensorbasierte Markdown-Dashboard-Karte
 - Visuelle Cockpit-Dashboard-Karte
 - Technikpanel-Dashboard-Karte
+- Lovelace-Simulator-Karte mit Horizont und Tageskurve
 - Optionaler Legacy-Helfer-Export
 
 Repository: https://github.com/Thomash100/HA-Aquarium-

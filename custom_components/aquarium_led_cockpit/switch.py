@@ -4,6 +4,7 @@ from __future__ import annotations
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import CONTROL_ENABLED, CONTROL_SIMULATION, CONTROL_TIME_LAPSE, DOMAIN
@@ -11,9 +12,9 @@ from .runtime import AquariumLedCockpitRuntime, async_get_runtime
 
 
 SWITCHES = (
-    (CONTROL_ENABLED, "Aquarium LED Steuerung", "mdi:fishbowl-outline"),
-    (CONTROL_SIMULATION, "Aquarium LED Simulation", "mdi:test-tube"),
-    (CONTROL_TIME_LAPSE, "Aquarium LED Zeitraffer", "mdi:fast-forward"),
+    (CONTROL_ENABLED, "Steuerung", "mdi:fishbowl-outline"),
+    (CONTROL_SIMULATION, "Simulation", "mdi:test-tube"),
+    (CONTROL_TIME_LAPSE, "Zeitraffer", "mdi:fast-forward"),
 )
 
 
@@ -23,9 +24,12 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up switches from a config entry."""
-    runtime = await async_get_runtime(hass)
+    runtime = await async_get_runtime(hass, entry.entry_id)
     async_add_entities(
-        [AquariumLedCockpitSwitch(runtime, key, name, icon) for key, name, icon in SWITCHES],
+        [
+            AquariumLedCockpitSwitch(runtime, entry, key, name, icon)
+            for key, name, icon in SWITCHES
+        ],
         True,
     )
 
@@ -38,15 +42,21 @@ class AquariumLedCockpitSwitch(SwitchEntity):
     def __init__(
         self,
         runtime: AquariumLedCockpitRuntime,
+        entry: ConfigEntry,
         key: str,
         name: str,
         icon: str,
     ) -> None:
         self._runtime = runtime
         self._key = key
-        self._attr_name = name
+        self._attr_name = f"{entry.title} {name}"
         self._attr_icon = icon
-        self._attr_unique_id = f"{DOMAIN}_{key}"
+        self._attr_unique_id = f"{DOMAIN}_{entry.entry_id}_{key}"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, entry.entry_id)},
+            name=entry.title,
+            manufacturer="Aquarium LED Cockpit",
+        )
 
     @property
     def is_on(self) -> bool:

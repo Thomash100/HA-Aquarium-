@@ -78,6 +78,12 @@ def _build_install_plan(
         items.extend(
             [
                 InstallItem(
+                    key="frontend_simulator_card",
+                    source=RESOURCE_ROOT / "frontend" / "aquarium-led-simulator-card.js",
+                    target=config_root / "www" / EXPORT_FOLDER / "aquarium-led-simulator-card.js",
+                    description="Lovelace-Simulator-Karte",
+                ),
+                InstallItem(
                     key="dashboard_markdown",
                     source=RESOURCE_ROOT / "dashboards" / "aquarium_led_status_sensor.yaml",
                     target=dashboard_root / "aquarium_led_status_sensor.yaml",
@@ -110,6 +116,12 @@ def _build_install_plan(
                     source=RESOURCE_ROOT / "dashboards" / "aquarium_led_power_price_24h.yaml",
                     target=dashboard_root / "aquarium_led_power_price_24h.yaml",
                     description="24h-Status- und Preisverlauf",
+                ),
+                InstallItem(
+                    key="dashboard_simulator_card",
+                    source=RESOURCE_ROOT / "dashboards" / "aquarium_led_simulator_card.yaml",
+                    target=dashboard_root / "aquarium_led_simulator_card.yaml",
+                    description="Lovelace-Simulator-Kartenbeispiel",
                 ),
             ]
         )

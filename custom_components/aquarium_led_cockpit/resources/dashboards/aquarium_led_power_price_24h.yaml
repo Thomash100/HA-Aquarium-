@@ -13,11 +13,11 @@ cards:
     hours_to_show: 24
     fit_y_data: true
     entities:
-      - entity: sensor.aquarium_led_cockpit_status
+      - entity: sensor.aquarium_status
         name: Cockpit Status
   - type: entities
     title: Verwendete Entitaet
     show_header_toggle: false
     entities:
-      - entity: sensor.aquarium_led_cockpit_status
+      - entity: sensor.aquarium_status
         name: Aquarium LED Cockpit Status

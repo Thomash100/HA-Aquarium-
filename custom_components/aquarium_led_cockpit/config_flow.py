@@ -12,6 +12,7 @@ from .const import (
     CONF_EXPORT_DASHBOARD_SNIPPETS,
     CONF_EXPORT_LEGACY_FILES,
     CONF_INSTALL_BLUEPRINT,
+    CONF_NAME,
     CONF_OVERWRITE_EXISTING,
     CONF_PRICE_ENTITY,
     CONF_RGBW_LIGHTS,
@@ -33,6 +34,10 @@ from .const import (
 def _build_schema(defaults: dict) -> vol.Schema:
     return vol.Schema(
         {
+            vol.Required(
+                CONF_NAME,
+                default=defaults.get(CONF_NAME, "Aquarium"),
+            ): selector.TextSelector(),
             vol.Optional(
                 CONF_RGBW_LIGHTS,
                 default=defaults.get(CONF_RGBW_LIGHTS, []),
@@ -109,7 +114,11 @@ class AquariumLedCockpitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_user(self, user_input: dict[str, bool] | None = None):
         """Handle the initial config step."""
         if user_input is not None:
-            return self.async_create_entry(title="Aquarium LED Cockpit", data=user_input)
+            name = str(user_input[CONF_NAME]).strip() or "Aquarium"
+            user_input = {**user_input, CONF_NAME: name}
+            await self.async_set_unique_id(name)
+            self._abort_if_unique_id_configured()
+            return self.async_create_entry(title=name, data=user_input)
 
         return self.async_show_form(step_id="user", data_schema=_build_schema({}))
 
@@ -123,6 +132,9 @@ class AquariumLedCockpitOptionsFlow(config_entries.OptionsFlow):
     async def async_step_init(self, user_input: dict[str, bool] | None = None):
         """Manage the integration options."""
         if user_input is not None:
+            name = str(user_input[CONF_NAME]).strip() or self.config_entry.title or "Aquarium"
+            user_input = {**user_input, CONF_NAME: name}
+            self.hass.config_entries.async_update_entry(self.config_entry, title=name)
             return self.async_create_entry(title="", data=user_input)
 
         defaults = {**self.config_entry.data, **self.config_entry.options}

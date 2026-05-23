@@ -5,6 +5,7 @@ DOMAIN = "aquarium_led_cockpit"
 PLATFORMS = ["sensor", "switch", "number"]
 
 CONF_INSTALL_BLUEPRINT = "install_blueprint"
+CONF_NAME = "name"
 CONF_EXPORT_DASHBOARD_SNIPPETS = "export_dashboard_snippets"
 CONF_EXPORT_LEGACY_FILES = "export_legacy_files"
 CONF_OVERWRITE_EXISTING = "overwrite_existing"
@@ -33,14 +34,14 @@ DEFAULT_CLOUD_STRENGTH = 45
 DEFAULT_SIMULATION_TIME = 360
 DEFAULT_SIMULATION_STEP = 15
 
-DATA_RUNTIME = "runtime"
+DATA_RUNTIMES = "runtimes"
 DATA_SERVICES_REGISTERED = "services_registered"
 
 SERVICE_INSTALL_RESOURCES = "install_resources"
 SERVICE_SET_DASHBOARD_STATUS = "set_dashboard_status"
 
 STORAGE_VERSION = 1
-STORAGE_KEY = f"{DOMAIN}_status"
+STORAGE_KEY_PREFIX = f"{DOMAIN}_entry"
 
 STATUS_SENSOR_UNIQUE_ID = f"{DOMAIN}_status"
 STATUS_SENSOR_NAME = "Aquarium LED Cockpit Status"

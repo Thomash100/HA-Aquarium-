@@ -1,7 +1,7 @@
 type: markdown
 title: Aquarium LED Cockpit
 content: >-
-  {% set entity = 'sensor.aquarium_led_cockpit_status' %}
+  {% set entity = 'sensor.aquarium_status' %}
   {% set rgbw = state_attr(entity, 'rgbw') if state_attr(entity, 'rgbw') is not none else ['-', '-', '-', '-'] %}
 
   **Phase:** {{ states(entity) }}
