@@ -1,0 +1,52 @@
+name: Publish GitHub Release
+
+on:
+  push:
+    tags:
+      - "V*"
+      - "[0-9]*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag to publish as a GitHub Release
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build release notes
+        env:
+          DISPATCH_TAG: ${{ inputs.tag }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          TAG="${DISPATCH_TAG:-$REF_NAME}"
+          if ! git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag '$TAG' does not exist."
+            exit 1
+          fi
+
+          python .github/scripts/build_release_notes.py "$TAG" > release-notes.md
+          echo "release_tag=$TAG" >> "$GITHUB_ENV"
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TITLE="$(head -n 1 release-notes.md | sed 's/^# //')"
+          if gh release view "$release_tag" >/dev/null 2>&1; then
+            gh release edit "$release_tag" --title "$TITLE" --notes-file release-notes.md
+          else
+            gh release create "$release_tag" --verify-tag --title "$TITLE" --notes-file release-notes.md
+          fi

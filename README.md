@@ -2,9 +2,9 @@
 
 Aquarium LED Cockpit is a Home Assistant custom integration for aquarium lighting automation with price-aware dimming, weather-based cloud simulation, sunrise/sunset phases, and ready-to-use dashboard views.
 
-Release label: `V26.05.19.002_BETA.00`
+Release label: `V26.05.19.003_BETA.00`
 
-Home Assistant manifest version: `26.5.19-beta.2`
+Home Assistant manifest version: `26.5.19-beta.3`
 
 [![Open your Home Assistant instance and open this repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Thomash100&repository=HA-Aquarium-&category=integration)
 ![HACS Custom](https://img.shields.io/badge/HACS-Custom-orange.svg)
@@ -22,6 +22,7 @@ Transform your aquarium lighting into a dynamic day cycle that reacts to the sun
 - [Quick Start](#quick-start)
 - [Dashboard Variants](#dashboard-variants)
 - [Entities and Services](#entities-and-services)
+- [Release History](#release-history)
 - [Exported Files](#exported-files)
 - [Troubleshooting](#troubleshooting)
 - [Repository Structure](#repository-structure)
@@ -112,6 +113,11 @@ lights. The integration uses the simulation-time number as the clock, writes the
 calculated phase, brightness and RGBW values to
 `sensor.aquarium_led_cockpit_status`, then advances the simulated time by the
 time-lapse step once per real minute.
+
+## Release History
+
+Releases are published from version tags and documented in `CHANGELOG.md`, so
+HACS can show selectable versions with release notes in the update dialog.
 
 ### Services
 
