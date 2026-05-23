@@ -1,4 +1,4 @@
 input_text:
   aquarium_led_dashboard_status:
     name: Aquarium LED Dashboard Status
-    max: 512
+    max: 255
