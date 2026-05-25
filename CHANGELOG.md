@@ -1,5 +1,14 @@
 # Aenderungsprotokoll
 
+## V260523.005_BETA.00
+
+Lokales Branding fuer die Home-Assistant-Integration.
+
+- Fuegt ein eigenes Aquarium-LED-Icon als `brand/icon.png` hinzu.
+- Fuegt ein passendes Logo als `brand/logo.png` hinzu.
+- Dokumentiert das lokale Home-Assistant-Branding.
+- Erhoeht die Home-Assistant-Manifest-Version auf `26.5.23-beta.5`.
+
 ## V260523.004_BETA.00
 
 Korrigierter Dashboard-Export fuer mehrere Aquarien.
