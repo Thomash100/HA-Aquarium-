@@ -2,16 +2,16 @@
 
 Aquarium LED Cockpit ist eine Home-Assistant-Custom-Integration fuer eine dynamische Aquarium-Beleuchtung mit strompreisabhaengiger Dimmung, wetterbasierter Wolkensimulation, Sonnenaufgangs-/Sonnenuntergangsphasen und vorbereiteten Dashboard-Ansichten.
 
-Veroeffentlichungskennzeichen: `V260523.006_BETA.00`
+Veroeffentlichungskennzeichen: `V260523.007_BETA.00`
 
-Home-Assistant-Manifest-Version: `26.5.23-beta.6`
+Home-Assistant-Manifest-Version: `26.5.23-beta.7`
 
 [![Home Assistant oeffnen und dieses Repository in HACS anzeigen.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Thomash100&repository=HA-Aquarium-&category=integration)
 ![HACS Custom](https://img.shields.io/badge/HACS-Custom-orange.svg)
 ![GitHub-Veroeffentlichung](https://img.shields.io/github/v/release/Thomash100/HA-Aquarium-?sort=semver)
 ![Lizenz](https://img.shields.io/github/license/Thomash100/HA-Aquarium-)
 
-Die Integration verwandelt deine Aquarium-Beleuchtung in einen dynamischen Tagesverlauf, der auf Sonne, Strompreise und Wetter reagieren kann. Sie kann direkt in Home Assistant konfiguriert werden, unterstuetzt mehrere Aquarien als getrennte Eintraege, stellt eigene Steuer-Entitaeten fuer den Alltag bereit, bringt den Blueprint als Kompatibilitaetsweg mit, exportiert Dashboard-Karten und liefert je Aquarium einen eigenen Live-Statussensor fuer Cockpit-Ansichten.
+Die Integration verwandelt deine Aquarium-Beleuchtung in einen dynamischen Tagesverlauf, der auf Sonne, Strompreise und Wetter reagieren kann. Sie kann direkt in Home Assistant konfiguriert werden, unterstuetzt mehrere Aquarien als getrennte Eintraege, stellt eigene Steuer-Entitaeten fuer den Alltag bereit, exportiert Dashboard-Karten und liefert je Aquarium einen eigenen Live-Statussensor fuer Cockpit-Ansichten. Der alte Blueprint bleibt nur als optionaler Kompatibilitaetsweg enthalten.
 
 > Demo-Medien und Screenshots koennen spaeter ergaenzt werden. Die Repository-Struktur ist bereits fuer eine HACS-Praesentation vorbereitet.
 
@@ -47,7 +47,7 @@ Die Integration verwandelt deine Aquarium-Beleuchtung in einen dynamischen Tages
 - Eigenes lokales Home-Assistant-Branding mit Aquarium-LED-Icon und Logo
 - Aquarium-spezifische Helper-Pakete fuer Blueprint-/Legacy-Setups statt global geteilter Helper
 - Visuelle Dashboard-Karten fuer Cockpit-, Technikpanel- und Simulator-Ansichten
-- Ein-Klick-Export von Blueprint- und Dashboard-Dateien fuer Legacy- oder manuelle Workflows
+- Optionaler Blueprint-Export fuer Legacy- oder Experten-Workflows
 
 ## Installation
 
@@ -72,15 +72,15 @@ Direkter HACS-Link:
 3. Fuege die Integration unter `Einstellungen -> Geraete & Dienste` hinzu.
 4. Gib einen Aquarium-Namen an und waehle RGBW-Lichter sowie optionale Entitaeten im Einrichtungsformular aus.
 5. Nutze die erzeugten Switches, Simulationsschalter und Number-Entitaeten in Home Assistant.
-6. Lasse `auto_install` aktiviert, wenn Blueprint und Dashboard-Snippets zusaetzlich exportiert werden sollen.
+6. Lasse `auto_install` aktiviert, wenn Dashboard-Snippets zusaetzlich exportiert werden sollen.
 7. Fuege bei Bedarf eine der exportierten Dashboard-Karten zu Lovelace hinzu.
 
 Nach der Einrichtung kann die Integration exportieren:
 
-- den Aquarium-Blueprint nach `/config/blueprints/automation/aquarium_led_cockpit/`
 - sensorbasierte Dashboard-Karten nach `/config/aquarium_led_cockpit/dashboard/<aquarium>/`
 - die Lovelace-Simulator-Karte nach `/config/www/aquarium_led_cockpit/aquarium-led-simulator-card.js`
 - optionale aquarium-spezifische Dashboard-Steuerhelfer nach `/config/packages/aquarium_led_cockpit_<aquarium>_controls.yaml`
+- optional den Legacy-Blueprint nach `/config/blueprints/automation/aquarium_led_cockpit/`
 - optionale Legacy-Helfer und Legacy-Karten fuer aeltere Setups
 
 Das Helper-Paket benoetigt aktivierte Home-Assistant-Packages, zum Beispiel
@@ -125,18 +125,18 @@ Veroeffentlichungen werden aus Versions-Tags erstellt und in `CHANGELOG.md` doku
 
 ## Versionierung
 
-Sichtbare Veroeffentlichungskennzeichen verwenden waehrend der Beta-Phase `VYYMMDD.NNN_BETA.xx`. `YYMMDD` ist das Erscheinungsdatum bei grundlegenden Aenderungen, `NNN` ist der Anpassungsindex fuer kompatible Folgeaenderungen innerhalb dieser Veroeffentlichungslinie und `xx` ist die Beta-Iteration. Sobald eine Veroeffentlichungslinie stabil ist, wird der `_BETA.xx`-Suffix entfernt. Home Assistant erhaelt parallel eine kompatible Manifest-Version wie `26.5.23-beta.6`.
+Sichtbare Veroeffentlichungskennzeichen verwenden waehrend der Beta-Phase `VYYMMDD.NNN_BETA.xx`. `YYMMDD` ist das Erscheinungsdatum bei grundlegenden Aenderungen, `NNN` ist der Anpassungsindex fuer kompatible Folgeaenderungen innerhalb dieser Veroeffentlichungslinie und `xx` ist die Beta-Iteration. Sobald eine Veroeffentlichungslinie stabil ist, wird der `_BETA.xx`-Suffix entfernt. Home Assistant erhaelt parallel eine kompatible Manifest-Version wie `26.5.23-beta.7`.
 
 ### Dienste
 
 #### `aquarium_led_cockpit.install_resources`
 
-Kopiert die mitgelieferten Blueprint- und Dashboard-Ressourcen in die Home-Assistant-Konfiguration.
+Kopiert die mitgelieferten Dashboard-Ressourcen und optional den Legacy-Blueprint in die Home-Assistant-Konfiguration.
 
 | Feld | Erforderlich | Beschreibung |
 | --- | --- | --- |
 | `config_entry_id` | Nein | Aquarium-Konfiguration, deren Exportoptionen genutzt werden sollen. Bei mehreren Eintraegen gezielt auswaehlen |
-| `install_blueprint` | Nein | Aquarium-Blueprint exportieren |
+| `install_blueprint` | Nein | Optionalen Legacy-Blueprint exportieren. Fuer die native Integrationssteuerung nicht erforderlich |
 | `export_dashboard_snippets` | Nein | Sensorbasierte Dashboard-Snippets exportieren |
 | `export_legacy_files` | Nein | Legacy-Helfer und Legacy-Karten exportieren |
 | `overwrite_existing` | Nein | Bereits vorhandene Dateien ersetzen |
@@ -172,6 +172,10 @@ Das Helper-Paket fuer Blueprint-/Legacy-Nutzung wird ebenfalls pro Aquarium umge
 | `aquarium_led_cockpit_<aquarium>_controls.yaml` | `/config/packages/` |
 | `aquarium_led_dashboard_status_helper.yaml` | optionaler Legacy-Export nach `/config/packages/` |
 
+## Blueprint
+
+Der Blueprint wird fuer neue Setups nicht mehr benoetigt. Die Integration berechnet und steuert Sonnenaufgang, Sonnenuntergang, Simulation, Zeitraffer, Preis- und Wetterdimmung direkt ueber eigene Entitaeten. Nutze den Blueprint nur noch, wenn du ein bestehendes Automation-Setup weiter betreiben oder sehr spezielle Blueprint-Logik testen moechtest. Bei mehreren Aquarien muss im Blueprint die passende Aquarium-Konfiguration ausgewaehlt werden.
+
 ## Fehlerbehebung
 
 ### Die Integration erscheint nach der HACS-Installation nicht
@@ -202,7 +206,7 @@ Fuehre den Export-Dienst manuell aus:
 ```yaml
 service: aquarium_led_cockpit.install_resources
 data:
-  install_blueprint: true
+  install_blueprint: false
   export_dashboard_snippets: true
   export_legacy_files: false
   overwrite_existing: false

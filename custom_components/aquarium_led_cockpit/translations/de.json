@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Aquarium LED Cockpit",
-        "description": "Installiert die Aquarium-Blueprint und exportiert Dashboard-Snippets in deine Home-Assistant-Konfiguration.",
+        "description": "Richtet die native Aquarium-LED-Steuerung ein und exportiert optional Dashboard-Snippets in deine Home-Assistant-Konfiguration.",
         "data": {
           "name": "Aquarium-Name",
           "rgbw_lights": "RGBW-Lichter",
@@ -12,7 +12,7 @@
           "sun_entity": "Sonnen-Entitaet",
           "price_entity": "Preis-Entitaet optional",
           "transition_seconds": "Uebergangszeit",
-          "install_blueprint": "Blueprint installieren",
+          "install_blueprint": "Optionalen Legacy-Blueprint installieren",
           "export_dashboard_snippets": "Dashboard-Snippets exportieren",
           "export_legacy_files": "Legacy-Helper und Karten exportieren",
           "overwrite_existing": "Vorhandene Dateien ueberschreiben",
@@ -25,7 +25,7 @@
     "step": {
       "init": {
         "title": "Aquarium LED Cockpit Optionen",
-        "description": "Waehle aus, welche Dateien automatisch exportiert werden sollen.",
+        "description": "Waehle aus, welche Dateien automatisch exportiert werden sollen. Der Blueprint ist nur noch fuer Legacy- oder Experten-Setups noetig.",
         "data": {
           "name": "Aquarium-Name",
           "rgbw_lights": "RGBW-Lichter",
@@ -34,7 +34,7 @@
           "sun_entity": "Sonnen-Entitaet",
           "price_entity": "Preis-Entitaet optional",
           "transition_seconds": "Uebergangszeit",
-          "install_blueprint": "Blueprint installieren",
+          "install_blueprint": "Optionalen Legacy-Blueprint installieren",
           "export_dashboard_snippets": "Dashboard-Snippets exportieren",
           "export_legacy_files": "Legacy-Helper und Karten exportieren",
           "overwrite_existing": "Vorhandene Dateien ueberschreiben",

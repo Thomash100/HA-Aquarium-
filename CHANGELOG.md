@@ -1,5 +1,14 @@
 # Aenderungsprotokoll
 
+## V260523.007_BETA.00
+
+Blueprint auf optionalen Kompatibilitaetsweg umgestellt.
+
+- Schaltet den Blueprint-Export fuer neue Setups standardmaessig aus.
+- Kennzeichnet den Blueprint in Services und Dokumentation als Legacy-/Expertenoption.
+- Ergaenzt im Blueprint eine Aquarium-Konfigurationsauswahl fuer mehrere Aquarien.
+- Erhoeht die Home-Assistant-Manifest-Version auf `26.5.23-beta.7`.
+
 ## V260523.006_BETA.00
 
 Aquarium-spezifische Helper-Pakete fuer mehrere Lichtsteuerungen.

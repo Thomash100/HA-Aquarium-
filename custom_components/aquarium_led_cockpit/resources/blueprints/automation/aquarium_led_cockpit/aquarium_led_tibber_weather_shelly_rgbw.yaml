@@ -11,6 +11,15 @@ blueprint:
     sinnvoll umsetzen.
   domain: automation
   input:
+    aquarium_config_entry_id:
+      name: Aquarium-Konfiguration optional
+      description: >
+        Waehle den Aquarium LED Cockpit Eintrag, dessen Statussensor aktualisiert
+        werden soll. Bei mehreren Aquarien ist diese Auswahl erforderlich.
+      default: ""
+      selector:
+        config_entry:
+          integration: aquarium_led_cockpit
     rgbw_lights:
       name: Shelly RGBW-Lichter
       description: Eine oder mehrere Farblicht-Entitaeten fuer das Aquarium.
@@ -519,6 +528,7 @@ triggers:
 
 variables:
   rgbw_lights: !input rgbw_lights
+  aquarium_config_entry_id: !input aquarium_config_entry_id
   white_lights: !input white_lights
   weather_entity: !input weather_entity
   sun_entity: !input sun_entity
@@ -1426,6 +1436,7 @@ actions:
 
   - action: aquarium_led_cockpit.set_dashboard_status
     data:
+      config_entry_id: "{{ aquarium_config_entry_id }}"
       status_json: "{{ dashboard_status_json }}"
 
   - choose:

@@ -4,7 +4,7 @@ Exportierte Dateien von Aquarium LED Cockpit
 Dieser Ordner enthaelt die Dateien, die von der HACS-Integration exportiert werden.
 
 Blueprint
-- /config/blueprints/automation/aquarium_led_cockpit/aquarium_led_tibber_weather_shelly_rgbw.yaml
+- optionaler Legacy-Blueprint: /config/blueprints/automation/aquarium_led_cockpit/aquarium_led_tibber_weather_shelly_rgbw.yaml
 
 Dashboard-Snippets
 - /config/aquarium_led_cockpit/dashboard/<aquarium>/aquarium_led_status_sensor.yaml
@@ -32,6 +32,7 @@ Hinweise
 - Fuege die Lovelace-Ressource hinzu, wenn du die Simulator-Karte nutzen moechtest.
 - Exportiere die Ressourcen pro Aquarium erneut, damit die Entity-IDs in den Snippets zum Aquarium-Namen passen.
 - Alte globale Helper wie input_boolean.aquarium_led_simulation_mode sind nur noch Legacy. Neue Helper werden pro Aquarium benannt.
+- Der Blueprint ist fuer neue Setups nicht mehr erforderlich und wird nur exportiert, wenn du ihn explizit aktivierst.
 - Aktiviere Home-Assistant-Packages, wenn die exportierten Dashboard-Helfer geladen werden sollen.
 - Der Simulationshelfer laesst die Blueprint Statuswerte berechnen, ohne Lichtbefehle zu senden.
 - Legacy-Helfer und Legacy-Karten sind optional und werden nur exportiert, wenn sie in den Integrationsoptionen aktiviert sind.
