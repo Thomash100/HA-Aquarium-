@@ -1,5 +1,14 @@
 # Aenderungsprotokoll
 
+## V260523.006_BETA.00
+
+Aquarium-spezifische Helper-Pakete fuer mehrere Lichtsteuerungen.
+
+- Exportiert das Helper-Paket pro Aquarium unter eigenem Dateinamen.
+- Schreibt Helper-Entity-IDs beim Export auf den Aquarium-Namen um, zum Beispiel `juwel_aquarium_led_simulation_mode`.
+- Verhindert, dass mehrere Aquarien globale `input_boolean`- und `input_number`-Helfer teilen.
+- Erhoeht die Home-Assistant-Manifest-Version auf `26.5.23-beta.6`.
+
 ## V260523.005_BETA.00
 
 Lokales Branding fuer die Home-Assistant-Integration.

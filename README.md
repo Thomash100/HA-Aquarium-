@@ -2,9 +2,9 @@
 
 Aquarium LED Cockpit ist eine Home-Assistant-Custom-Integration fuer eine dynamische Aquarium-Beleuchtung mit strompreisabhaengiger Dimmung, wetterbasierter Wolkensimulation, Sonnenaufgangs-/Sonnenuntergangsphasen und vorbereiteten Dashboard-Ansichten.
 
-Veroeffentlichungskennzeichen: `V260523.005_BETA.00`
+Veroeffentlichungskennzeichen: `V260523.006_BETA.00`
 
-Home-Assistant-Manifest-Version: `26.5.23-beta.5`
+Home-Assistant-Manifest-Version: `26.5.23-beta.6`
 
 [![Home Assistant oeffnen und dieses Repository in HACS anzeigen.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Thomash100&repository=HA-Aquarium-&category=integration)
 ![HACS Custom](https://img.shields.io/badge/HACS-Custom-orange.svg)
@@ -45,6 +45,7 @@ Die Integration verwandelt deine Aquarium-Beleuchtung in einen dynamischen Tages
 - Live-Dashboard-Entitaet pro Aquarium, zum Beispiel `sensor.aquarium_status`
 - Dashboard-Export pro Aquarium mit automatisch passenden Entity-IDs
 - Eigenes lokales Home-Assistant-Branding mit Aquarium-LED-Icon und Logo
+- Aquarium-spezifische Helper-Pakete fuer Blueprint-/Legacy-Setups statt global geteilter Helper
 - Visuelle Dashboard-Karten fuer Cockpit-, Technikpanel- und Simulator-Ansichten
 - Ein-Klick-Export von Blueprint- und Dashboard-Dateien fuer Legacy- oder manuelle Workflows
 
@@ -79,7 +80,7 @@ Nach der Einrichtung kann die Integration exportieren:
 - den Aquarium-Blueprint nach `/config/blueprints/automation/aquarium_led_cockpit/`
 - sensorbasierte Dashboard-Karten nach `/config/aquarium_led_cockpit/dashboard/<aquarium>/`
 - die Lovelace-Simulator-Karte nach `/config/www/aquarium_led_cockpit/aquarium-led-simulator-card.js`
-- Dashboard-Steuerhelfer nach `/config/packages/aquarium_led_cockpit_controls.yaml`
+- optionale aquarium-spezifische Dashboard-Steuerhelfer nach `/config/packages/aquarium_led_cockpit_<aquarium>_controls.yaml`
 - optionale Legacy-Helfer und Legacy-Karten fuer aeltere Setups
 
 Das Helper-Paket benoetigt aktivierte Home-Assistant-Packages, zum Beispiel
@@ -124,7 +125,7 @@ Veroeffentlichungen werden aus Versions-Tags erstellt und in `CHANGELOG.md` doku
 
 ## Versionierung
 
-Sichtbare Veroeffentlichungskennzeichen verwenden waehrend der Beta-Phase `VYYMMDD.NNN_BETA.xx`. `YYMMDD` ist das Erscheinungsdatum bei grundlegenden Aenderungen, `NNN` ist der Anpassungsindex fuer kompatible Folgeaenderungen innerhalb dieser Veroeffentlichungslinie und `xx` ist die Beta-Iteration. Sobald eine Veroeffentlichungslinie stabil ist, wird der `_BETA.xx`-Suffix entfernt. Home Assistant erhaelt parallel eine kompatible Manifest-Version wie `26.5.23-beta.5`.
+Sichtbare Veroeffentlichungskennzeichen verwenden waehrend der Beta-Phase `VYYMMDD.NNN_BETA.xx`. `YYMMDD` ist das Erscheinungsdatum bei grundlegenden Aenderungen, `NNN` ist der Anpassungsindex fuer kompatible Folgeaenderungen innerhalb dieser Veroeffentlichungslinie und `xx` ist die Beta-Iteration. Sobald eine Veroeffentlichungslinie stabil ist, wird der `_BETA.xx`-Suffix entfernt. Home Assistant erhaelt parallel eine kompatible Manifest-Version wie `26.5.23-beta.6`.
 
 ### Dienste
 
@@ -153,6 +154,8 @@ Wenn mehrere Aquarien eingerichtet sind, trennt die Integration Runtime, Speiche
 
 Beim Ressourcenexport werden die Dashboard-Snippets pro Aquarium in einen eigenen Unterordner geschrieben und die Standard-Entity-IDs automatisch auf den Aquarium-Namen umgeschrieben. Beispiel: Aus Aquarium `Juwel` wird `sensor.juwel_status`, `switch.juwel_steuerung` und `number.juwel_taghelligkeit`.
 
+Das Helper-Paket fuer Blueprint-/Legacy-Nutzung wird ebenfalls pro Aquarium umgeschrieben. Beispiel: Aus `aquarium_led_simulation_mode` wird fuer Aquarium `Juwel` `juwel_aquarium_led_simulation_mode`. Dadurch teilen mehrere Aquarien nicht mehr dieselben Helper.
+
 ## Exportierte Dateien
 
 | Datei | Ziel |
@@ -166,7 +169,7 @@ Beim Ressourcenexport werden die Dashboard-Snippets pro Aquarium in einen eigene
 | `aquarium_led_simulator_card.yaml` | `/config/aquarium_led_cockpit/dashboard/<aquarium>/` |
 | `aquarium-led-simulator-card.js` | `/config/www/aquarium_led_cockpit/` |
 | `brand/icon.png`, `brand/logo.png` | lokales Home-Assistant-Branding der Integration |
-| `aquarium_led_cockpit_controls.yaml` | `/config/packages/` |
+| `aquarium_led_cockpit_<aquarium>_controls.yaml` | `/config/packages/` |
 | `aquarium_led_dashboard_status_helper.yaml` | optionaler Legacy-Export nach `/config/packages/` |
 
 ## Fehlerbehebung

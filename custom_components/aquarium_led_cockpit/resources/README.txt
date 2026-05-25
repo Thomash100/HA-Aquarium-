@@ -19,7 +19,7 @@ Lovelace-Ressource
 - Dashboard-Ressource: /local/aquarium_led_cockpit/aquarium-led-simulator-card.js
 
 Dashboard-Helfer
-- /config/packages/aquarium_led_cockpit_controls.yaml
+- /config/packages/aquarium_led_cockpit_<aquarium>_controls.yaml
 
 Live-Status-Entitaet
 - wird aus dem Aquarium-Namen gebildet, zum Beispiel sensor.aquarium_status
@@ -31,6 +31,7 @@ Hinweise
 - Installiere custom:button-card ueber HACS, wenn du die visuellen Karten nutzen moechtest.
 - Fuege die Lovelace-Ressource hinzu, wenn du die Simulator-Karte nutzen moechtest.
 - Exportiere die Ressourcen pro Aquarium erneut, damit die Entity-IDs in den Snippets zum Aquarium-Namen passen.
+- Alte globale Helper wie input_boolean.aquarium_led_simulation_mode sind nur noch Legacy. Neue Helper werden pro Aquarium benannt.
 - Aktiviere Home-Assistant-Packages, wenn die exportierten Dashboard-Helfer geladen werden sollen.
 - Der Simulationshelfer laesst die Blueprint Statuswerte berechnen, ohne Lichtbefehle zu senden.
 - Legacy-Helfer und Legacy-Karten sind optional und werden nur exportiert, wenn sie in den Integrationsoptionen aktiviert sind.

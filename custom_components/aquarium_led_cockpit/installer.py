@@ -43,6 +43,12 @@ def _dashboard_replacements(aquarium_name: str) -> dict[str, str]:
     }
 
 
+def _helper_replacements(aquarium_name: str) -> dict[str, str]:
+    """Build helper replacements for one aquarium package export."""
+    slug = slugify(aquarium_name or "Aquarium") or "aquarium"
+    return {"aquarium_led_": f"{slug}_aquarium_led_"}
+
+
 def _build_install_plan(
     hass: HomeAssistant,
     *,
@@ -54,6 +60,7 @@ def _build_install_plan(
     config_root = Path(hass.config.path())
     aquarium_slug = slugify(aquarium_name or "Aquarium") or "aquarium"
     dashboard_replacements = _dashboard_replacements(aquarium_name)
+    helper_replacements = _helper_replacements(aquarium_name)
     items: list[InstallItem] = [
         InstallItem(
             key="readme",
@@ -85,13 +92,16 @@ def _build_install_plan(
             )
         )
 
-    if install_blueprint or export_dashboard_snippets:
+    if install_blueprint or export_legacy_files:
         items.append(
             InstallItem(
                 key="dashboard_controls_package",
                 source=RESOURCE_ROOT / "packages" / "aquarium_led_cockpit_controls.yaml",
-                target=config_root / "packages" / "aquarium_led_cockpit_controls.yaml",
-                description="Dashboard-Steuerhelfer-Paket",
+                target=config_root
+                / "packages"
+                / f"aquarium_led_cockpit_{aquarium_slug}_controls.yaml",
+                description="Aquarium-spezifisches Steuerhelfer-Paket",
+                replacements=helper_replacements,
             )
         )
 
