@@ -95,7 +95,7 @@ async def _async_notify_installation(
         [
             "Naechste Schritte:",
             "- Blueprints neu laden, wenn die Automation-Blueprint exportiert wurde.",
-            "- Exportierte Dashboard-YAML-Snippets aus /config/aquarium_led_cockpit/dashboard/ zu Lovelace hinzufuegen.",
+            "- Exportierte Dashboard-YAML-Snippets aus /config/aquarium_led_cockpit/dashboard/<aquarium>/ zu Lovelace hinzufuegen.",
             "- Lovelace-Ressource /local/aquarium_led_cockpit/aquarium-led-simulator-card.js hinzufuegen, wenn die Simulator-Karte genutzt wird.",
             "- Home-Assistant-Packages aktivieren, wenn die exportierten Steuerhelfer aus /config/packages/ genutzt werden sollen.",
             "- custom:button-card ueber HACS installieren, wenn die visuellen Karten genutzt werden sollen.",
@@ -162,6 +162,7 @@ async def async_setup_integration(hass: HomeAssistant, config: dict[str, Any]) -
                 CONF_OVERWRITE_EXISTING,
                 settings.get(CONF_OVERWRITE_EXISTING, DEFAULT_OVERWRITE_EXISTING),
             ),
+            aquarium_name=entry.title,
         )
 
         await _async_notify_installation(hass, results, automatic=False)
@@ -223,6 +224,7 @@ async def async_setup_entry_integration(hass: HomeAssistant, entry: ConfigEntry)
                 CONF_OVERWRITE_EXISTING,
                 DEFAULT_OVERWRITE_EXISTING,
             ),
+            aquarium_name=entry.title,
         )
         await _async_notify_installation(hass, results, automatic=True)
         _LOGGER.debug("Automatic resource export finished: %s", results)

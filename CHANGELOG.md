@@ -1,5 +1,14 @@
 # Aenderungsprotokoll
 
+## V260523.004_BETA.00
+
+Korrigierter Dashboard-Export fuer mehrere Aquarien.
+
+- Exportiert Dashboard-Snippets pro Aquarium in eigene Unterordner.
+- Ersetzt die Standard-Entity-IDs beim Export automatisch passend zum Aquarium-Namen.
+- Aktualisiert die Dokumentation fuer erneuten Ressourcenexport und passende Dashboard-Pfade.
+- Erhoeht die Home-Assistant-Manifest-Version auf `26.5.23-beta.4`.
+
 ## V260523.003_BETA.00
 
 Mehr-Aquarium-Dienste fuer getrennte Lichtsteuerungen.

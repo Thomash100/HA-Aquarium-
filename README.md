@@ -2,9 +2,9 @@
 
 Aquarium LED Cockpit ist eine Home-Assistant-Custom-Integration fuer eine dynamische Aquarium-Beleuchtung mit strompreisabhaengiger Dimmung, wetterbasierter Wolkensimulation, Sonnenaufgangs-/Sonnenuntergangsphasen und vorbereiteten Dashboard-Ansichten.
 
-Veroeffentlichungskennzeichen: `V260523.003_BETA.00`
+Veroeffentlichungskennzeichen: `V260523.004_BETA.00`
 
-Home-Assistant-Manifest-Version: `26.5.23-beta.3`
+Home-Assistant-Manifest-Version: `26.5.23-beta.4`
 
 [![Home Assistant oeffnen und dieses Repository in HACS anzeigen.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Thomash100&repository=HA-Aquarium-&category=integration)
 ![HACS Custom](https://img.shields.io/badge/HACS-Custom-orange.svg)
@@ -43,6 +43,7 @@ Die Integration verwandelt deine Aquarium-Beleuchtung in einen dynamischen Tages
 - Strompreisabhaengige Dimmung mit Begrenzung auf guenstige Preisbereiche
 - Optionaler Legacy-`input_text`-Export fuer aeltere Dashboard-Setups
 - Live-Dashboard-Entitaet pro Aquarium, zum Beispiel `sensor.aquarium_status`
+- Dashboard-Export pro Aquarium mit automatisch passenden Entity-IDs
 - Visuelle Dashboard-Karten fuer Cockpit-, Technikpanel- und Simulator-Ansichten
 - Ein-Klick-Export von Blueprint- und Dashboard-Dateien fuer Legacy- oder manuelle Workflows
 
@@ -75,7 +76,7 @@ Direkter HACS-Link:
 Nach der Einrichtung kann die Integration exportieren:
 
 - den Aquarium-Blueprint nach `/config/blueprints/automation/aquarium_led_cockpit/`
-- sensorbasierte Dashboard-Karten nach `/config/aquarium_led_cockpit/dashboard/`
+- sensorbasierte Dashboard-Karten nach `/config/aquarium_led_cockpit/dashboard/<aquarium>/`
 - die Lovelace-Simulator-Karte nach `/config/www/aquarium_led_cockpit/aquarium-led-simulator-card.js`
 - Dashboard-Steuerhelfer nach `/config/packages/aquarium_led_cockpit_controls.yaml`
 - optionale Legacy-Helfer und Legacy-Karten fuer aeltere Setups
@@ -122,7 +123,7 @@ Veroeffentlichungen werden aus Versions-Tags erstellt und in `CHANGELOG.md` doku
 
 ## Versionierung
 
-Sichtbare Veroeffentlichungskennzeichen verwenden waehrend der Beta-Phase `VYYMMDD.NNN_BETA.xx`. `YYMMDD` ist das Erscheinungsdatum bei grundlegenden Aenderungen, `NNN` ist der Anpassungsindex fuer kompatible Folgeaenderungen innerhalb dieser Veroeffentlichungslinie und `xx` ist die Beta-Iteration. Sobald eine Veroeffentlichungslinie stabil ist, wird der `_BETA.xx`-Suffix entfernt. Home Assistant erhaelt parallel eine kompatible Manifest-Version wie `26.5.23-beta.3`.
+Sichtbare Veroeffentlichungskennzeichen verwenden waehrend der Beta-Phase `VYYMMDD.NNN_BETA.xx`. `YYMMDD` ist das Erscheinungsdatum bei grundlegenden Aenderungen, `NNN` ist der Anpassungsindex fuer kompatible Folgeaenderungen innerhalb dieser Veroeffentlichungslinie und `xx` ist die Beta-Iteration. Sobald eine Veroeffentlichungslinie stabil ist, wird der `_BETA.xx`-Suffix entfernt. Home Assistant erhaelt parallel eine kompatible Manifest-Version wie `26.5.23-beta.4`.
 
 ### Dienste
 
@@ -149,17 +150,19 @@ Aktualisiert den Live-Statussensor aus einer Automation oder einem Skript.
 
 Wenn mehrere Aquarien eingerichtet sind, trennt die Integration Runtime, Speicher, Sensoren, Schalter, Zahlen und Dienstaufrufe pro Config-Entry. Dadurch koennen unterschiedliche Aquarium-Lichtsteuerungen parallel laufen, ohne sich gegenseitig Status oder Simulation zu ueberschreiben.
 
+Beim Ressourcenexport werden die Dashboard-Snippets pro Aquarium in einen eigenen Unterordner geschrieben und die Standard-Entity-IDs automatisch auf den Aquarium-Namen umgeschrieben. Beispiel: Aus Aquarium `Juwel` wird `sensor.juwel_status`, `switch.juwel_steuerung` und `number.juwel_taghelligkeit`.
+
 ## Exportierte Dateien
 
 | Datei | Ziel |
 | --- | --- |
 | `aquarium_led_tibber_weather_shelly_rgbw.yaml` | `/config/blueprints/automation/aquarium_led_cockpit/` |
-| `aquarium_led_status_sensor.yaml` | `/config/aquarium_led_cockpit/dashboard/` |
-| `aquarium_led_cockpit_visual_button_card_sensor.yaml` | `/config/aquarium_led_cockpit/dashboard/` |
-| `aquarium_led_technikpanel_sensor.yaml` | `/config/aquarium_led_cockpit/dashboard/` |
-| `aquarium_led_controls_panel.yaml` | `/config/aquarium_led_cockpit/dashboard/` |
-| `aquarium_led_power_price_24h.yaml` | `/config/aquarium_led_cockpit/dashboard/` |
-| `aquarium_led_simulator_card.yaml` | `/config/aquarium_led_cockpit/dashboard/` |
+| `aquarium_led_status_sensor.yaml` | `/config/aquarium_led_cockpit/dashboard/<aquarium>/` |
+| `aquarium_led_cockpit_visual_button_card_sensor.yaml` | `/config/aquarium_led_cockpit/dashboard/<aquarium>/` |
+| `aquarium_led_technikpanel_sensor.yaml` | `/config/aquarium_led_cockpit/dashboard/<aquarium>/` |
+| `aquarium_led_controls_panel.yaml` | `/config/aquarium_led_cockpit/dashboard/<aquarium>/` |
+| `aquarium_led_power_price_24h.yaml` | `/config/aquarium_led_cockpit/dashboard/<aquarium>/` |
+| `aquarium_led_simulator_card.yaml` | `/config/aquarium_led_cockpit/dashboard/<aquarium>/` |
 | `aquarium-led-simulator-card.js` | `/config/www/aquarium_led_cockpit/` |
 | `aquarium_led_cockpit_controls.yaml` | `/config/packages/` |
 | `aquarium_led_dashboard_status_helper.yaml` | optionaler Legacy-Export nach `/config/packages/` |
@@ -181,6 +184,8 @@ Wenn mehrere Aquarien eingerichtet sind, trennt die Integration Runtime, Speiche
 ### Dashboard-Karten zeigen keine Daten
 
 - Pruefe, ob der Statussensor des Aquariums existiert, zum Beispiel `sensor.aquarium_status`.
+- Exportiere die Ressourcen nach dem Update erneut und aktiviere `Vorhandene Dateien ueberschreiben`.
+- Verwende den Unterordner des passenden Aquariums, zum Beispiel `/config/aquarium_led_cockpit/dashboard/juwel/`.
 - Nutze den exportierten Blueprint oder rufe `aquarium_led_cockpit.set_dashboard_status` auf.
 - Stelle fuer visuelle Karten sicher, dass `custom:button-card` installiert ist.
 - Stelle fuer die Simulator-Karte sicher, dass `/local/aquarium_led_cockpit/aquarium-led-simulator-card.js` als Lovelace-Ressource eingetragen ist.

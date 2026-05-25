@@ -7,6 +7,7 @@ from shutil import copy2
 from typing import Any
 
 from homeassistant.core import HomeAssistant
+from homeassistant.util import slugify
 
 from .const import DOMAIN
 
@@ -22,6 +23,24 @@ class InstallItem:
     source: Path
     target: Path
     description: str
+    replacements: dict[str, str] | None = None
+
+
+def _dashboard_replacements(aquarium_name: str) -> dict[str, str]:
+    """Build entity replacements for one aquarium dashboard export."""
+    slug = slugify(aquarium_name or "Aquarium") or "aquarium"
+    return {
+        "sensor.aquarium_status": f"sensor.{slug}_status",
+        "switch.aquarium_steuerung": f"switch.{slug}_steuerung",
+        "switch.aquarium_simulation": f"switch.{slug}_simulation",
+        "switch.aquarium_zeitraffer": f"switch.{slug}_zeitraffer",
+        "number.aquarium_simulationszeit": f"number.{slug}_simulationszeit",
+        "number.aquarium_zeitraffer_schritt": f"number.{slug}_zeitraffer_schritt",
+        "number.aquarium_taghelligkeit": f"number.{slug}_taghelligkeit",
+        "number.aquarium_nachtlicht": f"number.{slug}_nachtlicht",
+        "number.aquarium_preisdimmung": f"number.{slug}_preisdimmung",
+        "number.aquarium_wolkenstaerke": f"number.{slug}_wolkenstaerke",
+    }
 
 
 def _build_install_plan(
@@ -30,8 +49,11 @@ def _build_install_plan(
     install_blueprint: bool,
     export_dashboard_snippets: bool,
     export_legacy_files: bool,
+    aquarium_name: str,
 ) -> list[InstallItem]:
     config_root = Path(hass.config.path())
+    aquarium_slug = slugify(aquarium_name or "Aquarium") or "aquarium"
+    dashboard_replacements = _dashboard_replacements(aquarium_name)
     items: list[InstallItem] = [
         InstallItem(
             key="readme",
@@ -74,7 +96,7 @@ def _build_install_plan(
         )
 
     if export_dashboard_snippets:
-        dashboard_root = config_root / EXPORT_FOLDER / "dashboard"
+        dashboard_root = config_root / EXPORT_FOLDER / "dashboard" / aquarium_slug
         items.extend(
             [
                 InstallItem(
@@ -88,6 +110,7 @@ def _build_install_plan(
                     source=RESOURCE_ROOT / "dashboards" / "aquarium_led_status_sensor.yaml",
                     target=dashboard_root / "aquarium_led_status_sensor.yaml",
                     description="Dashboard-Markdown-Karte",
+                    replacements=dashboard_replacements,
                 ),
                 InstallItem(
                     key="dashboard_cockpit",
@@ -98,30 +121,35 @@ def _build_install_plan(
                     ),
                     target=dashboard_root / "aquarium_led_cockpit_visual_button_card_sensor.yaml",
                     description="Visuelle Cockpit-Dashboard-Karte",
+                    replacements=dashboard_replacements,
                 ),
                 InstallItem(
                     key="dashboard_panel",
                     source=RESOURCE_ROOT / "dashboards" / "aquarium_led_technikpanel_sensor.yaml",
                     target=dashboard_root / "aquarium_led_technikpanel_sensor.yaml",
                     description="Technikpanel-Dashboard-Karte",
+                    replacements=dashboard_replacements,
                 ),
                 InstallItem(
                     key="dashboard_controls",
                     source=RESOURCE_ROOT / "dashboards" / "aquarium_led_controls_panel.yaml",
                     target=dashboard_root / "aquarium_led_controls_panel.yaml",
                     description="Dashboard-Steuerpanel",
+                    replacements=dashboard_replacements,
                 ),
                 InstallItem(
                     key="dashboard_power_price_24h",
                     source=RESOURCE_ROOT / "dashboards" / "aquarium_led_power_price_24h.yaml",
                     target=dashboard_root / "aquarium_led_power_price_24h.yaml",
                     description="24h-Status- und Preisverlauf",
+                    replacements=dashboard_replacements,
                 ),
                 InstallItem(
                     key="dashboard_simulator_card",
                     source=RESOURCE_ROOT / "dashboards" / "aquarium_led_simulator_card.yaml",
                     target=dashboard_root / "aquarium_led_simulator_card.yaml",
                     description="Lovelace-Simulator-Kartenbeispiel",
+                    replacements=dashboard_replacements,
                 ),
             ]
         )
@@ -178,7 +206,13 @@ def _copy_plan(plan: list[InstallItem], overwrite_existing: bool) -> list[dict[s
             continue
 
         status = "updated" if item.target.exists() else "created"
-        copy2(item.source, item.target)
+        if item.replacements:
+            text = item.source.read_text(encoding="utf-8")
+            for old, new in item.replacements.items():
+                text = text.replace(old, new)
+            item.target.write_text(text, encoding="utf-8")
+        else:
+            copy2(item.source, item.target)
         results.append(
             {
                 "key": item.key,
@@ -198,6 +232,7 @@ async def async_install_resources(
     export_dashboard_snippets: bool,
     export_legacy_files: bool,
     overwrite_existing: bool,
+    aquarium_name: str,
 ) -> list[dict[str, Any]]:
     """Copy packaged resources into the Home Assistant config directory."""
     plan = _build_install_plan(
@@ -205,5 +240,6 @@ async def async_install_resources(
         install_blueprint=install_blueprint,
         export_dashboard_snippets=export_dashboard_snippets,
         export_legacy_files=export_legacy_files,
+        aquarium_name=aquarium_name,
     )
     return await hass.async_add_executor_job(_copy_plan, plan, overwrite_existing)
