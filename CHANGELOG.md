@@ -1,5 +1,15 @@
 # Aenderungsprotokoll
 
+## V260523.008_BETA.00
+
+Nicht mehr benoetigte Ressourcen entfernt.
+
+- Entfernt den alten Automation-Blueprint aus den ausgelieferten Ressourcen.
+- Entfernt Legacy-Karten, Helper-Pakete und YAML-Dashboard-Beispiele.
+- Behaelt nur die native Integration, Branding und die Lovelace-Simulator-Ressource.
+- Vereinfacht den Ressourcenexport auf die Simulator-Frontend-Datei.
+- Erhoeht die Home-Assistant-Manifest-Version auf `26.5.23-beta.8`.
+
 ## V260523.007_BETA.00
 
 Blueprint auf optionalen Kompatibilitaetsweg umgestellt.

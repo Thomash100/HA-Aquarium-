@@ -16,16 +16,12 @@ from homeassistant.helpers import config_validation as cv
 from .const import (
     CONF_AUTO_INSTALL,
     CONF_CONFIG_ENTRY_ID,
-    CONF_EXPORT_DASHBOARD_SNIPPETS,
-    CONF_EXPORT_LEGACY_FILES,
-    CONF_INSTALL_BLUEPRINT,
+    CONF_EXPORT_FRONTEND_RESOURCES,
     CONF_OVERWRITE_EXISTING,
     CONF_STATUS_JSON,
     DATA_SERVICES_REGISTERED,
     DEFAULT_AUTO_INSTALL,
-    DEFAULT_EXPORT_DASHBOARD_SNIPPETS,
-    DEFAULT_EXPORT_LEGACY_FILES,
-    DEFAULT_INSTALL_BLUEPRINT,
+    DEFAULT_EXPORT_FRONTEND_RESOURCES,
     DEFAULT_OVERWRITE_EXISTING,
     DOMAIN,
     PLATFORMS,
@@ -94,11 +90,7 @@ async def _async_notify_installation(
     lines.extend(
         [
             "Naechste Schritte:",
-            "- Blueprints neu laden, wenn die Automation-Blueprint exportiert wurde.",
-            "- Exportierte Dashboard-YAML-Snippets aus /config/aquarium_led_cockpit/dashboard/<aquarium>/ zu Lovelace hinzufuegen.",
             "- Lovelace-Ressource /local/aquarium_led_cockpit/aquarium-led-simulator-card.js hinzufuegen, wenn die Simulator-Karte genutzt wird.",
-            "- Home-Assistant-Packages aktivieren, wenn die exportierten Steuerhelfer aus /config/packages/ genutzt werden sollen.",
-            "- custom:button-card ueber HACS installieren, wenn die visuellen Karten genutzt werden sollen.",
             "- Die Live-Status-Entitaet wird aus dem Aquarium-Namen gebildet, zum Beispiel sensor.aquarium_status.",
         ]
     )
@@ -119,9 +111,7 @@ async def async_setup_integration(hass: HomeAssistant, config: dict[str, Any]) -
     install_resources_schema = vol.Schema(
         {
             vol.Optional(CONF_CONFIG_ENTRY_ID): cv.string,
-            vol.Optional(CONF_INSTALL_BLUEPRINT): cv.boolean,
-            vol.Optional(CONF_EXPORT_DASHBOARD_SNIPPETS): cv.boolean,
-            vol.Optional(CONF_EXPORT_LEGACY_FILES): cv.boolean,
+            vol.Optional(CONF_EXPORT_FRONTEND_RESOURCES): cv.boolean,
             vol.Optional(CONF_OVERWRITE_EXISTING): cv.boolean,
         }
     )
@@ -143,26 +133,17 @@ async def async_setup_integration(hass: HomeAssistant, config: dict[str, Any]) -
 
         results = await async_install_resources(
             hass,
-            install_blueprint=call.data.get(
-                CONF_INSTALL_BLUEPRINT,
-                settings.get(CONF_INSTALL_BLUEPRINT, DEFAULT_INSTALL_BLUEPRINT),
-            ),
-            export_dashboard_snippets=call.data.get(
-                CONF_EXPORT_DASHBOARD_SNIPPETS,
+            export_frontend_resources=call.data.get(
+                CONF_EXPORT_FRONTEND_RESOURCES,
                 settings.get(
-                    CONF_EXPORT_DASHBOARD_SNIPPETS,
-                    DEFAULT_EXPORT_DASHBOARD_SNIPPETS,
+                    CONF_EXPORT_FRONTEND_RESOURCES,
+                    DEFAULT_EXPORT_FRONTEND_RESOURCES,
                 ),
-            ),
-            export_legacy_files=call.data.get(
-                CONF_EXPORT_LEGACY_FILES,
-                settings.get(CONF_EXPORT_LEGACY_FILES, DEFAULT_EXPORT_LEGACY_FILES),
             ),
             overwrite_existing=call.data.get(
                 CONF_OVERWRITE_EXISTING,
                 settings.get(CONF_OVERWRITE_EXISTING, DEFAULT_OVERWRITE_EXISTING),
             ),
-            aquarium_name=entry.title,
         )
 
         await _async_notify_installation(hass, results, automatic=False)
@@ -211,20 +192,14 @@ async def async_setup_entry_integration(hass: HomeAssistant, entry: ConfigEntry)
     if settings.get(CONF_AUTO_INSTALL, DEFAULT_AUTO_INSTALL):
         results = await async_install_resources(
             hass,
-            install_blueprint=settings.get(CONF_INSTALL_BLUEPRINT, DEFAULT_INSTALL_BLUEPRINT),
-            export_dashboard_snippets=settings.get(
-                CONF_EXPORT_DASHBOARD_SNIPPETS,
-                DEFAULT_EXPORT_DASHBOARD_SNIPPETS,
-            ),
-            export_legacy_files=settings.get(
-                CONF_EXPORT_LEGACY_FILES,
-                DEFAULT_EXPORT_LEGACY_FILES,
+            export_frontend_resources=settings.get(
+                CONF_EXPORT_FRONTEND_RESOURCES,
+                DEFAULT_EXPORT_FRONTEND_RESOURCES,
             ),
             overwrite_existing=settings.get(
                 CONF_OVERWRITE_EXISTING,
                 DEFAULT_OVERWRITE_EXISTING,
             ),
-            aquarium_name=entry.title,
         )
         await _async_notify_installation(hass, results, automatic=True)
         _LOGGER.debug("Automatic resource export finished: %s", results)

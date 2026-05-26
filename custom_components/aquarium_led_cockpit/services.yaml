@@ -1,6 +1,6 @@
 install_resources:
   name: Ressourcen installieren oder exportieren
-  description: Kopiert Blueprint- und Dashboard-Ressourcen der Integration in die Home-Assistant-Konfiguration.
+  description: Kopiert die Lovelace-Simulator-Ressource der Integration in die Home-Assistant-Konfiguration.
   fields:
     config_entry_id:
       name: Aquarium-Konfiguration
@@ -8,19 +8,9 @@ install_resources:
       selector:
         config_entry:
           integration: aquarium_led_cockpit
-    install_blueprint:
-      name: Optionalen Legacy-Blueprint installieren
-      description: Exportiert die alte Automation-Blueprint nur fuer Kompatibilitaets- oder Experten-Setups. Fuer die normale Integrationssteuerung ist sie nicht mehr erforderlich.
-      selector:
-        boolean:
-    export_dashboard_snippets:
-      name: Dashboard-Snippets exportieren
-      description: Exportiert die YAML-Snippets der Dashboard-Karten nach /config/aquarium_led_cockpit/dashboard/.
-      selector:
-        boolean:
-    export_legacy_files:
-      name: Legacy-Dateien exportieren
-      description: Exportiert das input_text-Helferpaket und die aelteren Dashboard-Varianten.
+    export_frontend_resources:
+      name: Lovelace-Ressource exportieren
+      description: Exportiert die Aquarium-LED-Simulator-Karte nach /config/www/aquarium_led_cockpit/.
       selector:
         boolean:
     overwrite_existing:

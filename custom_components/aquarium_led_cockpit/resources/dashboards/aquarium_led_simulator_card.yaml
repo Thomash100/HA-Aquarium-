@@ -1,8 +1,0 @@
-type: custom:aquarium-led-simulator-card
-title: Aquarium LED Simulation
-status_entity: sensor.aquarium_status
-control_switch: switch.aquarium_steuerung
-simulation_switch: switch.aquarium_simulation
-time_lapse_switch: switch.aquarium_zeitraffer
-simulation_time_number: number.aquarium_simulationszeit
-simulation_step_number: number.aquarium_zeitraffer_schritt

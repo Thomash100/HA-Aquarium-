@@ -9,9 +9,7 @@ from homeassistant.helpers import selector
 
 from .const import (
     CONF_AUTO_INSTALL,
-    CONF_EXPORT_DASHBOARD_SNIPPETS,
-    CONF_EXPORT_LEGACY_FILES,
-    CONF_INSTALL_BLUEPRINT,
+    CONF_EXPORT_FRONTEND_RESOURCES,
     CONF_NAME,
     CONF_OVERWRITE_EXISTING,
     CONF_PRICE_ENTITY,
@@ -21,9 +19,7 @@ from .const import (
     CONF_WEATHER_ENTITY,
     CONF_WHITE_LIGHTS,
     DEFAULT_AUTO_INSTALL,
-    DEFAULT_EXPORT_DASHBOARD_SNIPPETS,
-    DEFAULT_EXPORT_LEGACY_FILES,
-    DEFAULT_INSTALL_BLUEPRINT,
+    DEFAULT_EXPORT_FRONTEND_RESOURCES,
     DEFAULT_OVERWRITE_EXISTING,
     DEFAULT_SUN_ENTITY,
     DEFAULT_TRANSITION_SECONDS,
@@ -75,19 +71,11 @@ def _build_schema(defaults: dict) -> vol.Schema:
                 )
             ),
             vol.Required(
-                CONF_INSTALL_BLUEPRINT,
-                default=defaults.get(CONF_INSTALL_BLUEPRINT, DEFAULT_INSTALL_BLUEPRINT),
-            ): bool,
-            vol.Required(
-                CONF_EXPORT_DASHBOARD_SNIPPETS,
+                CONF_EXPORT_FRONTEND_RESOURCES,
                 default=defaults.get(
-                    CONF_EXPORT_DASHBOARD_SNIPPETS,
-                    DEFAULT_EXPORT_DASHBOARD_SNIPPETS,
+                    CONF_EXPORT_FRONTEND_RESOURCES,
+                    DEFAULT_EXPORT_FRONTEND_RESOURCES,
                 ),
-            ): bool,
-            vol.Required(
-                CONF_EXPORT_LEGACY_FILES,
-                default=defaults.get(CONF_EXPORT_LEGACY_FILES, DEFAULT_EXPORT_LEGACY_FILES),
             ): bool,
             vol.Required(
                 CONF_OVERWRITE_EXISTING,

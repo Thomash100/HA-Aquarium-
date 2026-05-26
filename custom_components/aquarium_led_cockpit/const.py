@@ -4,10 +4,8 @@ DOMAIN = "aquarium_led_cockpit"
 
 PLATFORMS = ["sensor", "switch", "number"]
 
-CONF_INSTALL_BLUEPRINT = "install_blueprint"
 CONF_NAME = "name"
-CONF_EXPORT_DASHBOARD_SNIPPETS = "export_dashboard_snippets"
-CONF_EXPORT_LEGACY_FILES = "export_legacy_files"
+CONF_EXPORT_FRONTEND_RESOURCES = "export_frontend_resources"
 CONF_OVERWRITE_EXISTING = "overwrite_existing"
 CONF_AUTO_INSTALL = "auto_install"
 CONF_RGBW_LIGHTS = "rgbw_lights"
@@ -20,9 +18,7 @@ CONF_TRANSITION_SECONDS = "transition_seconds"
 CONF_STATUS_JSON = "status_json"
 CONF_CONFIG_ENTRY_ID = "config_entry_id"
 
-DEFAULT_INSTALL_BLUEPRINT = False
-DEFAULT_EXPORT_DASHBOARD_SNIPPETS = True
-DEFAULT_EXPORT_LEGACY_FILES = False
+DEFAULT_EXPORT_FRONTEND_RESOURCES = True
 DEFAULT_OVERWRITE_EXISTING = False
 DEFAULT_AUTO_INSTALL = True
 DEFAULT_SUN_ENTITY = "sun.sun"
