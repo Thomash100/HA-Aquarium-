@@ -9,5 +9,5 @@
   "issue_tracker": "https://github.com/Thomash100/HA-Aquarium-/issues",
   "loggers": ["custom_components.aquarium_led_cockpit"],
   "requirements": [],
-  "version": "26.5.23-beta.11"
+  "version": "26.5.23-beta.12"
 }

@@ -238,6 +238,7 @@ def calculate_target(
         "white_pct": int(round(brightness * (rgbw[3] / 255))),
         "rgbw": list(rgbw),
         "price": price_value if price_value is not None else "-",
+        "price_entity": settings.get(CONF_PRICE_ENTITY) or "",
         "price_factor": round(price_factor, 3),
         "price_load_pct": int(round(price_adjustment["load"] * 100)),
         "price_dimming_pct": int(round((1 - price_factor) * 100)),
@@ -247,9 +248,11 @@ def calculate_target(
         "price_ignored": price_ignored,
         "price_ignored_reason": "battery_full" if battery_full else ("night" if phase == "night" else "-"),
         "battery_soc": battery_soc if battery_soc is not None else "-",
+        "battery_soc_entity": settings.get(CONF_BATTERY_SOC_ENTITY) or "",
         "battery_full_threshold": round(battery_full_threshold, 1),
         "battery_full": battery_full,
         "solar_power": solar_power if solar_power is not None else "-",
+        "solar_power_entity": settings.get(CONF_SOLAR_POWER_ENTITY) or "",
         "regional_sun": regional_sun,
         "weather": hass.states.get(settings.get(CONF_WEATHER_ENTITY)).state
         if settings.get(CONF_WEATHER_ENTITY) and hass.states.get(settings.get(CONF_WEATHER_ENTITY))
