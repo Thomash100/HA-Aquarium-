@@ -229,6 +229,7 @@ def calculate_target(
         "sunset_duration_minutes": SUNSET_DURATION_MINUTES,
         "sunset_phase_start": _minutes_to_clock(sunset_event - SUNSET_DURATION_MINUTES),
         "light_mode": "moonlight" if phase == "night" else phase,
+        "color_control": "rgbw",
         "day_brightness_pct": round(day, 1),
         "night_brightness_pct": round(night, 1),
         "base_pct": round(base_pct, 1),

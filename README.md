@@ -2,9 +2,9 @@
 
 Aquarium LED Cockpit ist eine Home-Assistant-Custom-Integration fuer eine dynamische Aquarium-Beleuchtung mit strompreisabhaengiger Dimmung, wetterbasierter Wolkensimulation, Sonnenaufgangs-/Sonnenuntergangsphasen und Lovelace-Simulator-Karte.
 
-Veroeffentlichungskennzeichen: `V260523.015_BETA.00`
+Veroeffentlichungskennzeichen: `V260523.016_BETA.00`
 
-Home-Assistant-Manifest-Version: `26.5.23-beta.15`
+Home-Assistant-Manifest-Version: `26.5.23-beta.16`
 
 [![Home Assistant oeffnen und dieses Repository in HACS anzeigen.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Thomash100&repository=HA-Aquarium-&category=integration)
 ![HACS Custom](https://img.shields.io/badge/HACS-Custom-orange.svg)
@@ -36,8 +36,8 @@ Die Integration verwandelt deine Aquarium-Beleuchtung in einen dynamischen Tages
 - Eigene Switch- und Number-Entitaeten fuer Normalbetrieb, sichere Simulation und Zeitraffer-Test
 - Mehrere Aquarien mit eigenem Namen, eigener Runtime und eigenen Entitaeten
 - Dienste mit Aquarium-Auswahl, damit Status und Ressourcen gezielt einem Aquarium zugeordnet werden
-- Echter Sonnenverlauf aus `sun.sun`: morgens 60 Minuten Rot zu Tagesweiss, abends 90 Minuten Tagesweiss zu Rot bis zum Sonnenuntergang
-- Stark reduziertes kuehles Mondlicht nach Sonnenuntergang mit der vorhandenen Nachtlicht-Helligkeit
+- Echter RGBW-Sonnenverlauf aus `sun.sun`: morgens 60 Minuten Tiefrot ueber Orange, Gold und Warmweiss zu Tagesweiss, abends 90 Minuten exakt rueckwaerts bis zum Sonnenuntergang
+- Stark reduziertes blaues Mondlicht nach Sonnenuntergang ohne Weisskanal und mit der vorhandenen Nachtlicht-Helligkeit
 - Wolkensimulation tagsueber mit wetterabhaengiger Dimmung
 - Simulationsmodus, der den Cockpit-Status aktualisiert, ohne Lichtbefehle zu senden
 - Konfigurierbarer 24-Stunden-Zeitraffer: ein kompletter Tag in einer bis zehn realen Minuten

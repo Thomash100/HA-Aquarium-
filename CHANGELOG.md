@@ -1,5 +1,15 @@
 # Aenderungsprotokoll
 
+## V260523.016_BETA.00
+
+RGBW-Farbprofil fuer Sonne und Mond ueberarbeitet.
+
+- Fuehrt Sonnenaufgang und Sonnenuntergang ueber definierte RGBW-Farbstufen: Tiefrot, Orange, Gold, Warmweiss und Tagesweiss.
+- Verwendet fuer den Abend exakt die umgekehrte Farbfolge des Morgens.
+- Setzt das Mondlicht auf reines, gedimmtes Blau ohne Weissanteil, sodass zusaetzliche Weisskanaele nachts ausgeschaltet bleiben.
+- Zeigt die vier aktiven RGBW-Kanalwerte direkt im Dashboard an.
+- Erhoeht die Home-Assistant-Manifest-Version auf `26.5.23-beta.16`.
+
 ## V260523.015_BETA.00
 
 Einmalige Zeitraffer-Vorschau auf den echten Aquarium-Leuchten ergaenzt.
