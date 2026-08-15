@@ -1,5 +1,13 @@
 # Aenderungsprotokoll
 
+## V260523.011_BETA.00
+
+Options-Flow fuer Home Assistant 2026.8 kompatibel gemacht.
+
+- Verwendet fuer den Config-Entry eine eigene interne Referenz statt der neuen schreibgeschuetzten Basisklassen-Eigenschaft.
+- Stellt damit den Konfigurationsdialog fuer Growatt-Speicher, Solarleistung und Voll-Schwelle wieder her.
+- Erhoeht die Home-Assistant-Manifest-Version auf `26.5.23-beta.11`.
+
 ## V260523.010_BETA.00
 
 Growatt-/NOAH-Speicher und regionale Sonne in die Preissteuerung aufgenommen.
