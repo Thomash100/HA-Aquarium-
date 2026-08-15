@@ -28,6 +28,14 @@ class FrontendResourceTests(unittest.TestCase):
         self.assertIn("Batterieverlauf", source)
         self.assertIn("Tibber-Vorschau", source)
 
+    def test_light_curve_uses_real_event_windows(self) -> None:
+        source = RESOURCE.read_text(encoding="utf-8")
+
+        self.assertIn("sunrise_duration_minutes ?? 60", source)
+        self.assertIn("sunset_duration_minutes ?? 90", source)
+        self.assertIn("const sunsetStart = sunset - sunsetDuration", source)
+        self.assertIn('night: "Mondlicht"', source)
+
 
 if __name__ == "__main__":
     unittest.main()

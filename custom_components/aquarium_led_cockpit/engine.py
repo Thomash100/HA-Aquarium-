@@ -32,6 +32,11 @@ from .const import (
     DEFAULT_SUN_ENTITY,
 )
 from .price import calculate_price_adjustment, is_battery_full
+from .solar import (
+    SUNRISE_DURATION_MINUTES,
+    SUNSET_DURATION_MINUTES,
+    calculate_solar_profile,
+)
 
 
 @dataclass(frozen=True)
@@ -157,45 +162,22 @@ def calculate_target(
         else now.hour * 60 + now.minute
     )
 
-    sunrise_start, sunset_start = _sun_window(
+    sunrise_start, sunset_event = _sun_window(
         hass,
         str(settings.get(CONF_SUN_ENTITY) or DEFAULT_SUN_ENTITY),
         now,
     )
-    sunrise_duration = 120
-    sunset_duration = 150
-    sunrise_end = (sunrise_start + sunrise_duration) % 1440
-    sunset_end = (sunset_start + sunset_duration) % 1440
-
-    if sunrise_start <= minute < sunrise_start + sunrise_duration:
-        phase = "sunrise"
-        progress = _clamp((minute - sunrise_start) / sunrise_duration, 0, 1)
-    elif sunrise_start + sunrise_duration <= minute < sunset_start:
-        phase = "day"
-        progress = 1
-    elif sunset_start <= minute < sunset_start + sunset_duration:
-        phase = "sunset"
-        progress = _clamp((minute - sunset_start) / sunset_duration, 0, 1)
-    else:
-        phase = "night"
-        progress = 0
-
     day = _clamp(float(controls.get(CONTROL_DAY_BRIGHTNESS, DEFAULT_DAY_BRIGHTNESS)), 1, 100)
     night = _clamp(float(controls.get(CONTROL_NIGHT_BRIGHTNESS, DEFAULT_NIGHT_BRIGHTNESS)), 0, 30)
-    if phase == "sunrise":
-        base_pct = night + ((day - night) * progress)
-        color_from = (255, 140, 60, 30)
-        color_to = (120, 180, 255, 220)
-    elif phase == "sunset":
-        base_pct = day + ((night - day) * progress)
-        color_from = (120, 180, 255, 220)
-        color_to = (255, 90, 30, 12)
-    elif phase == "day":
-        base_pct = day
-        color_from = color_to = (120, 180, 255, 220)
-    else:
-        base_pct = night
-        color_from = color_to = (15, 30, 90, 0)
+    solar_profile = calculate_solar_profile(
+        minute,
+        sunrise_start,
+        sunset_event,
+        day,
+        night,
+    )
+    phase = solar_profile.phase
+    base_pct = solar_profile.base_pct
 
     price_value, price_attributes = _price_state(hass, settings.get(CONF_PRICE_ENTITY))
     price_adjustment = calculate_price_adjustment(
@@ -221,10 +203,7 @@ def calculate_target(
     cloud_factor = 1 if phase == "night" else _clamp(1 - (cloudiness * cloud_strength * wave * 0.25), 0.4, 1)
 
     brightness = int(round(_clamp(base_pct * price_factor * weather_factor * cloud_factor, 0, 100)))
-    rgbw = tuple(
-        int(round(color_from[index] + ((color_to[index] - color_from[index]) * progress)))
-        for index in range(4)
-    )
+    rgbw = solar_profile.rgbw
 
     status = {
         "phase": phase,
@@ -232,7 +211,14 @@ def calculate_target(
         "time_lapse": time_lapse,
         "simulation": simulation,
         "sunrise": _minutes_to_clock(sunrise_start),
-        "sunset": _minutes_to_clock(sunset_start),
+        "sunrise_duration_minutes": SUNRISE_DURATION_MINUTES,
+        "sunrise_end": _minutes_to_clock(sunrise_start + SUNRISE_DURATION_MINUTES),
+        "sunset": _minutes_to_clock(sunset_event),
+        "sunset_duration_minutes": SUNSET_DURATION_MINUTES,
+        "sunset_phase_start": _minutes_to_clock(sunset_event - SUNSET_DURATION_MINUTES),
+        "light_mode": "moonlight" if phase == "night" else phase,
+        "day_brightness_pct": round(day, 1),
+        "night_brightness_pct": round(night, 1),
         "base_pct": round(base_pct, 1),
         "target_pct": brightness,
         "white_pct": int(round(brightness * (rgbw[3] / 255))),
