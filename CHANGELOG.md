@@ -1,5 +1,16 @@
 # Aenderungsprotokoll
 
+## V260523.013_BETA.00
+
+Realen Sonnenverlauf und reduziertes Mondlicht umgesetzt.
+
+- Startet den roten Morgenverlauf zum echten Sonnenaufgang aus `sun.sun` und blendet in 60 Minuten zu kuehlem Tagesweiss.
+- Beginnt den Abendverlauf 90 Minuten vor dem echten Sonnenuntergang und erreicht dort tiefes Rot.
+- Nutzt danach ein stark reduziertes, kuehles Mondlicht mit kleinem Weissanteil und der vorhandenen Nachtlicht-Helligkeit.
+- Zeigt die echten Ereigniszeiten und Uebergangsfenster in Statussensor und Dashboard-Kurve.
+- Sichert die Phasengrenzen und RGBW-Farben mit automatisierten Tests ab.
+- Erhoeht die Home-Assistant-Manifest-Version auf `26.5.23-beta.13`.
+
 ## V260523.012_BETA.00
 
 Preis- und Batterieverlaeufe in das Dashboard aufgenommen.

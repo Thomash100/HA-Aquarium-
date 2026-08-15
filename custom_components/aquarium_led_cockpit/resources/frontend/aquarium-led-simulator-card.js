@@ -53,7 +53,18 @@ class AquariumLedSimulatorCard extends HTMLElement {
     const currentTime = attr.time || "--:--";
     const sunrise = attr.sunrise || "06:00";
     const sunset = attr.sunset || "18:00";
-    const curve = this.buildCurve(sunrise, sunset, base, target);
+    const sunriseDuration = Number(attr.sunrise_duration_minutes ?? 60);
+    const sunsetDuration = Number(attr.sunset_duration_minutes ?? 90);
+    const dayBrightness = Number(attr.day_brightness_pct ?? Math.max(base, target, 70));
+    const nightBrightness = Number(attr.night_brightness_pct ?? 3);
+    const curve = this.buildCurve(
+      sunrise,
+      sunset,
+      nightBrightness,
+      dayBrightness,
+      sunriseDuration,
+      sunsetDuration,
+    );
     const rgb = `rgb(${rgbw[0] || 0}, ${rgbw[1] || 0}, ${rgbw[2] || 0})`;
     const whiteAlpha = Math.max(0.08, Math.min(0.85, (rgbw[3] || 0) / 255));
     const priceEntity = this.config.price_entity || attr.price_entity || "";
@@ -89,8 +100,8 @@ class AquariumLedSimulatorCard extends HTMLElement {
           </svg>
 
           <div class="alc-times">
-            <span>Sonnenaufgang ${this.escape(sunrise)}</span>
-            <span>Sonnenuntergang ${this.escape(sunset)}</span>
+            <span>Sonnenaufgang ${this.escape(sunrise)} · Rot → Weiss ${sunriseDuration} Min.</span>
+            <span>Weiss → Rot ab ${this.escape(attr.sunset_phase_start || sunset)} · Untergang ${this.escape(sunset)}</span>
           </div>
 
           <div class="alc-grid">
@@ -625,16 +636,22 @@ class AquariumLedSimulatorCard extends HTMLElement {
     return `<button data-domain="switch" data-service="${service}" data-entity="${this.escape(entity)}">${this.escape(label)}</button>`;
   }
 
-  buildCurve(sunrise, sunset, base, target) {
+  buildCurve(sunrise, sunset, nightPct, dayPct, sunriseDuration, sunsetDuration) {
     const sunriseMinute = this.parseMinute(sunrise, 360);
     const sunsetMinute = this.parseMinute(sunset, 1080);
-    const dayPct = Math.max(base, target, 70);
-    const nightPct = 3;
     const points = [];
 
     for (let index = 0; index <= 96; index += 1) {
       const minute = index * 15;
-      const pct = this.profileAt(minute, sunriseMinute, sunsetMinute, nightPct, dayPct);
+      const pct = this.profileAt(
+        minute,
+        sunriseMinute,
+        sunsetMinute,
+        nightPct,
+        dayPct,
+        sunriseDuration,
+        sunsetDuration,
+      );
       const x = (index / 96) * 320;
       const y = 88 - (pct / 100) * 72;
       points.push([x, y]);
@@ -645,17 +662,16 @@ class AquariumLedSimulatorCard extends HTMLElement {
     return { line, fill };
   }
 
-  profileAt(minute, sunrise, sunset, night, day) {
-    const sunriseDuration = 120;
-    const sunsetDuration = 150;
+  profileAt(minute, sunrise, sunset, night, day, sunriseDuration = 60, sunsetDuration = 90) {
+    const sunsetStart = sunset - sunsetDuration;
     if (minute >= sunrise && minute < sunrise + sunriseDuration) {
       return night + ((day - night) * ((minute - sunrise) / sunriseDuration));
     }
-    if (minute >= sunrise + sunriseDuration && minute < sunset) {
+    if (minute >= sunrise + sunriseDuration && minute < sunsetStart) {
       return day;
     }
-    if (minute >= sunset && minute < sunset + sunsetDuration) {
-      return day + ((night - day) * ((minute - sunset) / sunsetDuration));
+    if (minute >= sunsetStart && minute < sunset) {
+      return day + ((night - day) * ((minute - sunsetStart) / sunsetDuration));
     }
     return night;
   }
@@ -690,7 +706,7 @@ class AquariumLedSimulatorCard extends HTMLElement {
       sunrise: "Sonnenaufgang",
       day: "Tag",
       sunset: "Sonnenuntergang",
-      night: "Nacht",
+      night: "Mondlicht",
       idle: "Warten",
     };
     return labels[value] || value || "Unbekannt";
