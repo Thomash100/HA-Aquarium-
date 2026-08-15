@@ -60,6 +60,8 @@ class AquariumLedSimulatorCard extends HTMLElement {
     const celestial = this.celestialGeometry(currentTime, sunrise, sunset);
     const moonPhaseIcon = attr.moon_phase_icon || "🌙";
     const moonPhaseLabel = attr.moon_phase_label || "Mondphase";
+    const moonPhaseBrightness = Number(attr.moon_phase_brightness_pct ?? 60);
+    const moonCloudDimming = Number(attr.moon_cloud_dimming_pct ?? 0);
     const dayBrightness = Number(attr.day_brightness_pct ?? Math.max(base, target, 70));
     const nightBrightness = Number(attr.night_brightness_pct ?? 3);
     const curve = this.buildCurve(
@@ -110,7 +112,7 @@ class AquariumLedSimulatorCard extends HTMLElement {
                 : `<text x="${celestial.bodyX}" y="${celestial.bodyY + 9}" class="alc-moon-body" text-anchor="middle">${this.escape(moonPhaseIcon)}</text>`}
               <text x="${celestial.sunriseX}" y="160" class="alc-sky-label" text-anchor="middle">${this.escape(sunrise)}</text>
               <text x="${celestial.sunsetX}" y="160" class="alc-sky-label" text-anchor="middle">${this.escape(sunset)}</text>
-              <text x="360" y="181" class="alc-moon-label" text-anchor="middle">${this.escape(moonPhaseIcon)} ${this.escape(moonPhaseLabel)}</text>
+              <text x="360" y="181" class="alc-moon-label" text-anchor="middle">${this.escape(moonPhaseIcon)} ${this.escape(moonPhaseLabel)} · Mond ${Math.round(moonPhaseBrightness)}% · Wolken −${Math.round(moonCloudDimming)}%</text>
             </svg>
           </div>
 
@@ -144,6 +146,9 @@ class AquariumLedSimulatorCard extends HTMLElement {
             ${this.metric("Solar", this.formatPower(attr.solar_power))}
             ${this.metric("Sonne regional", attr.regional_sun ? "Ja" : "Nein")}
             ${this.metric("Wolken", `${attr.cloudiness_pct ?? "-"}%`)}
+            ${this.metric("Mondlicht", this.formatPercent(attr.moonlight_target_pct))}
+            ${this.metric("Mondphase", `${Math.round(moonPhaseBrightness)}%`)}
+            ${this.metric("Mond-Wolken", `−${Math.round(moonCloudDimming)}%`)}
             ${this.metric("Am Aquarium", aquariumPreviewActive ? "Vorschau aktiv" : "Geschuetzt")}
           </div>
 

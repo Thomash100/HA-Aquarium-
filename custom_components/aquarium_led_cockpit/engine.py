@@ -40,8 +40,10 @@ from .const import (
 from .price import calculate_price_adjustment, is_battery_full
 from .solar import (
     DAWN_DUSK_RGBW,
+    MIN_MOONLIGHT_BRIGHTNESS_PCT,
     SUNRISE_DURATION_MINUTES,
     SUNSET_DURATION_MINUTES,
+    calculate_moonlight_target,
     calculate_solar_profile,
     normalize_rgbw,
 )
@@ -200,7 +202,7 @@ def calculate_target(
         now,
     )
     day = _clamp(float(controls.get(CONTROL_DAY_BRIGHTNESS, DEFAULT_DAY_BRIGHTNESS)), 1, 100)
-    night = _clamp(float(controls.get(CONTROL_NIGHT_BRIGHTNESS, DEFAULT_NIGHT_BRIGHTNESS)), 0, 30)
+    night = _clamp(float(controls.get(CONTROL_NIGHT_BRIGHTNESS, DEFAULT_NIGHT_BRIGHTNESS)), 1, 30)
     solar_profile = calculate_solar_profile(
         minute,
         sunrise_start,
@@ -236,11 +238,25 @@ def calculate_target(
 
     cloudiness = _weather_cloudiness(hass, settings.get(CONF_WEATHER_ENTITY))
     cloud_strength = _clamp(float(controls.get(CONTROL_CLOUD_STRENGTH, DEFAULT_CLOUD_STRENGTH)) / 100, 0, 1)
-    weather_factor = 1 if phase == "night" else _clamp(1 - (cloudiness * 0.2), 0.5, 1)
     wave = (sin((minute / 1440) * tau * 8) + 1) / 2
-    cloud_factor = 1 if phase == "night" else _clamp(1 - (cloudiness * cloud_strength * wave * 0.25), 0.4, 1)
-
-    brightness = int(round(_clamp(base_pct * price_factor * weather_factor * cloud_factor, 0, 100)))
+    moonlight_target, moon_phase_factor, moon_cloud_factor = calculate_moonlight_target(
+        night,
+        moon_phase,
+        cloudiness,
+        cloud_strength,
+        wave,
+    )
+    if phase == "night":
+        weather_factor = 1
+        cloud_factor = moon_cloud_factor
+        brightness = max(
+            int(MIN_MOONLIGHT_BRIGHTNESS_PCT),
+            int(round(moonlight_target)),
+        )
+    else:
+        weather_factor = _clamp(1 - (cloudiness * 0.2), 0.5, 1)
+        cloud_factor = _clamp(1 - (cloudiness * cloud_strength * wave * 0.25), 0.4, 1)
+        brightness = int(round(_clamp(base_pct * price_factor * weather_factor * cloud_factor, 0, 100)))
     rgbw = solar_profile.rgbw
 
     status = {
@@ -267,6 +283,12 @@ def calculate_target(
         "moon_phase": moon_phase,
         "moon_phase_label": moon_phase_label,
         "moon_phase_icon": moon_phase_icon,
+        "moon_phase_factor": round(moon_phase_factor, 3),
+        "moon_phase_brightness_pct": int(round(moon_phase_factor * 100)),
+        "moon_cloud_factor": round(moon_cloud_factor, 3),
+        "moon_cloud_dimming_pct": int(round((1 - moon_cloud_factor) * 100)),
+        "moonlight_target_pct": brightness if phase == "night" else "-",
+        "moonlight_continuous": True,
         "day_brightness_pct": round(day, 1),
         "night_brightness_pct": round(night, 1),
         "base_pct": round(base_pct, 1),
@@ -295,6 +317,7 @@ def calculate_target(
         if settings.get(CONF_WEATHER_ENTITY) and hass.states.get(settings.get(CONF_WEATHER_ENTITY))
         else "-",
         "cloudiness_pct": int(round(cloudiness * 100)),
+        "cloud_strength_pct": int(round(cloud_strength * 100)),
         "weather_factor": round(weather_factor, 3),
         "cloud_factor": round(cloud_factor, 3),
         "updated": now.strftime("%Y-%m-%d %H:%M:%S"),

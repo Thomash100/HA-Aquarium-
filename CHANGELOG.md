@@ -1,5 +1,16 @@
 # Aenderungsprotokoll
 
+## V260523.018_BETA.00
+
+Dauerhaftes, mondphasen- und wolkenabhaengiges Mondlicht ergaenzt.
+
+- Haelt das RGBW-Mondlicht waehrend der gesamten Nacht mit mindestens einem Prozent eingeschaltet.
+- Verwendet die eingestellte Nachtlicht-Helligkeit als Vollmond-Obergrenze und reduziert sie fuer Sichel-, Viertel- und Neumondphasen.
+- Dimmt das Mondlicht zusaetzlich sanft anhand der realen Bewoelkung und der eingestellten Wolkenstaerke.
+- Zeigt effektives Mondlicht, Mondphasenfaktor und Wolkenabschlag in der Simulator-Karte.
+- Dokumentiert den Steuerungskonflikt, wenn die alte Blueprint-Automation parallel zur nativen Integration aktiv bleibt.
+- Erhoeht die Home-Assistant-Manifest-Version auf `26.5.23-beta.18`.
+
 ## V260523.017_BETA.00
 
 Sonnen-/Mondbahn und einstellbare RGBW-Uebergangsfarben ergaenzt.

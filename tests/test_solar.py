@@ -71,6 +71,35 @@ class SolarProfileTests(unittest.TestCase):
         self.assertEqual(0, night.rgbw[3])
         self.assertEqual(2, night.base_pct)
 
+    def test_moon_phase_controls_continuous_night_brightness(self) -> None:
+        new_moon, new_factor, _ = SOLAR.calculate_moonlight_target(
+            7, "new_moon", 0, 1, 1
+        )
+        full_moon, full_factor, _ = SOLAR.calculate_moonlight_target(
+            7, "full_moon", 0, 1, 1
+        )
+
+        self.assertEqual(0.25, new_factor)
+        self.assertEqual(1.0, full_factor)
+        self.assertGreaterEqual(new_moon, SOLAR.MIN_MOONLIGHT_BRIGHTNESS_PCT)
+        self.assertGreater(full_moon, new_moon)
+
+    def test_clouds_dim_moonlight_without_switching_it_off(self) -> None:
+        clear, _, clear_factor = SOLAR.calculate_moonlight_target(
+            7, "full_moon", 0, 1, 1
+        )
+        cloudy, _, cloudy_factor = SOLAR.calculate_moonlight_target(
+            7, "full_moon", 1, 1, 1
+        )
+        new_moon_cloudy, _, _ = SOLAR.calculate_moonlight_target(
+            1, "new_moon", 1, 1, 1
+        )
+
+        self.assertEqual(1.0, clear_factor)
+        self.assertLess(cloudy_factor, clear_factor)
+        self.assertLess(cloudy, clear)
+        self.assertEqual(SOLAR.MIN_MOONLIGHT_BRIGHTNESS_PCT, new_moon_cloudy)
+
     def test_colour_stops_pass_through_orange_gold_and_warm_white(self) -> None:
         self.assertEqual(
             SOLAR.ORANGE_RGBW,
