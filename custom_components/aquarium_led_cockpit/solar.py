@@ -13,6 +13,19 @@ GOLD_RGBW = (255, 135, 20, 10)
 WARM_WHITE_RGBW = (255, 190, 100, 140)
 DAYLIGHT_RGBW = (190, 220, 255, 255)
 MOONLIGHT_RGBW = (0, 10, 90, 0)
+MIN_MOONLIGHT_BRIGHTNESS_PCT = 1.0
+MOON_PHASE_LIGHT_FACTORS = {
+    "new_moon": 0.25,
+    "waxing_crescent": 0.45,
+    "first_quarter": 0.65,
+    "waxing_gibbous": 0.85,
+    "full_moon": 1.0,
+    "waning_gibbous": 0.85,
+    "last_quarter": 0.65,
+    "waning_crescent": 0.45,
+}
+DEFAULT_MOON_PHASE_LIGHT_FACTOR = 0.6
+
 
 @dataclass(frozen=True)
 class SolarProfile:
@@ -50,6 +63,44 @@ def normalize_rgbw(
         return tuple(int(round(_clamp(float(channel), 0, 255))) for channel in value)
     except (TypeError, ValueError):
         return fallback
+
+
+def moon_phase_light_factor(moon_phase: object) -> float:
+    """Return the visible moonlight share for a Home Assistant moon phase."""
+    return MOON_PHASE_LIGHT_FACTORS.get(
+        str(moon_phase),
+        DEFAULT_MOON_PHASE_LIGHT_FACTOR,
+    )
+
+
+def calculate_moonlight_target(
+    night_brightness_pct: float,
+    moon_phase: object,
+    cloudiness: float,
+    cloud_strength: float,
+    cloud_wave: float,
+) -> tuple[float, float, float]:
+    """Return continuous moonlight brightness plus moon and cloud factors.
+
+    The configured night brightness is the full-moon ceiling. Clouds reduce
+    it smoothly, while the one-percent floor keeps the RGBW moonlight on for
+    the whole night, including new moon and dense cloud cover.
+    """
+    configured = _clamp(float(night_brightness_pct), 1, 30)
+    phase_factor = moon_phase_light_factor(moon_phase)
+    cloud_amount = _clamp(float(cloudiness), 0, 1)
+    strength = _clamp(float(cloud_strength), 0, 1)
+    wave = _clamp(float(cloud_wave), 0, 1)
+    cloud_factor = _clamp(
+        1 - (cloud_amount * strength * (0.25 + (0.75 * wave)) * 0.55),
+        0.35,
+        1,
+    )
+    target = max(
+        MIN_MOONLIGHT_BRIGHTNESS_PCT,
+        configured * phase_factor * cloud_factor,
+    )
+    return target, phase_factor, cloud_factor
 
 
 def _tinted_color(

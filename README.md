@@ -2,9 +2,9 @@
 
 Aquarium LED Cockpit ist eine Home-Assistant-Custom-Integration fuer eine dynamische Aquarium-Beleuchtung mit strompreisabhaengiger Dimmung, wetterbasierter Wolkensimulation, Sonnenaufgangs-/Sonnenuntergangsphasen und Lovelace-Simulator-Karte.
 
-Veroeffentlichungskennzeichen: `V260523.017_BETA.00`
+Veroeffentlichungskennzeichen: `V260523.018_BETA.00`
 
-Home-Assistant-Manifest-Version: `26.5.23-beta.17`
+Home-Assistant-Manifest-Version: `26.5.23-beta.18`
 
 [![Home Assistant oeffnen und dieses Repository in HACS anzeigen.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Thomash100&repository=HA-Aquarium-&category=integration)
 ![HACS Custom](https://img.shields.io/badge/HACS-Custom-orange.svg)
@@ -38,7 +38,8 @@ Die Integration verwandelt deine Aquarium-Beleuchtung in einen dynamischen Tages
 - Dienste mit Aquarium-Auswahl, damit Status und Ressourcen gezielt einem Aquarium zugeordnet werden
 - Echter RGBW-Sonnenverlauf aus `sun.sun`: morgens 60 Minuten Tiefrot ueber Orange, Gold und Warmweiss zu Tagesweiss, abends 90 Minuten exakt rueckwaerts bis zum Sonnenuntergang
 - Getrennt einstellbare RGBW-Endfarben fuer Sonnenaufgang und Sonnenuntergang direkt in der Simulator-Karte
-- Stark reduziertes blaues Mondlicht nach Sonnenuntergang ohne Weisskanal und mit der vorhandenen Nachtlicht-Helligkeit
+- Durchgaengiges blaues Mondlicht nach Sonnenuntergang ohne Weisskanal; die eingestellte Nachtlicht-Helligkeit bildet die Vollmond-Obergrenze
+- Mondphasenabhaengige Nachthelligkeit mit sanfter Wolkensimulation und mindestens einem Prozent Licht statt Ein/Aus-Schalten
 - Sonnenbahn mit echten Auf-/Untergangszeiten und realer Mondphase aus `sensor.moon_phase`
 - Wolkensimulation tagsueber mit wetterabhaengiger Dimmung
 - Simulationsmodus, der den Cockpit-Status aktualisiert, ohne Lichtbefehle zu senden
@@ -92,6 +93,8 @@ Die alten YAML-Dashboard-Snippets und der Blueprint wurden entfernt, weil die na
 | Simulator-Karte | `aquarium-led-simulator-card.js` | Lovelace-Custom-Card mit Horizont, Tageskurve, Zielhelligkeit und Teststeuerung |
 
 Fuer die Simulator-Karte muss die Lovelace-Ressource `/local/aquarium_led_cockpit/aquarium-led-simulator-card.js` hinzugefuegt werden.
+
+> Die native Integration darf nicht gemeinsam mit der alten Blueprint-Automation dieselben Leuchten steuern. Deaktiviere die Blueprint-Automation nach der Migration, damit sich Lichtbefehle und Uebergangszeiten nicht ueberlagern.
 
 ## Entitaeten und Dienste
 

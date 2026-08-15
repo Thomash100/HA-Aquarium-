@@ -55,7 +55,7 @@ NUMBERS = (
         CONTROL_NIGHT_BRIGHTNESS,
         "Nachtlicht",
         "mdi:weather-night",
-        0,
+        1,
         30,
         1,
         PERCENTAGE,

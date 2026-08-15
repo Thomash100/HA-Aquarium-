@@ -69,6 +69,14 @@ class FrontendResourceTests(unittest.TestCase):
         self.assertIn("Pause: Nacht", source)
         self.assertIn("Pause: Speicher voll", source)
 
+    def test_continuous_moonlight_factors_are_visible(self) -> None:
+        source = RESOURCE.read_text(encoding="utf-8")
+
+        self.assertIn("moon_phase_brightness_pct", source)
+        self.assertIn("moon_cloud_dimming_pct", source)
+        self.assertIn('this.metric("Mondlicht"', source)
+        self.assertIn('this.metric("Mond-Wolken"', source)
+
 
 if __name__ == "__main__":
     unittest.main()
