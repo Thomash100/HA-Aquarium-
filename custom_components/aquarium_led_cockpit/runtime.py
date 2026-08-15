@@ -21,15 +21,14 @@ from .const import (
     CONTROL_NIGHT_BRIGHTNESS,
     CONTROL_PRICE_DIMMING,
     CONTROL_SIMULATION,
-    CONTROL_SIMULATION_STEP,
     CONTROL_SIMULATION_TIME,
+    CONTROL_TIME_LAPSE_DURATION,
     CONTROL_TIME_LAPSE,
     DATA_RUNTIMES,
     DEFAULT_CLOUD_STRENGTH,
     DEFAULT_DAY_BRIGHTNESS,
     DEFAULT_NIGHT_BRIGHTNESS,
     DEFAULT_PRICE_DIMMING,
-    DEFAULT_SIMULATION_STEP,
     DEFAULT_SIMULATION_TIME,
     DEFAULT_TRANSITION_SECONDS,
     DOMAIN,
@@ -37,6 +36,11 @@ from .const import (
     STORAGE_VERSION,
 )
 from .engine import calculate_target
+from .time_lapse import (
+    DEFAULT_TIME_LAPSE_DURATION_MINUTES,
+    advance_time_lapse_position,
+    normalize_time_lapse_duration,
+)
 
 DEFAULT_CONTROLS = {
     CONTROL_ENABLED: False,
@@ -47,7 +51,7 @@ DEFAULT_CONTROLS = {
     CONTROL_PRICE_DIMMING: DEFAULT_PRICE_DIMMING,
     CONTROL_CLOUD_STRENGTH: DEFAULT_CLOUD_STRENGTH,
     CONTROL_SIMULATION_TIME: DEFAULT_SIMULATION_TIME,
-    CONTROL_SIMULATION_STEP: DEFAULT_SIMULATION_STEP,
+    CONTROL_TIME_LAPSE_DURATION: DEFAULT_TIME_LAPSE_DURATION_MINUTES,
 }
 
 
@@ -68,6 +72,9 @@ class AquariumLedCockpitRuntime:
         )
         self._settings: dict[str, Any] = {}
         self._unsub_interval: Callable[[], None] | None = None
+        self._unsub_time_lapse_interval: Callable[[], None] | None = None
+        self._time_lapse_position: float | None = None
+        self._time_lapse_last_tick: float | None = None
 
     @property
     def status(self) -> dict[str, Any]:
@@ -87,16 +94,39 @@ class AquariumLedCockpitRuntime:
             stored_controls = stored.get("controls") if "controls" in stored else None
             if isinstance(stored_controls, dict):
                 self._controls.update(stored_controls)
+        self._controls[CONTROL_TIME_LAPSE_DURATION] = normalize_time_lapse_duration(
+            self._controls.get(CONTROL_TIME_LAPSE_DURATION)
+        )
 
-    async def async_set_status(self, status: dict[str, Any]) -> None:
+    async def async_set_status(
+        self,
+        status: dict[str, Any],
+        *,
+        persist: bool = True,
+    ) -> None:
         """Persist the latest dashboard status."""
         self._status = dict(status)
-        await self._async_save()
+        if persist:
+            await self._async_save()
         for listener in list(self._listeners):
             listener()
 
     async def async_set_control(self, key: str, value: Any) -> None:
         """Persist and apply a UI control value."""
+        if key == CONTROL_TIME_LAPSE_DURATION:
+            value = normalize_time_lapse_duration(value)
+        if key == CONTROL_SIMULATION_TIME and self._controls.get(CONTROL_TIME_LAPSE):
+            self._time_lapse_position = float(value)
+            self._time_lapse_last_tick = self.hass.loop.time()
+        if key == CONTROL_TIME_LAPSE:
+            if bool(value) and not self._controls.get(CONTROL_TIME_LAPSE):
+                self._time_lapse_position = float(
+                    self._controls.get(CONTROL_SIMULATION_TIME, DEFAULT_SIMULATION_TIME)
+                )
+                self._time_lapse_last_tick = self.hass.loop.time()
+            elif not bool(value):
+                self._time_lapse_position = None
+                self._time_lapse_last_tick = None
         self._controls[key] = value
         await self.async_update_target(apply_lights=True)
 
@@ -111,25 +141,61 @@ class AquariumLedCockpitRuntime:
                 self._async_interval_update,
                 timedelta(minutes=1),
             )
+        if self._unsub_time_lapse_interval is None:
+            self._unsub_time_lapse_interval = async_track_time_interval(
+                self.hass,
+                self._async_time_lapse_update,
+                timedelta(seconds=1),
+            )
 
     async def async_unload(self) -> None:
         """Stop runtime callbacks."""
         if self._unsub_interval is not None:
             self._unsub_interval()
             self._unsub_interval = None
+        if self._unsub_time_lapse_interval is not None:
+            self._unsub_time_lapse_interval()
+            self._unsub_time_lapse_interval = None
+        self._time_lapse_position = None
+        self._time_lapse_last_tick = None
 
     async def _async_interval_update(self, _now) -> None:
-        """Update target and advance time-lapse state."""
+        """Update the live target once per minute."""
         if self._controls.get(CONTROL_TIME_LAPSE):
-            current = int(self._controls.get(CONTROL_SIMULATION_TIME, DEFAULT_SIMULATION_TIME))
-            step = int(self._controls.get(CONTROL_SIMULATION_STEP, DEFAULT_SIMULATION_STEP))
-            self._controls[CONTROL_SIMULATION_TIME] = (current + step) % 1440
+            return
         await self.async_update_target(apply_lights=True)
 
-    async def async_update_target(self, *, apply_lights: bool) -> None:
+    async def _async_time_lapse_update(self, _now) -> None:
+        """Advance a complete simulated day in the configured 1-10 minutes."""
+        if not self._controls.get(CONTROL_TIME_LAPSE):
+            return
+
+        now_tick = self.hass.loop.time()
+        if self._time_lapse_position is None:
+            self._time_lapse_position = float(
+                self._controls.get(CONTROL_SIMULATION_TIME, DEFAULT_SIMULATION_TIME)
+            )
+        if self._time_lapse_last_tick is None:
+            self._time_lapse_last_tick = now_tick
+        elapsed_seconds = now_tick - self._time_lapse_last_tick
+        self._time_lapse_last_tick = now_tick
+        self._time_lapse_position = advance_time_lapse_position(
+            self._time_lapse_position,
+            elapsed_seconds,
+            self._controls.get(CONTROL_TIME_LAPSE_DURATION),
+        )
+        self._controls[CONTROL_SIMULATION_TIME] = int(self._time_lapse_position)
+        await self.async_update_target(apply_lights=True, persist=False)
+
+    async def async_update_target(
+        self,
+        *,
+        apply_lights: bool,
+        persist: bool = True,
+    ) -> None:
         """Calculate the target and optionally apply it to configured lights."""
         target = calculate_target(self.hass, self._settings, self._controls)
-        await self.async_set_status(target.status)
+        await self.async_set_status(target.status, persist=persist)
 
         if not apply_lights:
             return

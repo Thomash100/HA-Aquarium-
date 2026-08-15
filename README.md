@@ -2,9 +2,9 @@
 
 Aquarium LED Cockpit ist eine Home-Assistant-Custom-Integration fuer eine dynamische Aquarium-Beleuchtung mit strompreisabhaengiger Dimmung, wetterbasierter Wolkensimulation, Sonnenaufgangs-/Sonnenuntergangsphasen und Lovelace-Simulator-Karte.
 
-Veroeffentlichungskennzeichen: `V260523.013_BETA.00`
+Veroeffentlichungskennzeichen: `V260523.014_BETA.00`
 
-Home-Assistant-Manifest-Version: `26.5.23-beta.13`
+Home-Assistant-Manifest-Version: `26.5.23-beta.14`
 
 [![Home Assistant oeffnen und dieses Repository in HACS anzeigen.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Thomash100&repository=HA-Aquarium-&category=integration)
 ![HACS Custom](https://img.shields.io/badge/HACS-Custom-orange.svg)
@@ -40,6 +40,7 @@ Die Integration verwandelt deine Aquarium-Beleuchtung in einen dynamischen Tages
 - Stark reduziertes kuehles Mondlicht nach Sonnenuntergang mit der vorhandenen Nachtlicht-Helligkeit
 - Wolkensimulation tagsueber mit wetterabhaengiger Dimmung
 - Simulationsmodus, der den Cockpit-Status aktualisiert, ohne Lichtbefehle zu senden
+- Konfigurierbarer 24-Stunden-Zeitraffer: ein kompletter Tag in einer bis zehn realen Minuten
 - Tibber-Unterstuetzung und generische Preis-Entitaeten fuer andere Anbieter
 - Adaptive strompreisabhaengige Dimmung: bis zum Tagesdurchschnitt ungedimmt, danach linear bis zur eingestellten maximalen Dimmung am Tageshoechstpreis
 - Growatt-/NOAH-Speicherprioritaet: Bei vollem Speicher wird die Strompreis-Dimmung ignoriert
@@ -101,7 +102,7 @@ Fuer die Simulator-Karte muss die Lovelace-Ressource `/local/aquarium_led_cockpi
 | `switch.<aquarium>_simulation` | Berechnet den Status, ohne Lichtbefehle zu senden |
 | `switch.<aquarium>_zeitraffer` | Fuehrt eine sichere Zeitraffer-Simulation ohne Lichtbefehle aus |
 | `number.<aquarium>_simulationszeit` | Simulierte Minute des Tages, wobei `360` fuer `06:00` steht |
-| `number.<aquarium>_zeitraffer_schritt` | Minuten, die pro echtem Minuten-Takt zur Simulationszeit addiert werden |
+| `number.<aquarium>_zeitraffer_schritt` | Gesamtdauer eines simulierten 24-Stunden-Tages, einstellbar von 1 bis 10 Minuten |
 
 ### Strompreis-Dimmung
 
@@ -113,7 +114,7 @@ Die Simulator-Karte laedt die letzten 12 Stunden Strompreis und 24 Stunden Batte
 
 ### Zeitraffer-Simulation
 
-Aktiviere den Zeitraffer-Schalter, um einen ganzen Tag zu testen, ohne echte Lichter zu veraendern. Die Integration nutzt die Simulationszeit als Uhr, schreibt Phase, Helligkeit und RGBW-Zielwerte in den Statussensor des jeweiligen Aquariums und verschiebt die simulierte Zeit einmal pro echter Minute um den eingestellten Zeitraffer-Schritt.
+Aktiviere den Zeitraffer-Schalter, um einen ganzen Tag zu testen, ohne echte Lichter zu veraendern. Die Integration nutzt die Simulationszeit als Uhr und schreibt Phase, Helligkeit sowie RGBW-Zielwerte sekundenweise in den Statussensor. Der komplette 24-Stunden-Tag wird in der eingestellten Gesamtdauer von 1 bis 10 Minuten durchlaufen und anschliessend fortlaufend wiederholt, bis der Zeitraffer gestoppt wird.
 
 ## Veroeffentlichungshistorie
 

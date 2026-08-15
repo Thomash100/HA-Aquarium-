@@ -69,6 +69,12 @@ class AquariumLedSimulatorCard extends HTMLElement {
     const whiteAlpha = Math.max(0.08, Math.min(0.85, (rgbw[3] || 0) / 255));
     const priceEntity = this.config.price_entity || attr.price_entity || "";
     const batteryEntity = this.config.battery_entity || attr.battery_soc_entity || "";
+    const timeLapseDurationEntity = this.config.time_lapse_duration_number || "";
+    const timeLapseDuration = Number(
+      this._hass.states[timeLapseDurationEntity]?.state
+      ?? attr.time_lapse_duration_minutes
+      ?? 1,
+    );
 
     this.innerHTML = `
       <ha-card>
@@ -122,6 +128,7 @@ class AquariumLedSimulatorCard extends HTMLElement {
             ${this.controlButton("simulation_switch", "Simulation ein", "turn_on")}
             ${this.controlButton("time_lapse_switch", "Zeitraffer starten", "turn_on")}
             ${this.controlButton("time_lapse_switch", "Zeitraffer stoppen", "turn_off")}
+            ${this.timeLapseDurationControl(timeLapseDurationEntity, timeLapseDuration)}
           </div>
         </div>
       </ha-card>
@@ -131,6 +138,15 @@ class AquariumLedSimulatorCard extends HTMLElement {
       button.addEventListener("click", () => {
         this._hass.callService(button.dataset.domain, button.dataset.service, {
           entity_id: button.dataset.entity,
+        });
+      });
+    });
+
+    this.querySelectorAll("[data-time-lapse-duration]").forEach((input) => {
+      input.addEventListener("change", () => {
+        this._hass.callService("number", "set_value", {
+          entity_id: input.dataset.timeLapseDuration,
+          value: Number(input.value),
         });
       });
     });
@@ -160,6 +176,10 @@ class AquariumLedSimulatorCard extends HTMLElement {
         .alc-metric-value { font-size: 15px; font-weight: 600; line-height: 1.25; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .alc-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
         .alc-controls button { align-items: center; background: var(--primary-color); border: 0; border-radius: 6px; color: var(--text-primary-color); cursor: pointer; display: inline-flex; font: inherit; font-size: 13px; min-height: 36px; padding: 0 12px; }
+        .alc-duration { background: var(--secondary-background-color); border-radius: 8px; flex: 1 1 220px; min-width: 0; padding: 9px 11px; }
+        .alc-duration-head { align-items: center; display: flex; font-size: 12px; gap: 12px; justify-content: space-between; }
+        .alc-duration-head strong { color: var(--primary-text-color); white-space: nowrap; }
+        .alc-duration input { accent-color: var(--primary-color); cursor: pointer; margin: 8px 0 0; width: 100%; }
         .alc-timeline-section { border-top: 1px solid var(--divider-color); margin-top: 20px; padding-top: 18px; }
         .alc-timeline-title { font-size: 16px; font-weight: 650; }
         .alc-timeline-sub { color: var(--secondary-text-color); font-size: 12px; margin-top: 3px; }
@@ -634,6 +654,30 @@ class AquariumLedSimulatorCard extends HTMLElement {
       return "";
     }
     return `<button data-domain="switch" data-service="${service}" data-entity="${this.escape(entity)}">${this.escape(label)}</button>`;
+  }
+
+  timeLapseDurationControl(entity, value) {
+    if (!entity) {
+      return "";
+    }
+    const duration = Math.max(1, Math.min(10, Math.round(Number(value) || 1)));
+    return `
+      <label class="alc-duration">
+        <span class="alc-duration-head">
+          <span>24-Stunden-Dauer</span>
+          <strong>${duration} Min.</strong>
+        </span>
+        <input
+          type="range"
+          min="1"
+          max="10"
+          step="1"
+          value="${duration}"
+          data-time-lapse-duration="${this.escape(entity)}"
+          aria-label="Dauer des 24-Stunden-Zeitraffers in Minuten"
+        />
+      </label>
+    `;
   }
 
   buildCurve(sunrise, sunset, nightPct, dayPct, sunriseDuration, sunsetDuration) {
