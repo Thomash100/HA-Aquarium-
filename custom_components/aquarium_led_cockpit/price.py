@@ -100,3 +100,10 @@ def calculate_price_adjustment(
         "ceiling": ceiling,
         "strategy": strategy,
     }
+
+
+def is_battery_full(soc: float | None, threshold: float) -> bool:
+    """Return whether a storage battery has reached its full threshold."""
+    if soc is None:
+        return False
+    return soc >= _clamp(float(threshold), 50, 100)

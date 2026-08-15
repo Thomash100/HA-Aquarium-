@@ -9,16 +9,20 @@ from homeassistant.helpers import selector
 
 from .const import (
     CONF_AUTO_INSTALL,
+    CONF_BATTERY_FULL_THRESHOLD,
+    CONF_BATTERY_SOC_ENTITY,
     CONF_EXPORT_FRONTEND_RESOURCES,
     CONF_NAME,
     CONF_OVERWRITE_EXISTING,
     CONF_PRICE_ENTITY,
     CONF_RGBW_LIGHTS,
     CONF_SUN_ENTITY,
+    CONF_SOLAR_POWER_ENTITY,
     CONF_TRANSITION_SECONDS,
     CONF_WEATHER_ENTITY,
     CONF_WHITE_LIGHTS,
     DEFAULT_AUTO_INSTALL,
+    DEFAULT_BATTERY_FULL_THRESHOLD,
     DEFAULT_EXPORT_FRONTEND_RESOURCES,
     DEFAULT_OVERWRITE_EXISTING,
     DEFAULT_SUN_ENTITY,
@@ -58,6 +62,29 @@ def _build_schema(defaults: dict) -> vol.Schema:
                 CONF_PRICE_ENTITY,
                 default=defaults.get(CONF_PRICE_ENTITY, ""),
             ): selector.EntitySelector(selector.EntitySelectorConfig(domain="sensor")),
+            vol.Optional(
+                CONF_BATTERY_SOC_ENTITY,
+                default=defaults.get(CONF_BATTERY_SOC_ENTITY, ""),
+            ): selector.EntitySelector(selector.EntitySelectorConfig(domain="sensor")),
+            vol.Optional(
+                CONF_SOLAR_POWER_ENTITY,
+                default=defaults.get(CONF_SOLAR_POWER_ENTITY, ""),
+            ): selector.EntitySelector(selector.EntitySelectorConfig(domain="sensor")),
+            vol.Required(
+                CONF_BATTERY_FULL_THRESHOLD,
+                default=defaults.get(
+                    CONF_BATTERY_FULL_THRESHOLD,
+                    DEFAULT_BATTERY_FULL_THRESHOLD,
+                ),
+            ): selector.NumberSelector(
+                selector.NumberSelectorConfig(
+                    min=50,
+                    max=100,
+                    step=1,
+                    mode=selector.NumberSelectorMode.SLIDER,
+                    unit_of_measurement="%",
+                )
+            ),
             vol.Required(
                 CONF_TRANSITION_SECONDS,
                 default=defaults.get(CONF_TRANSITION_SECONDS, DEFAULT_TRANSITION_SECONDS),
