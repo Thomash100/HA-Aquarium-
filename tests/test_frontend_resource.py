@@ -44,6 +44,14 @@ class FrontendResourceTests(unittest.TestCase):
         self.assertIn('max="10"', source)
         self.assertIn('callService("number", "set_value"', source)
 
+    def test_physical_preview_requires_confirmation(self) -> None:
+        source = RESOURCE.read_text(encoding="utf-8")
+
+        self.assertIn("aquarium_preview_switch", source)
+        self.assertIn("Am Aquarium zeigen", source)
+        self.assertIn("window.confirm", source)
+        self.assertIn("stellt den vorherigen Lichtzustand wieder her", source)
+
 
 if __name__ == "__main__":
     unittest.main()

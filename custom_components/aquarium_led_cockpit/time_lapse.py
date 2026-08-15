@@ -34,3 +34,15 @@ def advance_time_lapse_position(
         float(position_minutes)
         + (max(0.0, float(elapsed_seconds)) * simulated_minutes_per_second)
     ) % MINUTES_PER_DAY
+
+
+def is_time_lapse_cycle_complete(
+    elapsed_seconds: Any,
+    duration_minutes: Any,
+) -> bool:
+    """Return whether one complete accelerated day has elapsed."""
+    try:
+        elapsed = max(0.0, float(elapsed_seconds))
+    except (TypeError, ValueError):
+        elapsed = 0.0
+    return elapsed >= normalize_time_lapse_duration(duration_minutes) * 60

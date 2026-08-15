@@ -1,5 +1,17 @@
 # Aenderungsprotokoll
 
+## V260523.015_BETA.00
+
+Einmalige Zeitraffer-Vorschau auf den echten Aquarium-Leuchten ergaenzt.
+
+- Fuegt einen getrennten Schalter `Zeitraffer am Aquarium` fuer die bewusste physische Vorschau hinzu.
+- Startet jeden physischen Test bei Mitternacht und beendet ihn automatisch nach genau einem simulierten Tag.
+- Sichert vor dem Start Ein/Aus-Zustand, Helligkeit und Farbe aller konfigurierten Leuchten.
+- Stellt den vorherigen Lichtzustand nach Ablauf, manuellem Stopp oder geordnetem Entladen der Integration wieder her.
+- Begrenzt Uebergaenge im beschleunigten Lauf auf eine Sekunde und verlangt in der Simulator-Karte eine Startbestaetigung.
+- Laesst die normale Dashboard-Simulation weiterhin vollstaendig ohne Lichtbefehle laufen.
+- Erhoeht die Home-Assistant-Manifest-Version auf `26.5.23-beta.15`.
+
 ## V260523.014_BETA.00
 
 Konfigurierbaren Ein- bis Zehn-Minuten-Tageslauf fuer die Simulation umgesetzt.

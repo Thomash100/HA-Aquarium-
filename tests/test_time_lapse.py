@@ -47,6 +47,11 @@ class TimeLapseTests(unittest.TestCase):
 
         self.assertEqual(14, position)
 
+    def test_physical_preview_stops_after_exactly_one_cycle(self) -> None:
+        self.assertFalse(TIME_LAPSE.is_time_lapse_cycle_complete(59.99, 1))
+        self.assertTrue(TIME_LAPSE.is_time_lapse_cycle_complete(60, 1))
+        self.assertTrue(TIME_LAPSE.is_time_lapse_cycle_complete(600, 10))
+
 
 if __name__ == "__main__":
     unittest.main()
