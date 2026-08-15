@@ -86,7 +86,7 @@ class AquariumLedSimulatorCard extends HTMLElement {
             ${this.metric("Basis", `${base}%`)}
             ${this.metric("Weiss", `${white}%`)}
             ${this.metric("Preis", this.formatValue(attr.price))}
-            ${this.metric("Preisfaktor", this.formatFactor(attr.price_factor))}
+            ${this.metric("Preis-Dimmung", this.formatPercent(attr.price_dimming_pct))}
             ${this.metric("Wetter", this.formatValue(attr.weather))}
             ${this.metric("Wolken", `${attr.cloudiness_pct ?? "-"}%`)}
           </div>
@@ -228,11 +228,11 @@ class AquariumLedSimulatorCard extends HTMLElement {
     return labels[value] || value || "Unbekannt";
   }
 
-  formatFactor(value) {
+  formatPercent(value) {
     if (value === undefined || value === null || value === "-") {
       return "-";
     }
-    return `${Math.round(Number(value) * 100)}%`;
+    return `${Math.round(Number(value))}%`;
   }
 
   formatValue(value) {

@@ -2,9 +2,9 @@
 
 Aquarium LED Cockpit ist eine Home-Assistant-Custom-Integration fuer eine dynamische Aquarium-Beleuchtung mit strompreisabhaengiger Dimmung, wetterbasierter Wolkensimulation, Sonnenaufgangs-/Sonnenuntergangsphasen und Lovelace-Simulator-Karte.
 
-Veroeffentlichungskennzeichen: `V260523.008_BETA.00`
+Veroeffentlichungskennzeichen: `V260523.009_BETA.00`
 
-Home-Assistant-Manifest-Version: `26.5.23-beta.8`
+Home-Assistant-Manifest-Version: `26.5.23-beta.9`
 
 [![Home Assistant oeffnen und dieses Repository in HACS anzeigen.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Thomash100&repository=HA-Aquarium-&category=integration)
 ![HACS Custom](https://img.shields.io/badge/HACS-Custom-orange.svg)
@@ -40,7 +40,7 @@ Die Integration verwandelt deine Aquarium-Beleuchtung in einen dynamischen Tages
 - Wolkensimulation tagsueber mit wetterabhaengiger Dimmung
 - Simulationsmodus, der den Cockpit-Status aktualisiert, ohne Lichtbefehle zu senden
 - Tibber-Unterstuetzung und generische Preis-Entitaeten fuer andere Anbieter
-- Strompreisabhaengige Dimmung mit Begrenzung auf guenstige Preisbereiche
+- Adaptive strompreisabhaengige Dimmung: bis zum Tagesdurchschnitt ungedimmt, danach linear bis zur eingestellten maximalen Dimmung am Tageshoechstpreis
 - Live-Dashboard-Entitaet pro Aquarium, zum Beispiel `sensor.aquarium_status`
 - Eigenes lokales Home-Assistant-Branding mit Aquarium-LED-Icon und Logo
 - Lovelace-Simulator-Karte als einzige exportierte Frontend-Ressource
@@ -97,6 +97,10 @@ Fuer die Simulator-Karte muss die Lovelace-Ressource `/local/aquarium_led_cockpi
 | `switch.<aquarium>_zeitraffer` | Fuehrt eine sichere Zeitraffer-Simulation ohne Lichtbefehle aus |
 | `number.<aquarium>_simulationszeit` | Simulierte Minute des Tages, wobei `360` fuer `06:00` steht |
 | `number.<aquarium>_zeitraffer_schritt` | Minuten, die pro echtem Minuten-Takt zur Simulationszeit addiert werden |
+
+### Strompreis-Dimmung
+
+Wenn der Preissensor Tagesdurchschnitt und Tageshoechstpreis bereitstellt, bleibt die Beleuchtung bis zum Durchschnitt ungedimmt. Oberhalb des Durchschnitts steigt die Dimmung linear an und erreicht am Tageshoechstpreis den Wert von `number.<aquarium>_preisdimmung`. Bei 72 Prozent Preisdimmung bleiben am Tageshoechstpreis somit 28 Prozent der normalen Helligkeit uebrig. Fuer generische Preissensoren nutzt die Integration alternativ die Tagesrangfolge oder ein zur Einheit passendes Preisfenster.
 
 ### Zeitraffer-Simulation
 

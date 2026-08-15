@@ -27,6 +27,7 @@ from .const import (
     DEFAULT_SIMULATION_TIME,
     DEFAULT_SUN_ENTITY,
 )
+from .price import calculate_price_adjustment
 
 
 @dataclass(frozen=True)
@@ -54,16 +55,16 @@ def _minutes_to_clock(minutes: int) -> str:
     return f"{wrapped // 60:02d}:{wrapped % 60:02d}"
 
 
-def _number_state(hass: HomeAssistant, entity_id: str | None) -> float | None:
+def _price_state(hass: HomeAssistant, entity_id: str | None) -> tuple[float | None, dict[str, Any]]:
     if not entity_id:
-        return None
+        return None, {}
     state = hass.states.get(entity_id)
     if state is None:
-        return None
+        return None, {}
     try:
-        return float(state.state)
+        return float(state.state), dict(state.attributes)
     except (TypeError, ValueError):
-        return None
+        return None, dict(state.attributes)
 
 
 def _weather_cloudiness(hass: HomeAssistant, entity_id: str | None) -> float:
@@ -173,11 +174,13 @@ def calculate_target(
         base_pct = night
         color_from = color_to = (15, 30, 90, 0)
 
-    price_value = _number_state(hass, settings.get(CONF_PRICE_ENTITY))
-    price_factor = 1.0
-    if price_value is not None and phase != "night":
-        dim_strength = _clamp(float(controls.get(CONTROL_PRICE_DIMMING, DEFAULT_PRICE_DIMMING)) / 100, 0, 0.9)
-        price_factor = _clamp(1 - (price_value * dim_strength), 0.55, 1)
+    price_value, price_attributes = _price_state(hass, settings.get(CONF_PRICE_ENTITY))
+    price_adjustment = calculate_price_adjustment(
+        price_value,
+        price_attributes,
+        float(controls.get(CONTROL_PRICE_DIMMING, DEFAULT_PRICE_DIMMING)),
+    )
+    price_factor = 1.0 if phase == "night" else price_adjustment["factor"]
 
     cloudiness = _weather_cloudiness(hass, settings.get(CONF_WEATHER_ENTITY))
     cloud_strength = _clamp(float(controls.get(CONTROL_CLOUD_STRENGTH, DEFAULT_CLOUD_STRENGTH)) / 100, 0, 1)
@@ -204,6 +207,11 @@ def calculate_target(
         "rgbw": list(rgbw),
         "price": price_value if price_value is not None else "-",
         "price_factor": round(price_factor, 3),
+        "price_load_pct": int(round(price_adjustment["load"] * 100)),
+        "price_dimming_pct": int(round((1 - price_factor) * 100)),
+        "price_reference": price_adjustment["reference"] if price_adjustment["reference"] is not None else "-",
+        "price_ceiling": price_adjustment["ceiling"] if price_adjustment["ceiling"] is not None else "-",
+        "price_strategy": price_adjustment["strategy"],
         "weather": hass.states.get(settings.get(CONF_WEATHER_ENTITY)).state
         if settings.get(CONF_WEATHER_ENTITY) and hass.states.get(settings.get(CONF_WEATHER_ENTITY))
         else "-",
