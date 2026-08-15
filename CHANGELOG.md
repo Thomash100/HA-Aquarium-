@@ -1,5 +1,16 @@
 # Aenderungsprotokoll
 
+## V260523.014_BETA.00
+
+Konfigurierbaren Ein- bis Zehn-Minuten-Tageslauf fuer die Simulation umgesetzt.
+
+- Laesst einen kompletten simulierten 24-Stunden-Tag standardmaessig in einer realen Minute durchlaufen.
+- Erlaubt ueber die bestehende Zeitraffer-Number eine Gesamtdauer von einer bis zehn Minuten.
+- Aktualisiert die Simulation sekundenweise und gleicht Zeitabweichungen ueber eine monotone Laufzeituhr aus.
+- Verhindert waehrend des Zeitraffers weiterhin alle Lichtbefehle und vermeidet sekundenweise Schreibzugriffe auf den Speicher.
+- Ergaenzt einen direkten Dauerregler in der Simulator-Karte und zeigt Geschwindigkeit sowie Dauer im Status.
+- Erhoeht die Home-Assistant-Manifest-Version auf `26.5.23-beta.14`.
+
 ## V260523.013_BETA.00
 
 Realen Sonnenverlauf und reduziertes Mondlicht umgesetzt.

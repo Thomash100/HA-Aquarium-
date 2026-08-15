@@ -32,7 +32,6 @@ DEFAULT_PRICE_DIMMING = 40
 DEFAULT_BATTERY_FULL_THRESHOLD = 95
 DEFAULT_CLOUD_STRENGTH = 45
 DEFAULT_SIMULATION_TIME = 360
-DEFAULT_SIMULATION_STEP = 15
 
 DATA_RUNTIMES = "runtimes"
 DATA_SERVICES_REGISTERED = "services_registered"
@@ -54,4 +53,5 @@ CONTROL_NIGHT_BRIGHTNESS = "night_brightness_pct"
 CONTROL_PRICE_DIMMING = "price_dimming_pct"
 CONTROL_CLOUD_STRENGTH = "cloud_strength_pct"
 CONTROL_SIMULATION_TIME = "simulation_time_minutes"
-CONTROL_SIMULATION_STEP = "simulation_step_minutes"
+# The stored key and entity unique ID stay unchanged for upgrade compatibility.
+CONTROL_TIME_LAPSE_DURATION = "simulation_step_minutes"

@@ -36,6 +36,14 @@ class FrontendResourceTests(unittest.TestCase):
         self.assertIn("const sunsetStart = sunset - sunsetDuration", source)
         self.assertIn('night: "Mondlicht"', source)
 
+    def test_time_lapse_duration_is_adjustable_in_the_card(self) -> None:
+        source = RESOURCE.read_text(encoding="utf-8")
+
+        self.assertIn("time_lapse_duration_number", source)
+        self.assertIn("24-Stunden-Dauer", source)
+        self.assertIn('max="10"', source)
+        self.assertIn('callService("number", "set_value"', source)
+
 
 if __name__ == "__main__":
     unittest.main()

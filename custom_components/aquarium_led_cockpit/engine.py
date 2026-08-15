@@ -22,6 +22,7 @@ from .const import (
     CONTROL_PRICE_DIMMING,
     CONTROL_SIMULATION,
     CONTROL_SIMULATION_TIME,
+    CONTROL_TIME_LAPSE_DURATION,
     CONTROL_TIME_LAPSE,
     DEFAULT_CLOUD_STRENGTH,
     DEFAULT_BATTERY_FULL_THRESHOLD,
@@ -37,6 +38,7 @@ from .solar import (
     SUNSET_DURATION_MINUTES,
     calculate_solar_profile,
 )
+from .time_lapse import MINUTES_PER_DAY, normalize_time_lapse_duration
 
 
 @dataclass(frozen=True)
@@ -156,6 +158,9 @@ def calculate_target(
     now = now or dt_util.now()
     time_lapse = bool(controls.get(CONTROL_TIME_LAPSE, False))
     simulation = bool(controls.get(CONTROL_SIMULATION, False) or time_lapse)
+    time_lapse_duration = normalize_time_lapse_duration(
+        controls.get(CONTROL_TIME_LAPSE_DURATION)
+    )
     minute = (
         _parse_minutes(controls.get(CONTROL_SIMULATION_TIME), DEFAULT_SIMULATION_TIME) % 1440
         if time_lapse
@@ -210,6 +215,11 @@ def calculate_target(
         "time": _minutes_to_clock(minute),
         "time_lapse": time_lapse,
         "simulation": simulation,
+        "time_lapse_duration_minutes": time_lapse_duration,
+        "time_lapse_speed_minutes_per_second": round(
+            MINUTES_PER_DAY / (time_lapse_duration * 60),
+            2,
+        ),
         "sunrise": _minutes_to_clock(sunrise_start),
         "sunrise_duration_minutes": SUNRISE_DURATION_MINUTES,
         "sunrise_end": _minutes_to_clock(sunrise_start + SUNRISE_DURATION_MINUTES),

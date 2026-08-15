@@ -15,11 +15,15 @@ from .const import (
     CONTROL_DAY_BRIGHTNESS,
     CONTROL_NIGHT_BRIGHTNESS,
     CONTROL_PRICE_DIMMING,
-    CONTROL_SIMULATION_STEP,
     CONTROL_SIMULATION_TIME,
+    CONTROL_TIME_LAPSE_DURATION,
     DOMAIN,
 )
 from .runtime import AquariumLedCockpitRuntime, async_get_runtime
+from .time_lapse import (
+    MAX_TIME_LAPSE_DURATION_MINUTES,
+    MIN_TIME_LAPSE_DURATION_MINUTES,
+)
 
 
 @dataclass(frozen=True)
@@ -88,11 +92,11 @@ NUMBERS = (
         NumberMode.BOX,
     ),
     NumberDescription(
-        CONTROL_SIMULATION_STEP,
-        "Zeitraffer-Schritt",
-        "mdi:debug-step-over",
-        1,
-        120,
+        CONTROL_TIME_LAPSE_DURATION,
+        "Zeitraffer-Dauer",
+        "mdi:timer-fast",
+        MIN_TIME_LAPSE_DURATION_MINUTES,
+        MAX_TIME_LAPSE_DURATION_MINUTES,
         1,
         UnitOfTime.MINUTES,
         NumberMode.SLIDER,
