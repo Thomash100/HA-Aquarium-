@@ -1,5 +1,15 @@
 # Aenderungsprotokoll
 
+## V260523.009_BETA.00
+
+Strompreis-Dimmung an das tatsaechliche Tagespreisniveau gekoppelt.
+
+- Dimmt erst oberhalb des Tagesdurchschnitts und danach linear staerker bis zum Tageshoechstpreis.
+- Nutzt die eingestellte Preisdimmung als echte maximale Reduktion statt als schwachen Multiplikator auf den absoluten Preis.
+- Unterstuetzt Tagesrangfolge und einheitenabhaengige Preisfenster als Fallback fuer generische Preissensoren.
+- Zeigt die tatsaechliche Preis-Dimmung direkt in Statussensor und Simulator-Karte.
+- Erhoeht die Home-Assistant-Manifest-Version auf `26.5.23-beta.9`.
+
 ## V260523.008_BETA.00
 
 Nicht mehr benoetigte Ressourcen entfernt.
