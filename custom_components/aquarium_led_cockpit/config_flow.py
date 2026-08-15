@@ -12,6 +12,7 @@ from .const import (
     CONF_BATTERY_FULL_THRESHOLD,
     CONF_BATTERY_SOC_ENTITY,
     CONF_EXPORT_FRONTEND_RESOURCES,
+    CONF_MOON_ENTITY,
     CONF_NAME,
     CONF_OVERWRITE_EXISTING,
     CONF_PRICE_ENTITY,
@@ -24,6 +25,7 @@ from .const import (
     DEFAULT_AUTO_INSTALL,
     DEFAULT_BATTERY_FULL_THRESHOLD,
     DEFAULT_EXPORT_FRONTEND_RESOURCES,
+    DEFAULT_MOON_ENTITY,
     DEFAULT_OVERWRITE_EXISTING,
     DEFAULT_SUN_ENTITY,
     DEFAULT_TRANSITION_SECONDS,
@@ -58,6 +60,10 @@ def _build_schema(defaults: dict) -> vol.Schema:
                 CONF_SUN_ENTITY,
                 default=defaults.get(CONF_SUN_ENTITY, DEFAULT_SUN_ENTITY),
             ): selector.EntitySelector(selector.EntitySelectorConfig(domain="sun")),
+            vol.Optional(
+                CONF_MOON_ENTITY,
+                default=defaults.get(CONF_MOON_ENTITY, DEFAULT_MOON_ENTITY),
+            ): selector.EntitySelector(selector.EntitySelectorConfig(domain="sensor")),
             vol.Optional(
                 CONF_PRICE_ENTITY,
                 default=defaults.get(CONF_PRICE_ENTITY, ""),

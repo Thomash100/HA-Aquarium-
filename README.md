@@ -2,9 +2,9 @@
 
 Aquarium LED Cockpit ist eine Home-Assistant-Custom-Integration fuer eine dynamische Aquarium-Beleuchtung mit strompreisabhaengiger Dimmung, wetterbasierter Wolkensimulation, Sonnenaufgangs-/Sonnenuntergangsphasen und Lovelace-Simulator-Karte.
 
-Veroeffentlichungskennzeichen: `V260523.016_BETA.00`
+Veroeffentlichungskennzeichen: `V260523.017_BETA.00`
 
-Home-Assistant-Manifest-Version: `26.5.23-beta.16`
+Home-Assistant-Manifest-Version: `26.5.23-beta.17`
 
 [![Home Assistant oeffnen und dieses Repository in HACS anzeigen.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Thomash100&repository=HA-Aquarium-&category=integration)
 ![HACS Custom](https://img.shields.io/badge/HACS-Custom-orange.svg)
@@ -37,7 +37,9 @@ Die Integration verwandelt deine Aquarium-Beleuchtung in einen dynamischen Tages
 - Mehrere Aquarien mit eigenem Namen, eigener Runtime und eigenen Entitaeten
 - Dienste mit Aquarium-Auswahl, damit Status und Ressourcen gezielt einem Aquarium zugeordnet werden
 - Echter RGBW-Sonnenverlauf aus `sun.sun`: morgens 60 Minuten Tiefrot ueber Orange, Gold und Warmweiss zu Tagesweiss, abends 90 Minuten exakt rueckwaerts bis zum Sonnenuntergang
+- Getrennt einstellbare RGBW-Endfarben fuer Sonnenaufgang und Sonnenuntergang direkt in der Simulator-Karte
 - Stark reduziertes blaues Mondlicht nach Sonnenuntergang ohne Weisskanal und mit der vorhandenen Nachtlicht-Helligkeit
+- Sonnenbahn mit echten Auf-/Untergangszeiten und realer Mondphase aus `sensor.moon_phase`
 - Wolkensimulation tagsueber mit wetterabhaengiger Dimmung
 - Simulationsmodus, der den Cockpit-Status aktualisiert, ohne Lichtbefehle zu senden
 - Konfigurierbarer 24-Stunden-Zeitraffer: ein kompletter Tag in einer bis zehn realen Minuten
@@ -147,6 +149,16 @@ Aktualisiert den Live-Statussensor aus einer Automation oder einem Skript.
 | --- | --- | --- |
 | `config_entry_id` | Nein | Aquarium-Konfiguration, deren Live-Status aktualisiert werden soll. Bei mehreren Eintraegen erforderlich |
 | `status_json` | Ja | Kompaktes JSON-Objekt mit dem Aquarium-Lichtstatus |
+
+#### `aquarium_led_cockpit.set_transition_color`
+
+Speichert die RGBW-Endfarbe eines Sonnenaufgangs oder Sonnenuntergangs. Die Simulator-Karte ruft diesen Dienst ueber ihre beiden Farbfelder auf.
+
+| Feld | Erforderlich | Beschreibung |
+| --- | --- | --- |
+| `config_entry_id` | Nein | Aquarium-Konfiguration; bei mehreren Eintraegen erforderlich |
+| `phase` | Ja | `sunrise` oder `sunset` |
+| `rgbw_color` | Ja | Vier Werte von 0 bis 255 in der Reihenfolge Rot, Gruen, Blau, Weiss |
 
 Wenn mehrere Aquarien eingerichtet sind, trennt die Integration Runtime, Speicher, Sensoren, Schalter, Zahlen und Dienstaufrufe pro Config-Entry. Dadurch koennen unterschiedliche Aquarium-Lichtsteuerungen parallel laufen, ohne sich gegenseitig Status oder Simulation zu ueberschreiben.
 

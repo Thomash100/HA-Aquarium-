@@ -55,6 +55,11 @@ class AquariumLedSimulatorCard extends HTMLElement {
     const sunset = attr.sunset || "18:00";
     const sunriseDuration = Number(attr.sunrise_duration_minutes ?? 60);
     const sunsetDuration = Number(attr.sunset_duration_minutes ?? 90);
+    const sunriseRgbw = this.normalizeRgbw(attr.sunrise_rgbw, [255, 0, 0, 0]);
+    const sunsetRgbw = this.normalizeRgbw(attr.sunset_rgbw, [255, 0, 0, 0]);
+    const celestial = this.celestialGeometry(currentTime, sunrise, sunset);
+    const moonPhaseIcon = attr.moon_phase_icon || "🌙";
+    const moonPhaseLabel = attr.moon_phase_label || "Mondphase";
     const dayBrightness = Number(attr.day_brightness_pct ?? Math.max(base, target, 70));
     const nightBrightness = Number(attr.night_brightness_pct ?? 3);
     const curve = this.buildCurve(
@@ -93,9 +98,20 @@ class AquariumLedSimulatorCard extends HTMLElement {
             <div class="alc-badge">${target}%</div>
           </div>
 
-          <div class="alc-horizon" style="--alc-rgb: ${rgb}; --alc-white: ${whiteAlpha};">
-            <div class="alc-sun" style="left: ${this.sunPosition(currentTime, sunrise, sunset)}%;"></div>
-            <div class="alc-now" style="left: ${this.minutePercent(currentTime)}%;"></div>
+          <div class="alc-celestial" style="--alc-rgb: ${rgb}; --alc-white: ${whiteAlpha};">
+            <svg class="alc-sky" viewBox="0 0 720 190" role="img" aria-label="Sonnenbahn und Mondphase ueber 24 Stunden">
+              <path d="${celestial.sunArc}" class="alc-sun-arc"></path>
+              <path d="${celestial.moonEveningArc}" class="alc-moon-arc"></path>
+              <path d="${celestial.moonMorningArc}" class="alc-moon-arc"></path>
+              <line x1="0" y1="138" x2="720" y2="138" class="alc-horizon-line"></line>
+              <line x1="${celestial.nowX}" y1="12" x2="${celestial.nowX}" y2="166" class="alc-sky-now"></line>
+              ${celestial.isDay
+                ? `<circle cx="${celestial.bodyX}" cy="${celestial.bodyY}" r="14" class="alc-sun-body"></circle>`
+                : `<text x="${celestial.bodyX}" y="${celestial.bodyY + 9}" class="alc-moon-body" text-anchor="middle">${this.escape(moonPhaseIcon)}</text>`}
+              <text x="${celestial.sunriseX}" y="160" class="alc-sky-label" text-anchor="middle">${this.escape(sunrise)}</text>
+              <text x="${celestial.sunsetX}" y="160" class="alc-sky-label" text-anchor="middle">${this.escape(sunset)}</text>
+              <text x="360" y="181" class="alc-moon-label" text-anchor="middle">${this.escape(moonPhaseIcon)} ${this.escape(moonPhaseLabel)}</text>
+            </svg>
           </div>
 
           <svg class="alc-chart" viewBox="0 0 320 96" role="img" aria-label="24-Stunden-Lichtkurve">
@@ -111,9 +127,11 @@ class AquariumLedSimulatorCard extends HTMLElement {
           </svg>
 
           <div class="alc-times">
-            <span>Sonnenaufgang ${this.escape(sunrise)} · Rot → Orange → Gold → Weiss ${sunriseDuration} Min.</span>
-            <span>Weiss → Gold → Orange → Rot ab ${this.escape(attr.sunset_phase_start || sunset)} · Untergang ${this.escape(sunset)}</span>
+            <span>Sonnenaufgang ${this.escape(sunrise)} · Wunschfarbe → Gold → Weiss ${sunriseDuration} Min.</span>
+            <span>Weiss → Gold → Wunschfarbe ab ${this.escape(attr.sunset_phase_start || sunset)} · Untergang ${this.escape(sunset)}</span>
           </div>
+
+          ${this.transitionColorControls(sunriseRgbw, sunsetRgbw, attr.config_entry_id || this.config.config_entry_id || "")}
 
           <div class="alc-grid">
             ${this.metric("Basis", `${base}%`)}
@@ -122,7 +140,7 @@ class AquariumLedSimulatorCard extends HTMLElement {
             ${this.metric("Preis", this.formatPrice(attr.price, this._hass.states[priceEntity]?.attributes?.unit_of_measurement))}
             ${this.metric("Preis-Dimmung", this.formatPercent(attr.price_dimming_pct))}
             ${this.metric("Speicher", this.formatPercent(attr.battery_soc))}
-            ${this.metric("Preisregel", attr.price_ignored ? "Ignoriert" : "Aktiv")}
+            ${this.metric("Preisregel", this.priceRuleLabel(attr))}
             ${this.metric("Solar", this.formatPower(attr.solar_power))}
             ${this.metric("Sonne regional", attr.regional_sun ? "Ja" : "Nein")}
             ${this.metric("Wolken", `${attr.cloudiness_pct ?? "-"}%`)}
@@ -174,6 +192,12 @@ class AquariumLedSimulatorCard extends HTMLElement {
       });
     });
 
+    this.querySelectorAll("[data-rgbw-editor]").forEach((editor) => {
+      editor.querySelectorAll("input").forEach((input) => {
+        input.addEventListener("change", () => this.saveTransitionColor(editor));
+      });
+    });
+
     this.ensureTimelineData(priceEntity, batteryEntity);
   }
 
@@ -186,13 +210,27 @@ class AquariumLedSimulatorCard extends HTMLElement {
         .alc-sub { color: var(--secondary-text-color); font-size: 13px; margin-top: 3px; }
         .alc-badge { border-radius: 999px; background: var(--primary-color); color: var(--text-primary-color); font-weight: 700; min-width: 54px; padding: 8px 10px; text-align: center; }
         .alc-empty { color: var(--error-color); margin-top: 10px; }
-        .alc-horizon { background: linear-gradient(90deg, #10172f 0%, #f18f45 24%, var(--alc-rgb) 50%, #d95d3d 76%, #10172f 100%); border-radius: 8px; height: 76px; margin-top: 18px; overflow: hidden; position: relative; }
-        .alc-horizon::after { background: radial-gradient(circle at 50% 42%, rgba(255,255,255,var(--alc-white)), transparent 34%), linear-gradient(180deg, transparent 45%, rgba(0,0,0,0.26)); content: ""; inset: 0; position: absolute; }
-        .alc-sun { background: #ffd36a; border-radius: 999px; box-shadow: 0 0 24px rgba(255, 211, 106, 0.74); height: 22px; position: absolute; top: 18px; transform: translateX(-50%); width: 22px; z-index: 1; }
-        .alc-now { background: rgba(255,255,255,0.8); bottom: 0; position: absolute; top: 0; width: 2px; z-index: 2; }
+        .alc-celestial { background: linear-gradient(90deg, #071022 0%, #15254d 17%, #f28b45 25%, #56b9e9 49%, #f06446 77%, #15254d 84%, #071022 100%); border-radius: 12px; box-shadow: inset 0 -34px 58px rgba(0,0,0,0.30); margin-top: 18px; overflow: hidden; position: relative; }
+        .alc-celestial::after { background: radial-gradient(circle at 50% 38%, rgba(255,255,255,var(--alc-white)), transparent 34%); content: ""; inset: 0; pointer-events: none; position: absolute; }
+        .alc-sky { display: block; height: auto; overflow: visible; position: relative; width: 100%; z-index: 1; }
+        .alc-sun-arc { fill: none; stroke: rgba(255,221,119,0.78); stroke-dasharray: 7 6; stroke-linecap: round; stroke-width: 3; }
+        .alc-moon-arc { fill: none; stroke: rgba(181,203,255,0.55); stroke-dasharray: 5 7; stroke-linecap: round; stroke-width: 2.5; }
+        .alc-horizon-line { stroke: rgba(255,255,255,0.38); stroke-width: 2; }
+        .alc-sky-now { stroke: rgba(255,255,255,0.72); stroke-dasharray: 3 5; stroke-width: 1.5; }
+        .alc-sun-body { fill: #ffd75e; filter: drop-shadow(0 0 12px rgba(255,211,82,0.95)); }
+        .alc-moon-body { dominant-baseline: central; font-family: "Segoe UI Emoji", "Apple Color Emoji", sans-serif; font-size: 32px; filter: drop-shadow(0 0 8px rgba(202,218,255,0.72)); }
+        .alc-sky-label { fill: rgba(255,255,255,0.82); font-size: 11px; font-weight: 650; }
+        .alc-moon-label { fill: rgba(230,237,255,0.88); font-family: var(--paper-font-body1_-_font-family, sans-serif); font-size: 11px; }
         .alc-chart { display: block; height: 96px; margin-top: 14px; width: 100%; }
         .alc-chart-now { stroke: var(--secondary-text-color); stroke-dasharray: 3 4; stroke-width: 1.5; }
         .alc-times { color: var(--secondary-text-color); display: flex; font-size: 12px; justify-content: space-between; gap: 12px; margin-top: 4px; }
+        .alc-color-grid { display: grid; gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 14px; }
+        .alc-color-editor { align-items: center; background: var(--secondary-background-color); border: 1px solid color-mix(in srgb, var(--divider-color) 70%, transparent); border-radius: 10px; display: grid; gap: 8px; grid-template-columns: auto minmax(0, 1fr); padding: 10px; }
+        .alc-color-picker { background: transparent; border: 0; cursor: pointer; height: 46px; padding: 0; width: 54px; }
+        .alc-color-copy { min-width: 0; }
+        .alc-color-title { font-size: 13px; font-weight: 650; }
+        .alc-color-values { color: var(--secondary-text-color); font-size: 11px; margin-top: 2px; }
+        .alc-white-slider { accent-color: var(--primary-color); cursor: pointer; grid-column: 1 / -1; width: 100%; }
         .alc-grid { display: grid; gap: 8px; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 14px; }
         .alc-metric { background: var(--secondary-background-color); border-radius: 8px; padding: 9px 10px; min-width: 0; }
         .alc-metric-label { color: var(--secondary-text-color); font-size: 11px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -243,6 +281,7 @@ class AquariumLedSimulatorCard extends HTMLElement {
         @media (max-width: 520px) {
           .alc-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
           .alc-times { flex-direction: column; gap: 2px; }
+          .alc-color-grid { grid-template-columns: 1fr; }
           .alc-controls button { flex: 1 1 100%; justify-content: center; }
           .alc-timeline-grid { grid-template-columns: 1fr; }
           .alc-timeline-chart { height: 154px; }
@@ -705,6 +744,123 @@ class AquariumLedSimulatorCard extends HTMLElement {
         />
       </label>
     `;
+  }
+
+  transitionColorControls(sunriseRgbw, sunsetRgbw, configEntryId) {
+    return `
+      <div class="alc-color-grid">
+        ${this.transitionColorEditor("sunrise", "Farbe Sonnenaufgang", sunriseRgbw, configEntryId)}
+        ${this.transitionColorEditor("sunset", "Farbe Sonnenuntergang", sunsetRgbw, configEntryId)}
+      </div>
+    `;
+  }
+
+  transitionColorEditor(phase, title, rgbw, configEntryId) {
+    return `
+      <label class="alc-color-editor" data-rgbw-editor data-phase="${phase}" data-config-entry-id="${this.escape(configEntryId)}">
+        <input class="alc-color-picker" type="color" value="${this.rgbwToHex(rgbw)}" data-rgb-picker aria-label="${this.escape(title)}" />
+        <span class="alc-color-copy">
+          <span class="alc-color-title">${this.escape(title)}</span>
+          <span class="alc-color-values">R ${rgbw[0]} · G ${rgbw[1]} · B ${rgbw[2]} · W ${rgbw[3]}</span>
+        </span>
+        <input class="alc-white-slider" type="range" min="0" max="255" step="1" value="${rgbw[3]}" data-white-picker aria-label="Weisskanal fuer ${this.escape(title)}" />
+      </label>
+    `;
+  }
+
+  saveTransitionColor(editor) {
+    const rgb = this.hexToRgb(editor.querySelector("[data-rgb-picker]")?.value);
+    const white = Math.max(0, Math.min(255, Math.round(Number(editor.querySelector("[data-white-picker]")?.value) || 0)));
+    const data = {
+      phase: editor.dataset.phase,
+      rgbw_color: [...rgb, white],
+    };
+    if (editor.dataset.configEntryId) {
+      data.config_entry_id = editor.dataset.configEntryId;
+    }
+    this._hass.callService("aquarium_led_cockpit", "set_transition_color", data);
+  }
+
+  normalizeRgbw(value, fallback) {
+    if (!Array.isArray(value) || value.length !== 4) {
+      return [...fallback];
+    }
+    return value.map((channel) => Math.max(0, Math.min(255, Math.round(Number(channel) || 0))));
+  }
+
+  rgbwToHex(rgbw) {
+    return `#${rgbw.slice(0, 3).map((channel) => channel.toString(16).padStart(2, "0")).join("")}`;
+  }
+
+  hexToRgb(value) {
+    const match = String(value || "").match(/^#([0-9a-f]{6})$/i);
+    if (!match) {
+      return [255, 0, 0];
+    }
+    return [0, 2, 4].map((offset) => Number.parseInt(match[1].slice(offset, offset + 2), 16));
+  }
+
+  priceRuleLabel(attr) {
+    const reason = attr.price_ignored_reason;
+    if (reason === "night") {
+      return "Pause: Nacht";
+    }
+    if (reason === "battery_full") {
+      return "Pause: Speicher voll";
+    }
+    return attr.price_ignored ? "Pausiert" : "Aktiv";
+  }
+
+  celestialGeometry(time, sunrise, sunset) {
+    const width = 720;
+    const horizon = 138;
+    const rise = this.parseMinute(sunrise, 360);
+    const set = this.parseMinute(sunset, 1080);
+    const minute = this.parseMinute(time, 720);
+    const sunriseX = (rise / 1440) * width;
+    const sunsetX = (set / 1440) * width;
+    const nowX = (minute / 1440) * width;
+    const dayDuration = Math.max(1, set - rise);
+    const nightDuration = Math.max(1, (1440 - set) + rise);
+    const isDay = minute >= rise && minute < set;
+
+    let bodyX = nowX;
+    let bodyY;
+    if (isDay) {
+      const progress = Math.max(0, Math.min(1, (minute - rise) / dayDuration));
+      bodyY = horizon - (Math.sin(Math.PI * progress) * 98);
+    } else {
+      const unwrappedMinute = minute >= set ? minute : minute + 1440;
+      const progress = Math.max(0, Math.min(1, (unwrappedMinute - set) / nightDuration));
+      bodyY = horizon - (Math.sin(Math.PI * progress) * 72);
+    }
+
+    return {
+      bodyX: bodyX.toFixed(1),
+      bodyY: bodyY.toFixed(1),
+      isDay,
+      moonEveningArc: this.celestialArc(set, 1440, set, nightDuration, 72, width, horizon),
+      moonMorningArc: this.celestialArc(1440, 1440 + rise, set, nightDuration, 72, width, horizon),
+      nowX: nowX.toFixed(1),
+      sunArc: this.celestialArc(rise, set, rise, dayDuration, 98, width, horizon),
+      sunriseX: sunriseX.toFixed(1),
+      sunsetX: sunsetX.toFixed(1),
+    };
+  }
+
+  celestialArc(start, end, cycleStart, duration, amplitude, width, horizon) {
+    const points = [];
+    for (let index = 0; index <= 32; index += 1) {
+      const unwrappedMinute = start + (((end - start) * index) / 32);
+      const progress = Math.max(0, Math.min(1, (unwrappedMinute - cycleStart) / duration));
+      const wrappedMinute = unwrappedMinute === 1440
+        ? (start >= 1440 ? 0 : 1440)
+        : unwrappedMinute % 1440;
+      const x = (wrappedMinute / 1440) * width;
+      const y = horizon - (Math.sin(Math.PI * progress) * amplitude);
+      points.push(`${index === 0 ? "M" : "L"} ${x.toFixed(1)} ${y.toFixed(1)}`);
+    }
+    return points.join(" ");
   }
 
   buildCurve(sunrise, sunset, nightPct, dayPct, sunriseDuration, sunsetDuration) {

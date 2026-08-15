@@ -14,19 +14,6 @@ WARM_WHITE_RGBW = (255, 190, 100, 140)
 DAYLIGHT_RGBW = (190, 220, 255, 255)
 MOONLIGHT_RGBW = (0, 10, 90, 0)
 
-SUNRISE_RGBW_STOPS = (
-    (0.00, DAWN_DUSK_RGBW),
-    (0.22, ORANGE_RGBW),
-    (0.55, GOLD_RGBW),
-    (0.82, WARM_WHITE_RGBW),
-    (1.00, DAYLIGHT_RGBW),
-)
-SUNSET_RGBW_STOPS = tuple(
-    (round(1 - progress, 2), color)
-    for progress, color in reversed(SUNRISE_RGBW_STOPS)
-)
-
-
 @dataclass(frozen=True)
 class SolarProfile:
     """Calculated solar phase, brightness and RGBW colour."""
@@ -52,6 +39,57 @@ def _interpolate_rgbw(
     )
 
 
+def normalize_rgbw(
+    value: object,
+    fallback: tuple[int, int, int, int] = DAWN_DUSK_RGBW,
+) -> tuple[int, int, int, int]:
+    """Return a validated RGBW tuple with channels clipped to 0-255."""
+    if not isinstance(value, (list, tuple)) or len(value) != 4:
+        return fallback
+    try:
+        return tuple(int(round(_clamp(float(channel), 0, 255))) for channel in value)
+    except (TypeError, ValueError):
+        return fallback
+
+
+def _tinted_color(
+    base: tuple[int, int, int, int],
+    endpoint: tuple[int, int, int, int],
+    influence: float,
+) -> tuple[int, int, int, int]:
+    """Tint a warm palette colour towards a configurable endpoint."""
+    return tuple(
+        int(round(_clamp(base[index] + ((endpoint[index] - DAWN_DUSK_RGBW[index]) * influence), 0, 255)))
+        for index in range(4)
+    )
+
+
+def build_transition_stops(
+    endpoint: object,
+    *,
+    reverse: bool = False,
+) -> tuple[tuple[float, tuple[int, int, int, int]], ...]:
+    """Build the warm RGBW path for one configurable dawn/dusk endpoint."""
+    endpoint_rgbw = normalize_rgbw(endpoint)
+    sunrise_stops = (
+        (0.00, endpoint_rgbw),
+        (0.22, _tinted_color(ORANGE_RGBW, endpoint_rgbw, 0.55)),
+        (0.55, _tinted_color(GOLD_RGBW, endpoint_rgbw, 0.25)),
+        (0.82, _tinted_color(WARM_WHITE_RGBW, endpoint_rgbw, 0.10)),
+        (1.00, DAYLIGHT_RGBW),
+    )
+    if not reverse:
+        return sunrise_stops
+    return tuple(
+        (round(1 - progress, 2), color)
+        for progress, color in reversed(sunrise_stops)
+    )
+
+
+SUNRISE_RGBW_STOPS = build_transition_stops(DAWN_DUSK_RGBW)
+SUNSET_RGBW_STOPS = build_transition_stops(DAWN_DUSK_RGBW, reverse=True)
+
+
 def _interpolate_rgbw_stops(
     stops: tuple[tuple[float, tuple[int, int, int, int]], ...],
     progress: float,
@@ -73,6 +111,8 @@ def calculate_solar_profile(
     sunset_minute: int,
     day_brightness_pct: float,
     night_brightness_pct: float,
+    sunrise_rgbw: object = DAWN_DUSK_RGBW,
+    sunset_rgbw: object = DAWN_DUSK_RGBW,
 ) -> SolarProfile:
     """Return the profile for real sunrise and sunset event minutes.
 
@@ -96,7 +136,10 @@ def calculate_solar_profile(
         base_pct = night_brightness_pct + (
             (day_brightness_pct - night_brightness_pct) * progress
         )
-        rgbw = _interpolate_rgbw_stops(SUNRISE_RGBW_STOPS, progress)
+        rgbw = _interpolate_rgbw_stops(
+            build_transition_stops(sunrise_rgbw),
+            progress,
+        )
     elif sunrise_end <= minute < sunset_start:
         phase = "day"
         progress = 1
@@ -112,7 +155,10 @@ def calculate_solar_profile(
         base_pct = day_brightness_pct + (
             (night_brightness_pct - day_brightness_pct) * progress
         )
-        rgbw = _interpolate_rgbw_stops(SUNSET_RGBW_STOPS, progress)
+        rgbw = _interpolate_rgbw_stops(
+            build_transition_stops(sunset_rgbw, reverse=True),
+            progress,
+        )
     else:
         phase = "night"
         progress = 0

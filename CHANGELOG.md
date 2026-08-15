@@ -1,5 +1,16 @@
 # Aenderungsprotokoll
 
+## V260523.017_BETA.00
+
+Sonnen-/Mondbahn und einstellbare RGBW-Uebergangsfarben ergaenzt.
+
+- Ersetzt das bisherige Tagesband durch eine echte Sonnenbahn anhand der Auf- und Untergangszeiten.
+- Zeigt nachts eine eigene Mondbahn mit der realen Home-Assistant-Mondphase an.
+- Ergaenzt getrennte RGB-Farbwaehler und W-Kanal-Regler fuer Sonnenaufgang und Sonnenuntergang.
+- Speichert beide RGBW-Endfarben dauerhaft pro Aquarium und nutzt sie sofort in Livebetrieb und Simulation.
+- Ersetzt die missverstaendliche Preisregel-Anzeige `Ignoriert` durch `Pause: Nacht` oder `Pause: Speicher voll`.
+- Erhoeht die Home-Assistant-Manifest-Version auf `26.5.23-beta.17`.
+
 ## V260523.016_BETA.00
 
 RGBW-Farbprofil fuer Sonne und Mond ueberarbeitet.

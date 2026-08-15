@@ -12,6 +12,7 @@ from homeassistant.util import dt as dt_util
 from .const import (
     CONF_BATTERY_FULL_THRESHOLD,
     CONF_BATTERY_SOC_ENTITY,
+    CONF_MOON_ENTITY,
     CONF_PRICE_ENTITY,
     CONF_SOLAR_POWER_ENTITY,
     CONF_SUN_ENTITY,
@@ -23,21 +24,26 @@ from .const import (
     CONTROL_PRICE_DIMMING,
     CONTROL_SIMULATION,
     CONTROL_SIMULATION_TIME,
+    CONTROL_SUNRISE_RGBW,
+    CONTROL_SUNSET_RGBW,
     CONTROL_TIME_LAPSE_DURATION,
     CONTROL_TIME_LAPSE,
     DEFAULT_CLOUD_STRENGTH,
     DEFAULT_BATTERY_FULL_THRESHOLD,
     DEFAULT_DAY_BRIGHTNESS,
     DEFAULT_NIGHT_BRIGHTNESS,
+    DEFAULT_MOON_ENTITY,
     DEFAULT_PRICE_DIMMING,
     DEFAULT_SIMULATION_TIME,
     DEFAULT_SUN_ENTITY,
 )
 from .price import calculate_price_adjustment, is_battery_full
 from .solar import (
+    DAWN_DUSK_RGBW,
     SUNRISE_DURATION_MINUTES,
     SUNSET_DURATION_MINUTES,
     calculate_solar_profile,
+    normalize_rgbw,
 )
 from .time_lapse import MINUTES_PER_DAY, normalize_time_lapse_duration
 
@@ -96,6 +102,26 @@ def _regional_sun(hass: HomeAssistant, entity_id: str | None) -> bool:
         return False
     state = hass.states.get(entity_id)
     return state is not None and str(state.state).lower() in {"sunny", "partlycloudy"}
+
+
+MOON_PHASES = {
+    "new_moon": ("Neumond", "🌑"),
+    "waxing_crescent": ("Zunehmende Sichel", "🌒"),
+    "first_quarter": ("Erstes Viertel", "🌓"),
+    "waxing_gibbous": ("Zunehmender Mond", "🌔"),
+    "full_moon": ("Vollmond", "🌕"),
+    "waning_gibbous": ("Abnehmender Mond", "🌖"),
+    "last_quarter": ("Letztes Viertel", "🌗"),
+    "waning_crescent": ("Abnehmende Sichel", "🌘"),
+}
+
+
+def _moon_phase(hass: HomeAssistant, entity_id: str | None) -> tuple[str, str, str]:
+    """Return raw phase, German label, and symbol from Home Assistant."""
+    state = hass.states.get(entity_id) if entity_id else None
+    raw = str(state.state) if state is not None else "unknown"
+    label, icon = MOON_PHASES.get(raw, ("Mondphase unbekannt", "🌙"))
+    return raw, label, icon
 
 
 def _weather_cloudiness(hass: HomeAssistant, entity_id: str | None) -> float:
@@ -181,6 +207,8 @@ def calculate_target(
         sunset_event,
         day,
         night,
+        controls.get(CONTROL_SUNRISE_RGBW, DAWN_DUSK_RGBW),
+        controls.get(CONTROL_SUNSET_RGBW, DAWN_DUSK_RGBW),
     )
     phase = solar_profile.phase
     base_pct = solar_profile.base_pct
@@ -201,6 +229,10 @@ def calculate_target(
     price_strategy = "battery_full_override" if battery_full else price_adjustment["strategy"]
     solar_power = _number_state(hass, settings.get(CONF_SOLAR_POWER_ENTITY))
     regional_sun = _regional_sun(hass, settings.get(CONF_WEATHER_ENTITY))
+    moon_phase, moon_phase_label, moon_phase_icon = _moon_phase(
+        hass,
+        str(settings.get(CONF_MOON_ENTITY) or DEFAULT_MOON_ENTITY),
+    )
 
     cloudiness = _weather_cloudiness(hass, settings.get(CONF_WEATHER_ENTITY))
     cloud_strength = _clamp(float(controls.get(CONTROL_CLOUD_STRENGTH, DEFAULT_CLOUD_STRENGTH)) / 100, 0, 1)
@@ -230,6 +262,11 @@ def calculate_target(
         "sunset_phase_start": _minutes_to_clock(sunset_event - SUNSET_DURATION_MINUTES),
         "light_mode": "moonlight" if phase == "night" else phase,
         "color_control": "rgbw",
+        "sunrise_rgbw": list(normalize_rgbw(controls.get(CONTROL_SUNRISE_RGBW))),
+        "sunset_rgbw": list(normalize_rgbw(controls.get(CONTROL_SUNSET_RGBW))),
+        "moon_phase": moon_phase,
+        "moon_phase_label": moon_phase_label,
+        "moon_phase_icon": moon_phase_icon,
         "day_brightness_pct": round(day, 1),
         "night_brightness_pct": round(night, 1),
         "base_pct": round(base_pct, 1),
@@ -246,6 +283,7 @@ def calculate_target(
         "price_strategy": price_strategy,
         "price_ignored": price_ignored,
         "price_ignored_reason": "battery_full" if battery_full else ("night" if phase == "night" else "-"),
+        "price_rule": "pause_battery_full" if battery_full else ("pause_night" if phase == "night" else "active"),
         "battery_soc": battery_soc if battery_soc is not None else "-",
         "battery_soc_entity": settings.get(CONF_BATTERY_SOC_ENTITY) or "",
         "battery_full_threshold": round(battery_full_threshold, 1),

@@ -85,6 +85,26 @@ class SolarProfileTests(unittest.TestCase):
             SOLAR._interpolate_rgbw_stops(SOLAR.SUNRISE_RGBW_STOPS, 0.82),
         )
 
+    def test_sunrise_and_sunset_endpoints_are_independently_configurable(self) -> None:
+        sunrise_color = (210, 20, 80, 15)
+        sunset_color = (255, 80, 0, 25)
+
+        sunrise = SOLAR.calculate_solar_profile(
+            360, 360, 1200, 90, 2, sunrise_color, sunset_color
+        )
+        sunset_stops = SOLAR.build_transition_stops(sunset_color, reverse=True)
+
+        self.assertEqual(sunrise_color, sunrise.rgbw)
+        self.assertEqual(sunset_color, sunset_stops[-1][1])
+        self.assertNotEqual(sunrise.rgbw, sunset_stops[-1][1])
+
+    def test_invalid_configured_colour_falls_back_to_deep_red(self) -> None:
+        profile = SOLAR.calculate_solar_profile(
+            360, 360, 1200, 90, 2, [999, "bad"], None
+        )
+
+        self.assertEqual(SOLAR.DAWN_DUSK_RGBW, profile.rgbw)
+
 
 if __name__ == "__main__":
     unittest.main()

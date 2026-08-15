@@ -24,6 +24,8 @@ from .const import (
     CONTROL_PRICE_DIMMING,
     CONTROL_SIMULATION,
     CONTROL_SIMULATION_TIME,
+    CONTROL_SUNRISE_RGBW,
+    CONTROL_SUNSET_RGBW,
     CONTROL_TIME_LAPSE_DURATION,
     CONTROL_TIME_LAPSE,
     DATA_RUNTIMES,
@@ -38,6 +40,7 @@ from .const import (
     STORAGE_VERSION,
 )
 from .engine import calculate_target
+from .solar import DAWN_DUSK_RGBW, normalize_rgbw
 from .time_lapse import (
     DEFAULT_TIME_LAPSE_DURATION_MINUTES,
     advance_time_lapse_position,
@@ -56,6 +59,8 @@ DEFAULT_CONTROLS = {
     CONTROL_CLOUD_STRENGTH: DEFAULT_CLOUD_STRENGTH,
     CONTROL_SIMULATION_TIME: DEFAULT_SIMULATION_TIME,
     CONTROL_TIME_LAPSE_DURATION: DEFAULT_TIME_LAPSE_DURATION_MINUTES,
+    CONTROL_SUNRISE_RGBW: list(DAWN_DUSK_RGBW),
+    CONTROL_SUNSET_RGBW: list(DAWN_DUSK_RGBW),
 }
 
 
@@ -105,6 +110,12 @@ class AquariumLedCockpitRuntime:
         self._controls[CONTROL_TIME_LAPSE_DURATION] = normalize_time_lapse_duration(
             self._controls.get(CONTROL_TIME_LAPSE_DURATION)
         )
+        self._controls[CONTROL_SUNRISE_RGBW] = list(
+            normalize_rgbw(self._controls.get(CONTROL_SUNRISE_RGBW))
+        )
+        self._controls[CONTROL_SUNSET_RGBW] = list(
+            normalize_rgbw(self._controls.get(CONTROL_SUNSET_RGBW))
+        )
         # A physical preview is deliberately transient and never resumes after a reload.
         self._controls[CONTROL_AQUARIUM_PREVIEW] = False
 
@@ -143,6 +154,8 @@ class AquariumLedCockpitRuntime:
             await self._async_stop_aquarium_preview()
         if key == CONTROL_TIME_LAPSE_DURATION:
             value = normalize_time_lapse_duration(value)
+        if key in {CONTROL_SUNRISE_RGBW, CONTROL_SUNSET_RGBW}:
+            value = list(normalize_rgbw(value))
         if key == CONTROL_SIMULATION_TIME and self._controls.get(CONTROL_TIME_LAPSE):
             self._time_lapse_position = float(value)
             self._time_lapse_last_tick = self.hass.loop.time()
@@ -288,7 +301,8 @@ class AquariumLedCockpitRuntime:
     ) -> None:
         """Calculate the target and optionally apply it to configured lights."""
         target = calculate_target(self.hass, self._settings, self._controls)
-        await self.async_set_status(target.status, persist=persist)
+        status = {**target.status, "config_entry_id": self.entry_id}
+        await self.async_set_status(status, persist=persist)
 
         if not apply_lights:
             return
