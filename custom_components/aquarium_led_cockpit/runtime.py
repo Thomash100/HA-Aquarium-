@@ -8,6 +8,7 @@ from typing import Any
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_ENTITY_ID
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.storage import Store
 
@@ -15,6 +16,7 @@ from .const import (
     CONF_RGBW_LIGHTS,
     CONF_TRANSITION_SECONDS,
     CONF_WHITE_LIGHTS,
+    CONTROL_AQUARIUM_PREVIEW,
     CONTROL_CLOUD_STRENGTH,
     CONTROL_DAY_BRIGHTNESS,
     CONTROL_ENABLED,
@@ -39,6 +41,7 @@ from .engine import calculate_target
 from .time_lapse import (
     DEFAULT_TIME_LAPSE_DURATION_MINUTES,
     advance_time_lapse_position,
+    is_time_lapse_cycle_complete,
     normalize_time_lapse_duration,
 )
 
@@ -46,6 +49,7 @@ DEFAULT_CONTROLS = {
     CONTROL_ENABLED: False,
     CONTROL_SIMULATION: True,
     CONTROL_TIME_LAPSE: False,
+    CONTROL_AQUARIUM_PREVIEW: False,
     CONTROL_DAY_BRIGHTNESS: DEFAULT_DAY_BRIGHTNESS,
     CONTROL_NIGHT_BRIGHTNESS: DEFAULT_NIGHT_BRIGHTNESS,
     CONTROL_PRICE_DIMMING: DEFAULT_PRICE_DIMMING,
@@ -75,6 +79,10 @@ class AquariumLedCockpitRuntime:
         self._unsub_time_lapse_interval: Callable[[], None] | None = None
         self._time_lapse_position: float | None = None
         self._time_lapse_last_tick: float | None = None
+        self._preview_started_at: float | None = None
+        self._preview_previous_time_lapse = False
+        self._preview_previous_simulation_time = DEFAULT_SIMULATION_TIME
+        self._preview_light_states: dict[str, dict[str, Any]] = {}
 
     @property
     def status(self) -> dict[str, Any]:
@@ -97,6 +105,8 @@ class AquariumLedCockpitRuntime:
         self._controls[CONTROL_TIME_LAPSE_DURATION] = normalize_time_lapse_duration(
             self._controls.get(CONTROL_TIME_LAPSE_DURATION)
         )
+        # A physical preview is deliberately transient and never resumes after a reload.
+        self._controls[CONTROL_AQUARIUM_PREVIEW] = False
 
     async def async_set_status(
         self,
@@ -113,6 +123,24 @@ class AquariumLedCockpitRuntime:
 
     async def async_set_control(self, key: str, value: Any) -> None:
         """Persist and apply a UI control value."""
+        if key == CONTROL_AQUARIUM_PREVIEW:
+            if bool(value):
+                await self._async_start_aquarium_preview()
+            else:
+                await self._async_stop_aquarium_preview()
+            return
+        if (
+            key == CONTROL_ENABLED
+            and not bool(value)
+            and self._controls.get(CONTROL_AQUARIUM_PREVIEW)
+        ):
+            await self._async_stop_aquarium_preview()
+        if (
+            key == CONTROL_TIME_LAPSE
+            and not bool(value)
+            and self._controls.get(CONTROL_AQUARIUM_PREVIEW)
+        ):
+            await self._async_stop_aquarium_preview()
         if key == CONTROL_TIME_LAPSE_DURATION:
             value = normalize_time_lapse_duration(value)
         if key == CONTROL_SIMULATION_TIME and self._controls.get(CONTROL_TIME_LAPSE):
@@ -150,6 +178,8 @@ class AquariumLedCockpitRuntime:
 
     async def async_unload(self) -> None:
         """Stop runtime callbacks."""
+        if self._controls.get(CONTROL_AQUARIUM_PREVIEW):
+            await self._async_stop_aquarium_preview()
         if self._unsub_interval is not None:
             self._unsub_interval()
             self._unsub_interval = None
@@ -158,6 +188,57 @@ class AquariumLedCockpitRuntime:
             self._unsub_time_lapse_interval = None
         self._time_lapse_position = None
         self._time_lapse_last_tick = None
+
+    async def _async_start_aquarium_preview(self) -> None:
+        """Run one complete time-lapse cycle on the configured physical lights."""
+        if self._controls.get(CONTROL_AQUARIUM_PREVIEW):
+            return
+        if not self._controls.get(CONTROL_ENABLED):
+            raise HomeAssistantError(
+                "Bitte zuerst die Aquarium-LED-Steuerung einschalten."
+            )
+
+        light_states = self._snapshot_configured_lights()
+        if not light_states:
+            raise HomeAssistantError(
+                "Fuer die Aquarium-Vorschau sind keine erreichbaren Leuchten konfiguriert."
+            )
+
+        self._preview_previous_time_lapse = bool(
+            self._controls.get(CONTROL_TIME_LAPSE)
+        )
+        self._preview_previous_simulation_time = int(
+            self._controls.get(CONTROL_SIMULATION_TIME, DEFAULT_SIMULATION_TIME)
+        )
+        self._preview_light_states = light_states
+        self._controls[CONTROL_AQUARIUM_PREVIEW] = True
+        self._controls[CONTROL_TIME_LAPSE] = True
+        self._controls[CONTROL_SIMULATION_TIME] = 0
+        self._time_lapse_position = 0.0
+        self._time_lapse_last_tick = self.hass.loop.time()
+        self._preview_started_at = self._time_lapse_last_tick
+        await self.async_update_target(apply_lights=True, persist=False)
+
+    async def _async_stop_aquarium_preview(self) -> None:
+        """Stop the physical preview and restore its captured light states."""
+        if not self._controls.get(CONTROL_AQUARIUM_PREVIEW):
+            return
+
+        self._controls[CONTROL_AQUARIUM_PREVIEW] = False
+        self._controls[CONTROL_TIME_LAPSE] = self._preview_previous_time_lapse
+        self._controls[CONTROL_SIMULATION_TIME] = self._preview_previous_simulation_time
+        if self._preview_previous_time_lapse:
+            self._time_lapse_position = float(self._preview_previous_simulation_time)
+            self._time_lapse_last_tick = self.hass.loop.time()
+        else:
+            self._time_lapse_position = None
+            self._time_lapse_last_tick = None
+        self._preview_started_at = None
+
+        light_states = self._preview_light_states
+        self._preview_light_states = {}
+        await self._async_restore_light_states(light_states)
+        await self.async_update_target(apply_lights=False)
 
     async def _async_interval_update(self, _now) -> None:
         """Update the live target once per minute."""
@@ -179,6 +260,18 @@ class AquariumLedCockpitRuntime:
             self._time_lapse_last_tick = now_tick
         elapsed_seconds = now_tick - self._time_lapse_last_tick
         self._time_lapse_last_tick = now_tick
+
+        if (
+            self._controls.get(CONTROL_AQUARIUM_PREVIEW)
+            and self._preview_started_at is not None
+            and is_time_lapse_cycle_complete(
+                now_tick - self._preview_started_at,
+                self._controls.get(CONTROL_TIME_LAPSE_DURATION),
+            )
+        ):
+            await self._async_stop_aquarium_preview()
+            return
+
         self._time_lapse_position = advance_time_lapse_position(
             self._time_lapse_position,
             elapsed_seconds,
@@ -201,12 +294,15 @@ class AquariumLedCockpitRuntime:
             return
         if not self._controls.get(CONTROL_ENABLED):
             return
-        if target.status.get("simulation"):
+        aquarium_preview = bool(self._controls.get(CONTROL_AQUARIUM_PREVIEW))
+        if target.status.get("simulation") and not aquarium_preview:
             return
 
         rgbw_lights = self._normalize_entities(self._settings.get(CONF_RGBW_LIGHTS))
         white_lights = self._normalize_entities(self._settings.get(CONF_WHITE_LIGHTS))
         transition = self._settings.get(CONF_TRANSITION_SECONDS, DEFAULT_TRANSITION_SECONDS)
+        if aquarium_preview:
+            transition = min(max(float(transition), 0), 1)
         if rgbw_lights and target.brightness_pct > 0:
             await self.hass.services.async_call(
                 "light",
@@ -240,6 +336,65 @@ class AquariumLedCockpitRuntime:
                 "light",
                 "turn_off",
                 {ATTR_ENTITY_ID: white_lights, "transition": transition},
+                blocking=False,
+            )
+
+    def _snapshot_configured_lights(self) -> dict[str, dict[str, Any]]:
+        """Capture all configured lights before a physical preview starts."""
+        entities = [
+            *self._normalize_entities(self._settings.get(CONF_RGBW_LIGHTS)),
+            *self._normalize_entities(self._settings.get(CONF_WHITE_LIGHTS)),
+        ]
+        snapshots: dict[str, dict[str, Any]] = {}
+        for entity_id in dict.fromkeys(entities):
+            state = self.hass.states.get(entity_id)
+            if state is None or state.state in {"unknown", "unavailable"}:
+                continue
+            snapshots[entity_id] = {
+                "state": state.state,
+                "attributes": dict(state.attributes),
+            }
+        return snapshots
+
+    async def _async_restore_light_states(
+        self,
+        snapshots: dict[str, dict[str, Any]],
+    ) -> None:
+        """Restore the exact on/off, brightness, and color state after preview."""
+        for entity_id, snapshot in snapshots.items():
+            if snapshot.get("state") != "on":
+                await self.hass.services.async_call(
+                    "light",
+                    "turn_off",
+                    {ATTR_ENTITY_ID: entity_id, "transition": 1},
+                    blocking=False,
+                )
+                continue
+
+            attributes = snapshot.get("attributes", {})
+            service_data: dict[str, Any] = {
+                ATTR_ENTITY_ID: entity_id,
+                "transition": 1,
+            }
+            brightness = attributes.get("brightness")
+            if brightness is not None:
+                service_data["brightness"] = brightness
+            for color_attribute in (
+                "rgbw_color",
+                "rgbww_color",
+                "rgb_color",
+                "hs_color",
+                "xy_color",
+                "color_temp_kelvin",
+            ):
+                color_value = attributes.get(color_attribute)
+                if color_value is not None:
+                    service_data[color_attribute] = color_value
+                    break
+            await self.hass.services.async_call(
+                "light",
+                "turn_on",
+                service_data,
                 blocking=False,
             )
 

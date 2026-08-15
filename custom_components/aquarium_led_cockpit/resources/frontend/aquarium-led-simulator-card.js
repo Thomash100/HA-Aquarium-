@@ -70,6 +70,11 @@ class AquariumLedSimulatorCard extends HTMLElement {
     const priceEntity = this.config.price_entity || attr.price_entity || "";
     const batteryEntity = this.config.battery_entity || attr.battery_soc_entity || "";
     const timeLapseDurationEntity = this.config.time_lapse_duration_number || "";
+    const aquariumPreviewEntity = this.config.aquarium_preview_switch || "";
+    const aquariumPreviewActive = (
+      this._hass.states[aquariumPreviewEntity]?.state === "on"
+      || Boolean(attr.aquarium_preview)
+    );
     const timeLapseDuration = Number(
       this._hass.states[timeLapseDurationEntity]?.state
       ?? attr.time_lapse_duration_minutes
@@ -120,6 +125,7 @@ class AquariumLedSimulatorCard extends HTMLElement {
             ${this.metric("Solar", this.formatPower(attr.solar_power))}
             ${this.metric("Sonne regional", attr.regional_sun ? "Ja" : "Nein")}
             ${this.metric("Wolken", `${attr.cloudiness_pct ?? "-"}%`)}
+            ${this.metric("Am Aquarium", aquariumPreviewActive ? "Vorschau aktiv" : "Geschuetzt")}
           </div>
 
           ${this.timelineSection(attr, priceEntity, batteryEntity)}
@@ -128,14 +134,30 @@ class AquariumLedSimulatorCard extends HTMLElement {
             ${this.controlButton("simulation_switch", "Simulation ein", "turn_on")}
             ${this.controlButton("time_lapse_switch", "Zeitraffer starten", "turn_on")}
             ${this.controlButton("time_lapse_switch", "Zeitraffer stoppen", "turn_off")}
+            ${aquariumPreviewActive
+              ? this.controlButton("aquarium_preview_switch", "Aquarium-Vorschau stoppen", "turn_off")
+              : this.controlButton(
+                "aquarium_preview_switch",
+                "Am Aquarium zeigen",
+                "turn_on",
+                "Der komplette simulierte Tag wird jetzt einmal ueber die echten Aquarium-Leuchten abgespielt. Starten?",
+              )}
             ${this.timeLapseDurationControl(timeLapseDurationEntity, timeLapseDuration)}
           </div>
+          ${aquariumPreviewEntity ? `
+            <div class="alc-preview-note">
+              Bei eingeschalteter Steuerung bewegt die Aquarium-Vorschau echte Leuchten, endet nach einem Durchlauf und stellt den vorherigen Lichtzustand wieder her.
+            </div>
+          ` : ""}
         </div>
       </ha-card>
     `;
 
     this.querySelectorAll("[data-domain]").forEach((button) => {
       button.addEventListener("click", () => {
+        if (button.dataset.confirm && !window.confirm(button.dataset.confirm)) {
+          return;
+        }
         this._hass.callService(button.dataset.domain, button.dataset.service, {
           entity_id: button.dataset.entity,
         });
@@ -180,6 +202,7 @@ class AquariumLedSimulatorCard extends HTMLElement {
         .alc-duration-head { align-items: center; display: flex; font-size: 12px; gap: 12px; justify-content: space-between; }
         .alc-duration-head strong { color: var(--primary-text-color); white-space: nowrap; }
         .alc-duration input { accent-color: var(--primary-color); cursor: pointer; margin: 8px 0 0; width: 100%; }
+        .alc-preview-note { color: var(--secondary-text-color); font-size: 11px; line-height: 1.4; margin-top: 8px; }
         .alc-timeline-section { border-top: 1px solid var(--divider-color); margin-top: 20px; padding-top: 18px; }
         .alc-timeline-title { font-size: 16px; font-weight: 650; }
         .alc-timeline-sub { color: var(--secondary-text-color); font-size: 12px; margin-top: 3px; }
@@ -648,12 +671,15 @@ class AquariumLedSimulatorCard extends HTMLElement {
     `;
   }
 
-  controlButton(configKey, label, service) {
+  controlButton(configKey, label, service, confirmation = "") {
     const entity = this.config[configKey];
     if (!entity) {
       return "";
     }
-    return `<button data-domain="switch" data-service="${service}" data-entity="${this.escape(entity)}">${this.escape(label)}</button>`;
+    const confirmAttribute = confirmation
+      ? ` data-confirm="${this.escape(confirmation)}"`
+      : "";
+    return `<button data-domain="switch" data-service="${service}" data-entity="${this.escape(entity)}"${confirmAttribute}>${this.escape(label)}</button>`;
   }
 
   timeLapseDurationControl(entity, value) {

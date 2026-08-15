@@ -2,9 +2,9 @@
 
 Aquarium LED Cockpit ist eine Home-Assistant-Custom-Integration fuer eine dynamische Aquarium-Beleuchtung mit strompreisabhaengiger Dimmung, wetterbasierter Wolkensimulation, Sonnenaufgangs-/Sonnenuntergangsphasen und Lovelace-Simulator-Karte.
 
-Veroeffentlichungskennzeichen: `V260523.014_BETA.00`
+Veroeffentlichungskennzeichen: `V260523.015_BETA.00`
 
-Home-Assistant-Manifest-Version: `26.5.23-beta.14`
+Home-Assistant-Manifest-Version: `26.5.23-beta.15`
 
 [![Home Assistant oeffnen und dieses Repository in HACS anzeigen.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Thomash100&repository=HA-Aquarium-&category=integration)
 ![HACS Custom](https://img.shields.io/badge/HACS-Custom-orange.svg)
@@ -101,6 +101,7 @@ Fuer die Simulator-Karte muss die Lovelace-Ressource `/local/aquarium_led_cockpi
 | `switch.<aquarium>_steuerung` | Aktiviert die direkte Lichtsteuerung durch die Integration |
 | `switch.<aquarium>_simulation` | Berechnet den Status, ohne Lichtbefehle zu senden |
 | `switch.<aquarium>_zeitraffer` | Fuehrt eine sichere Zeitraffer-Simulation ohne Lichtbefehle aus |
+| `switch.<aquarium>_zeitraffer_am_aquarium` | Spielt nach Bestaetigung genau einen Zeitraffer-Durchlauf auf den echten Leuchten ab und stellt anschliessend deren vorherigen Zustand wieder her |
 | `number.<aquarium>_simulationszeit` | Simulierte Minute des Tages, wobei `360` fuer `06:00` steht |
 | `number.<aquarium>_zeitraffer_schritt` | Gesamtdauer eines simulierten 24-Stunden-Tages, einstellbar von 1 bis 10 Minuten |
 
@@ -115,6 +116,8 @@ Die Simulator-Karte laedt die letzten 12 Stunden Strompreis und 24 Stunden Batte
 ### Zeitraffer-Simulation
 
 Aktiviere den Zeitraffer-Schalter, um einen ganzen Tag zu testen, ohne echte Lichter zu veraendern. Die Integration nutzt die Simulationszeit als Uhr und schreibt Phase, Helligkeit sowie RGBW-Zielwerte sekundenweise in den Statussensor. Der komplette 24-Stunden-Tag wird in der eingestellten Gesamtdauer von 1 bis 10 Minuten durchlaufen und anschliessend fortlaufend wiederholt, bis der Zeitraffer gestoppt wird.
+
+Mit `Zeitraffer am Aquarium` kann derselbe Verlauf bewusst einmalig auf den konfigurierten echten Leuchten betrachtet werden. Die normale Steuerung muss dafuer eingeschaltet sein. Vor dem Start sichert die Integration Ein/Aus-Zustand, Helligkeit und Farbe jeder erreichbaren Leuchte. Nach einem vollstaendigen Durchlauf oder beim manuellen Stopp wird dieser Zustand automatisch wiederhergestellt. Die physischen Vorschau-Uebergaenge sind auf maximal eine Sekunde begrenzt, damit der beschleunigte Verlauf sichtbar bleibt.
 
 ## Veroeffentlichungshistorie
 

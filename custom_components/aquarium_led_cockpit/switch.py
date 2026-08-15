@@ -7,7 +7,13 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import CONTROL_ENABLED, CONTROL_SIMULATION, CONTROL_TIME_LAPSE, DOMAIN
+from .const import (
+    CONTROL_AQUARIUM_PREVIEW,
+    CONTROL_ENABLED,
+    CONTROL_SIMULATION,
+    CONTROL_TIME_LAPSE,
+    DOMAIN,
+)
 from .runtime import AquariumLedCockpitRuntime, async_get_runtime
 
 
@@ -15,6 +21,11 @@ SWITCHES = (
     (CONTROL_ENABLED, "Steuerung", "mdi:fishbowl-outline"),
     (CONTROL_SIMULATION, "Simulation", "mdi:test-tube"),
     (CONTROL_TIME_LAPSE, "Zeitraffer", "mdi:fast-forward"),
+    (
+        CONTROL_AQUARIUM_PREVIEW,
+        "Zeitraffer am Aquarium",
+        "mdi:fishbowl-outline",
+    ),
 )
 
 

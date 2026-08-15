@@ -16,6 +16,7 @@ from .const import (
     CONF_SOLAR_POWER_ENTITY,
     CONF_SUN_ENTITY,
     CONF_WEATHER_ENTITY,
+    CONTROL_AQUARIUM_PREVIEW,
     CONTROL_CLOUD_STRENGTH,
     CONTROL_DAY_BRIGHTNESS,
     CONTROL_NIGHT_BRIGHTNESS,
@@ -215,6 +216,7 @@ def calculate_target(
         "time": _minutes_to_clock(minute),
         "time_lapse": time_lapse,
         "simulation": simulation,
+        "aquarium_preview": bool(controls.get(CONTROL_AQUARIUM_PREVIEW, False)),
         "time_lapse_duration_minutes": time_lapse_duration,
         "time_lapse_speed_minutes_per_second": round(
             MINUTES_PER_DAY / (time_lapse_duration * 60),
