@@ -40,6 +40,9 @@ class SolarProfileTests(unittest.TestCase):
 
         self.assertEqual("sunrise", midpoint.phase)
         self.assertAlmostEqual(46, midpoint.base_pct)
+        self.assertGreater(midpoint.rgbw[0], midpoint.rgbw[1])
+        self.assertGreater(midpoint.rgbw[1], midpoint.rgbw[2])
+        self.assertLess(midpoint.rgbw[3], 30)
         self.assertEqual("day", daylight.phase)
         self.assertEqual(SOLAR.DAYLIGHT_RGBW, daylight.rgbw)
         self.assertEqual(90, daylight.base_pct)
@@ -53,6 +56,7 @@ class SolarProfileTests(unittest.TestCase):
         self.assertEqual(90, start.base_pct)
         self.assertEqual("sunset", midpoint.phase)
         self.assertAlmostEqual(46, midpoint.base_pct)
+        self.assertEqual(self.profile(390).rgbw, midpoint.rgbw)
 
     def test_real_sunset_switches_to_dim_moonlight(self) -> None:
         before = self.profile(1199)
@@ -62,9 +66,24 @@ class SolarProfileTests(unittest.TestCase):
         self.assertGreater(before.rgbw[0], before.rgbw[2])
         self.assertEqual("night", night.phase)
         self.assertEqual(SOLAR.MOONLIGHT_RGBW, night.rgbw)
-        self.assertGreater(night.rgbw[3], 0)
-        self.assertLess(night.rgbw[3], SOLAR.DAYLIGHT_RGBW[3])
+        self.assertEqual(0, night.rgbw[0])
+        self.assertGreater(night.rgbw[2], night.rgbw[1])
+        self.assertEqual(0, night.rgbw[3])
         self.assertEqual(2, night.base_pct)
+
+    def test_colour_stops_pass_through_orange_gold_and_warm_white(self) -> None:
+        self.assertEqual(
+            SOLAR.ORANGE_RGBW,
+            SOLAR._interpolate_rgbw_stops(SOLAR.SUNRISE_RGBW_STOPS, 0.22),
+        )
+        self.assertEqual(
+            SOLAR.GOLD_RGBW,
+            SOLAR._interpolate_rgbw_stops(SOLAR.SUNRISE_RGBW_STOPS, 0.55),
+        )
+        self.assertEqual(
+            SOLAR.WARM_WHITE_RGBW,
+            SOLAR._interpolate_rgbw_stops(SOLAR.SUNRISE_RGBW_STOPS, 0.82),
+        )
 
 
 if __name__ == "__main__":

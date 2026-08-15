@@ -46,7 +46,7 @@ class AquariumLedSimulatorCard extends HTMLElement {
 
     const attr = state.attributes || {};
     const phase = this.phaseLabel(attr.phase || state.state);
-    const rgbw = Array.isArray(attr.rgbw) ? attr.rgbw : [15, 30, 90, 0];
+    const rgbw = Array.isArray(attr.rgbw) ? attr.rgbw : [0, 10, 90, 0];
     const target = Number(attr.target_pct || 0);
     const base = Number(attr.base_pct || target || 0);
     const white = Number(attr.white_pct || 0);
@@ -111,12 +111,13 @@ class AquariumLedSimulatorCard extends HTMLElement {
           </svg>
 
           <div class="alc-times">
-            <span>Sonnenaufgang ${this.escape(sunrise)} · Rot → Weiss ${sunriseDuration} Min.</span>
-            <span>Weiss → Rot ab ${this.escape(attr.sunset_phase_start || sunset)} · Untergang ${this.escape(sunset)}</span>
+            <span>Sonnenaufgang ${this.escape(sunrise)} · Rot → Orange → Gold → Weiss ${sunriseDuration} Min.</span>
+            <span>Weiss → Gold → Orange → Rot ab ${this.escape(attr.sunset_phase_start || sunset)} · Untergang ${this.escape(sunset)}</span>
           </div>
 
           <div class="alc-grid">
             ${this.metric("Basis", `${base}%`)}
+            ${this.metric("RGBW", rgbw.map((channel) => Math.round(Number(channel) || 0)).join(" / "))}
             ${this.metric("Weiss", `${white}%`)}
             ${this.metric("Preis", this.formatPrice(attr.price, this._hass.states[priceEntity]?.attributes?.unit_of_measurement))}
             ${this.metric("Preis-Dimmung", this.formatPercent(attr.price_dimming_pct))}
