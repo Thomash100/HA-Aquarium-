@@ -1,5 +1,15 @@
 # Aenderungsprotokoll
 
+## V260523.010_BETA.00
+
+Growatt-/NOAH-Speicher und regionale Sonne in die Preissteuerung aufgenommen.
+
+- Ergaenzt konfigurierbare Entitaeten fuer Speicher-Ladezustand und Solarleistung.
+- Ignoriert die Strompreis-Dimmung, sobald der Speicher die konfigurierbare Voll-Schwelle erreicht.
+- Nutzt standardmaessig 95 Prozent als Voll-Schwelle.
+- Zeigt Speicher, Solarleistung, regionalen Sonnenschein und den Status der Preisregel im Cockpit.
+- Erhoeht die Home-Assistant-Manifest-Version auf `26.5.23-beta.10`.
+
 ## V260523.009_BETA.00
 
 Strompreis-Dimmung an das tatsaechliche Tagespreisniveau gekoppelt.

@@ -70,6 +70,14 @@ class PriceAdjustmentTests(unittest.TestCase):
         self.assertEqual(result["strategy"], "unavailable")
         self.assertEqual(result["factor"], 1.0)
 
+    def test_battery_full_uses_configured_threshold(self) -> None:
+        self.assertFalse(PRICE.is_battery_full(94.9, 95))
+        self.assertTrue(PRICE.is_battery_full(95, 95))
+        self.assertTrue(PRICE.is_battery_full(100, 95))
+
+    def test_unavailable_battery_is_not_full(self) -> None:
+        self.assertFalse(PRICE.is_battery_full(None, 95))
+
 
 if __name__ == "__main__":
     unittest.main()

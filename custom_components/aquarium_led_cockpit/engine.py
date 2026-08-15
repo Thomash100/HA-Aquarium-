@@ -10,7 +10,10 @@ from homeassistant.core import HomeAssistant
 from homeassistant.util import dt as dt_util
 
 from .const import (
+    CONF_BATTERY_FULL_THRESHOLD,
+    CONF_BATTERY_SOC_ENTITY,
     CONF_PRICE_ENTITY,
+    CONF_SOLAR_POWER_ENTITY,
     CONF_SUN_ENTITY,
     CONF_WEATHER_ENTITY,
     CONTROL_CLOUD_STRENGTH,
@@ -21,13 +24,14 @@ from .const import (
     CONTROL_SIMULATION_TIME,
     CONTROL_TIME_LAPSE,
     DEFAULT_CLOUD_STRENGTH,
+    DEFAULT_BATTERY_FULL_THRESHOLD,
     DEFAULT_DAY_BRIGHTNESS,
     DEFAULT_NIGHT_BRIGHTNESS,
     DEFAULT_PRICE_DIMMING,
     DEFAULT_SIMULATION_TIME,
     DEFAULT_SUN_ENTITY,
 )
-from .price import calculate_price_adjustment
+from .price import calculate_price_adjustment, is_battery_full
 
 
 @dataclass(frozen=True)
@@ -65,6 +69,25 @@ def _price_state(hass: HomeAssistant, entity_id: str | None) -> tuple[float | No
         return float(state.state), dict(state.attributes)
     except (TypeError, ValueError):
         return None, dict(state.attributes)
+
+
+def _number_state(hass: HomeAssistant, entity_id: str | None) -> float | None:
+    if not entity_id:
+        return None
+    state = hass.states.get(entity_id)
+    if state is None:
+        return None
+    try:
+        return float(state.state)
+    except (TypeError, ValueError):
+        return None
+
+
+def _regional_sun(hass: HomeAssistant, entity_id: str | None) -> bool:
+    if not entity_id:
+        return False
+    state = hass.states.get(entity_id)
+    return state is not None and str(state.state).lower() in {"sunny", "partlycloudy"}
 
 
 def _weather_cloudiness(hass: HomeAssistant, entity_id: str | None) -> float:
@@ -180,7 +203,16 @@ def calculate_target(
         price_attributes,
         float(controls.get(CONTROL_PRICE_DIMMING, DEFAULT_PRICE_DIMMING)),
     )
-    price_factor = 1.0 if phase == "night" else price_adjustment["factor"]
+    battery_soc = _number_state(hass, settings.get(CONF_BATTERY_SOC_ENTITY))
+    battery_full_threshold = float(
+        settings.get(CONF_BATTERY_FULL_THRESHOLD, DEFAULT_BATTERY_FULL_THRESHOLD)
+    )
+    battery_full = is_battery_full(battery_soc, battery_full_threshold)
+    price_ignored = phase == "night" or battery_full
+    price_factor = 1.0 if price_ignored else price_adjustment["factor"]
+    price_strategy = "battery_full_override" if battery_full else price_adjustment["strategy"]
+    solar_power = _number_state(hass, settings.get(CONF_SOLAR_POWER_ENTITY))
+    regional_sun = _regional_sun(hass, settings.get(CONF_WEATHER_ENTITY))
 
     cloudiness = _weather_cloudiness(hass, settings.get(CONF_WEATHER_ENTITY))
     cloud_strength = _clamp(float(controls.get(CONTROL_CLOUD_STRENGTH, DEFAULT_CLOUD_STRENGTH)) / 100, 0, 1)
@@ -211,7 +243,14 @@ def calculate_target(
         "price_dimming_pct": int(round((1 - price_factor) * 100)),
         "price_reference": price_adjustment["reference"] if price_adjustment["reference"] is not None else "-",
         "price_ceiling": price_adjustment["ceiling"] if price_adjustment["ceiling"] is not None else "-",
-        "price_strategy": price_adjustment["strategy"],
+        "price_strategy": price_strategy,
+        "price_ignored": price_ignored,
+        "price_ignored_reason": "battery_full" if battery_full else ("night" if phase == "night" else "-"),
+        "battery_soc": battery_soc if battery_soc is not None else "-",
+        "battery_full_threshold": round(battery_full_threshold, 1),
+        "battery_full": battery_full,
+        "solar_power": solar_power if solar_power is not None else "-",
+        "regional_sun": regional_sun,
         "weather": hass.states.get(settings.get(CONF_WEATHER_ENTITY)).state
         if settings.get(CONF_WEATHER_ENTITY) and hass.states.get(settings.get(CONF_WEATHER_ENTITY))
         else "-",

@@ -87,7 +87,10 @@ class AquariumLedSimulatorCard extends HTMLElement {
             ${this.metric("Weiss", `${white}%`)}
             ${this.metric("Preis", this.formatValue(attr.price))}
             ${this.metric("Preis-Dimmung", this.formatPercent(attr.price_dimming_pct))}
-            ${this.metric("Wetter", this.formatValue(attr.weather))}
+            ${this.metric("Speicher", this.formatPercent(attr.battery_soc))}
+            ${this.metric("Preisregel", attr.price_ignored ? "Ignoriert" : "Aktiv")}
+            ${this.metric("Solar", this.formatPower(attr.solar_power))}
+            ${this.metric("Sonne regional", attr.regional_sun ? "Ja" : "Nein")}
             ${this.metric("Wolken", `${attr.cloudiness_pct ?? "-"}%`)}
           </div>
 
@@ -233,6 +236,13 @@ class AquariumLedSimulatorCard extends HTMLElement {
       return "-";
     }
     return `${Math.round(Number(value))}%`;
+  }
+
+  formatPower(value) {
+    if (value === undefined || value === null || value === "-") {
+      return "-";
+    }
+    return `${Math.round(Number(value))} W`;
   }
 
   formatValue(value) {
