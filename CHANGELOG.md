@@ -1,5 +1,15 @@
 # Aenderungsprotokoll
 
+## V260523.012_BETA.00
+
+Preis- und Batterieverlaeufe in das Dashboard aufgenommen.
+
+- Zeigt 12 Stunden Strompreis-Rueckblick aus der Home-Assistant-Historie.
+- Ergaenzt bis zu 24 Stunden echte Viertelstunden-Vorschau ueber `tibber.get_prices`.
+- Zeigt 24 Stunden Growatt-/NOAH-Ladezustand mit Vollgrenze, Minimum, Maximum und Aenderung.
+- Laedt Verlaufsdaten asynchron und aktualisiert sie alle fuenf Minuten.
+- Erhoeht die Home-Assistant-Manifest-Version auf `26.5.23-beta.12`.
+
 ## V260523.011_BETA.00
 
 Options-Flow fuer Home Assistant 2026.8 kompatibel gemacht.
