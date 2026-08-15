@@ -52,6 +52,23 @@ class FrontendResourceTests(unittest.TestCase):
         self.assertIn("window.confirm", source)
         self.assertIn("stellt den vorherigen Lichtzustand wieder her", source)
 
+    def test_day_band_uses_sun_arc_and_home_assistant_moon_phase(self) -> None:
+        source = RESOURCE.read_text(encoding="utf-8")
+
+        self.assertIn("celestialGeometry", source)
+        self.assertIn("alc-sun-arc", source)
+        self.assertIn("alc-moon-arc", source)
+        self.assertIn("moon_phase_label", source)
+
+    def test_transition_colours_are_editable_as_rgbw(self) -> None:
+        source = RESOURCE.read_text(encoding="utf-8")
+
+        self.assertIn('type="color"', source)
+        self.assertIn("data-white-picker", source)
+        self.assertIn('callService("aquarium_led_cockpit", "set_transition_color"', source)
+        self.assertIn("Pause: Nacht", source)
+        self.assertIn("Pause: Speicher voll", source)
+
 
 if __name__ == "__main__":
     unittest.main()

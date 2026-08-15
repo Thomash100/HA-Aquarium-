@@ -18,15 +18,20 @@ from .const import (
     CONF_CONFIG_ENTRY_ID,
     CONF_EXPORT_FRONTEND_RESOURCES,
     CONF_OVERWRITE_EXISTING,
+    CONF_PHASE,
+    CONF_RGBW_COLOR,
     CONF_STATUS_JSON,
     DATA_SERVICES_REGISTERED,
     DEFAULT_AUTO_INSTALL,
     DEFAULT_EXPORT_FRONTEND_RESOURCES,
     DEFAULT_OVERWRITE_EXISTING,
     DOMAIN,
+    CONTROL_SUNRISE_RGBW,
+    CONTROL_SUNSET_RGBW,
     PLATFORMS,
     SERVICE_INSTALL_RESOURCES,
     SERVICE_SET_DASHBOARD_STATUS,
+    SERVICE_SET_TRANSITION_COLOR,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -121,6 +126,16 @@ async def async_setup_integration(hass: HomeAssistant, config: dict[str, Any]) -
             vol.Required(CONF_STATUS_JSON): cv.string,
         }
     )
+    set_transition_color_schema = vol.Schema(
+        {
+            vol.Optional(CONF_CONFIG_ENTRY_ID): cv.string,
+            vol.Required(CONF_PHASE): vol.In({"sunrise", "sunset"}),
+            vol.Required(CONF_RGBW_COLOR): vol.All(
+                [vol.All(vol.Coerce(int), vol.Range(min=0, max=255))],
+                vol.Length(min=4, max=4),
+            ),
+        }
+    )
 
     domain_data = hass.data.setdefault(DOMAIN, {})
 
@@ -162,6 +177,16 @@ async def async_setup_integration(hass: HomeAssistant, config: dict[str, Any]) -
 
         await runtime.async_set_status(payload)
 
+    async def async_handle_set_transition_color(call: ServiceCall) -> None:
+        entry = _resolve_entry(hass, call.data.get(CONF_CONFIG_ENTRY_ID))
+        runtime = await async_get_runtime(hass, entry.entry_id)
+        control = (
+            CONTROL_SUNRISE_RGBW
+            if call.data[CONF_PHASE] == "sunrise"
+            else CONTROL_SUNSET_RGBW
+        )
+        await runtime.async_set_control(control, list(call.data[CONF_RGBW_COLOR]))
+
     hass.services.async_register(
         DOMAIN,
         SERVICE_INSTALL_RESOURCES,
@@ -173,6 +198,12 @@ async def async_setup_integration(hass: HomeAssistant, config: dict[str, Any]) -
         SERVICE_SET_DASHBOARD_STATUS,
         async_handle_set_dashboard_status,
         schema=set_dashboard_status_schema,
+    )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_SET_TRANSITION_COLOR,
+        async_handle_set_transition_color,
+        schema=set_transition_color_schema,
     )
     domain_data[DATA_SERVICES_REGISTERED] = True
     return True
