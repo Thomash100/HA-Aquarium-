@@ -41,6 +41,7 @@ Die Integration verwandelt deine Aquarium-Beleuchtung in einen dynamischen Tages
 - Durchgaengiges blaues Mondlicht nach Sonnenuntergang ohne Weisskanal; die eingestellte Nachtlicht-Helligkeit bildet die Vollmond-Obergrenze
 - Mondphasenabhaengige Nachthelligkeit mit sanfter Wolkensimulation und mindestens einem Prozent Licht statt Ein/Aus-Schalten
 - Sonnenbahn mit echten Auf-/Untergangszeiten und realer Mondphase aus `sensor.moon_phase`
+- Einstellbare Sonnenaufgangs-Verschiebung von minus sechs bis plus sechs Stunden; positive Werte verlaengern das Mondlicht am Morgen
 - Wolkensimulation tagsueber mit wetterabhaengiger Dimmung
 - Simulationsmodus, der den Cockpit-Status aktualisiert, ohne Lichtbefehle zu senden
 - Konfigurierbarer 24-Stunden-Zeitraffer: ein kompletter Tag in einer bis zehn realen Minuten
@@ -108,6 +109,7 @@ Fuer die Simulator-Karte muss die Lovelace-Ressource `/local/aquarium_led_cockpi
 | `switch.<aquarium>_zeitraffer` | Fuehrt eine sichere Zeitraffer-Simulation ohne Lichtbefehle aus |
 | `switch.<aquarium>_zeitraffer_am_aquarium` | Spielt nach Bestaetigung genau einen Zeitraffer-Durchlauf auf den echten Leuchten ab und stellt anschliessend deren vorherigen Zustand wieder her |
 | `number.<aquarium>_simulationszeit` | Simulierte Minute des Tages, wobei `360` fuer `06:00` steht |
+| `number.<aquarium>_sonnenaufgang_verschiebung` | Verschiebt den Licht-Sonnenaufgang in Viertelstundenschritten um minus sechs bis plus sechs Stunden; `0` folgt der echten Sonne |
 | `number.<aquarium>_zeitraffer_schritt` | Gesamtdauer eines simulierten 24-Stunden-Tages, einstellbar von 1 bis 10 Minuten |
 
 ### Strompreis-Dimmung
@@ -117,6 +119,10 @@ Wenn der Preissensor Tagesdurchschnitt und Tageshoechstpreis bereitstellt, bleib
 Optional kann ein Speicher-Ladezustand sowie eine Solarleistungs-Entitaet ausgewaehlt werden. Ab der konfigurierten Voll-Schwelle, standardmaessig 95 Prozent, wird die Preis-Dimmung ignoriert: Bereits gespeicherte Solarenergie hat dann Vorrang vor dem Netzpreis. Regionale Sonne wird aus der ausgewaehlten Wetter-Entitaet erkannt und zusammen mit der realen Solarleistung im Statussensor dargestellt.
 
 Die Simulator-Karte laedt die letzten 12 Stunden Strompreis und 24 Stunden Batterie-Ladezustand direkt aus der Home-Assistant-Historie. Wenn die Tibber-Aktion `tibber.get_prices` verfuegbar ist, ergaenzt sie die Preislinie um die bereits veroeffentlichten Viertelstundenpreise der naechsten 24 Stunden. Fuer den Batterie-Ladezustand wird bewusst keine kuenstliche Zukunftsprognose erzeugt.
+
+### Sonnenaufgang und Mondlicht
+
+Das Mondlicht beginnt am echten Sonnenuntergang und bleibt bis zum eingestellten Licht-Sonnenaufgang aktiv. Mit `number.<aquarium>_sonnenaufgang_verschiebung` laesst sich dieser Morgenzeitpunkt relativ zur echten Sonne verschieben: `+2` startet den roten Sonnenaufgang zwei Stunden spaeter und verlaengert das Mondlicht entsprechend; `-1` startet ihn eine Stunde frueher. Die Simulator-Karte zeigt echte Sonnenzeit, Lichtstart und Versatz getrennt an.
 
 ### Zeitraffer-Simulation
 

@@ -24,6 +24,7 @@ from .const import (
     CONTROL_PRICE_DIMMING,
     CONTROL_SIMULATION,
     CONTROL_SIMULATION_TIME,
+    CONTROL_SUNRISE_OFFSET,
     CONTROL_SUNRISE_RGBW,
     CONTROL_SUNSET_RGBW,
     CONTROL_TIME_LAPSE_DURATION,
@@ -35,6 +36,7 @@ from .const import (
     DEFAULT_MOON_ENTITY,
     DEFAULT_PRICE_DIMMING,
     DEFAULT_SIMULATION_TIME,
+    DEFAULT_SUNRISE_OFFSET_HOURS,
     DEFAULT_SUN_ENTITY,
 )
 from .price import calculate_price_adjustment, is_battery_full
@@ -46,6 +48,8 @@ from .solar import (
     calculate_moonlight_target,
     calculate_solar_profile,
     normalize_rgbw,
+    normalize_sunrise_offset,
+    shift_sunrise_minute,
 )
 from .time_lapse import MINUTES_PER_DAY, normalize_time_lapse_duration
 
@@ -196,11 +200,15 @@ def calculate_target(
         else now.hour * 60 + now.minute
     )
 
-    sunrise_start, sunset_event = _sun_window(
+    sunrise_actual, sunset_event = _sun_window(
         hass,
         str(settings.get(CONF_SUN_ENTITY) or DEFAULT_SUN_ENTITY),
         now,
     )
+    sunrise_offset_hours = normalize_sunrise_offset(
+        controls.get(CONTROL_SUNRISE_OFFSET, DEFAULT_SUNRISE_OFFSET_HOURS)
+    )
+    sunrise_start = shift_sunrise_minute(sunrise_actual, sunrise_offset_hours)
     day = _clamp(float(controls.get(CONTROL_DAY_BRIGHTNESS, DEFAULT_DAY_BRIGHTNESS)), 1, 100)
     night = _clamp(float(controls.get(CONTROL_NIGHT_BRIGHTNESS, DEFAULT_NIGHT_BRIGHTNESS)), 1, 30)
     solar_profile = calculate_solar_profile(
@@ -271,11 +279,15 @@ def calculate_target(
             2,
         ),
         "sunrise": _minutes_to_clock(sunrise_start),
+        "sunrise_actual": _minutes_to_clock(sunrise_actual),
+        "sunrise_offset_hours": sunrise_offset_hours,
         "sunrise_duration_minutes": SUNRISE_DURATION_MINUTES,
         "sunrise_end": _minutes_to_clock(sunrise_start + SUNRISE_DURATION_MINUTES),
         "sunset": _minutes_to_clock(sunset_event),
         "sunset_duration_minutes": SUNSET_DURATION_MINUTES,
         "sunset_phase_start": _minutes_to_clock(sunset_event - SUNSET_DURATION_MINUTES),
+        "moonlight_start": _minutes_to_clock(sunset_event),
+        "moonlight_end": _minutes_to_clock(sunrise_start),
         "light_mode": "moonlight" if phase == "night" else phase,
         "color_control": "rgbw",
         "sunrise_rgbw": list(normalize_rgbw(controls.get(CONTROL_SUNRISE_RGBW))),

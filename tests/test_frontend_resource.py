@@ -77,6 +77,15 @@ class FrontendResourceTests(unittest.TestCase):
         self.assertIn('this.metric("Mondlicht"', source)
         self.assertIn('this.metric("Mond-Wolken"', source)
 
+    def test_sunrise_offset_is_adjustable_and_shows_real_time(self) -> None:
+        source = RESOURCE.read_text(encoding="utf-8")
+
+        self.assertIn("sunrise_offset_number", source)
+        self.assertIn("sunrise_actual", source)
+        self.assertIn("Sonnenaufgang verschieben", source)
+        self.assertIn('data-sunrise-offset=', source)
+        self.assertIn('step="0.25"', source)
+
 
 if __name__ == "__main__":
     unittest.main()

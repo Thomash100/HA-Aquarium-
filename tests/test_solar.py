@@ -134,6 +134,16 @@ class SolarProfileTests(unittest.TestCase):
 
         self.assertEqual(SOLAR.DAWN_DUSK_RGBW, profile.rgbw)
 
+    def test_sunrise_can_be_shifted_later_by_hours(self) -> None:
+        shifted = SOLAR.shift_sunrise_minute(355, 2.5)
+
+        self.assertEqual(505, shifted)
+
+    def test_sunrise_shift_is_limited_and_does_not_wrap_days(self) -> None:
+        self.assertEqual(0, SOLAR.shift_sunrise_minute(300, -20))
+        self.assertEqual(1439, SOLAR.shift_sunrise_minute(1200, 20))
+        self.assertEqual(300, SOLAR.shift_sunrise_minute(300, "invalid"))
+
 
 if __name__ == "__main__":
     unittest.main()

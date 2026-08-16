@@ -52,6 +52,7 @@ class AquariumLedSimulatorCard extends HTMLElement {
     const white = Number(attr.white_pct || 0);
     const currentTime = attr.time || "--:--";
     const sunrise = attr.sunrise || "06:00";
+    const sunriseActual = attr.sunrise_actual || sunrise;
     const sunset = attr.sunset || "18:00";
     const sunriseDuration = Number(attr.sunrise_duration_minutes ?? 60);
     const sunsetDuration = Number(attr.sunset_duration_minutes ?? 90);
@@ -77,6 +78,7 @@ class AquariumLedSimulatorCard extends HTMLElement {
     const priceEntity = this.config.price_entity || attr.price_entity || "";
     const batteryEntity = this.config.battery_entity || attr.battery_soc_entity || "";
     const timeLapseDurationEntity = this.config.time_lapse_duration_number || "";
+    const sunriseOffsetEntity = this.config.sunrise_offset_number || "";
     const aquariumPreviewEntity = this.config.aquarium_preview_switch || "";
     const aquariumPreviewActive = (
       this._hass.states[aquariumPreviewEntity]?.state === "on"
@@ -86,6 +88,11 @@ class AquariumLedSimulatorCard extends HTMLElement {
       this._hass.states[timeLapseDurationEntity]?.state
       ?? attr.time_lapse_duration_minutes
       ?? 1,
+    );
+    const sunriseOffsetHours = Number(
+      this._hass.states[sunriseOffsetEntity]?.state
+      ?? attr.sunrise_offset_hours
+      ?? 0,
     );
 
     this.innerHTML = `
@@ -129,9 +136,11 @@ class AquariumLedSimulatorCard extends HTMLElement {
           </svg>
 
           <div class="alc-times">
-            <span>Sonnenaufgang ${this.escape(sunrise)} · Wunschfarbe → Gold → Weiss ${sunriseDuration} Min.</span>
+            <span>Reale Sonne ${this.escape(sunriseActual)} · Lichtstart ${this.escape(sunrise)} (${this.escape(this.formatSignedHours(sunriseOffsetHours))}) · Wunschfarbe → Gold → Weiss ${sunriseDuration} Min.</span>
             <span>Weiss → Gold → Wunschfarbe ab ${this.escape(attr.sunset_phase_start || sunset)} · Untergang ${this.escape(sunset)}</span>
           </div>
+
+          ${this.sunriseOffsetControl(sunriseOffsetEntity, sunriseOffsetHours)}
 
           ${this.transitionColorControls(sunriseRgbw, sunsetRgbw, attr.config_entry_id || this.config.config_entry_id || "")}
 
@@ -149,6 +158,7 @@ class AquariumLedSimulatorCard extends HTMLElement {
             ${this.metric("Mondlicht", this.formatPercent(attr.moonlight_target_pct))}
             ${this.metric("Mondphase", `${Math.round(moonPhaseBrightness)}%`)}
             ${this.metric("Mond-Wolken", `−${Math.round(moonCloudDimming)}%`)}
+            ${this.metric("Sonnenaufgang", `${sunrise} · ${this.formatSignedHours(sunriseOffsetHours)}`)}
             ${this.metric("Am Aquarium", aquariumPreviewActive ? "Vorschau aktiv" : "Geschuetzt")}
           </div>
 
@@ -192,6 +202,15 @@ class AquariumLedSimulatorCard extends HTMLElement {
       input.addEventListener("change", () => {
         this._hass.callService("number", "set_value", {
           entity_id: input.dataset.timeLapseDuration,
+          value: Number(input.value),
+        });
+      });
+    });
+
+    this.querySelectorAll("[data-sunrise-offset]").forEach((input) => {
+      input.addEventListener("change", () => {
+        this._hass.callService("number", "set_value", {
+          entity_id: input.dataset.sunriseOffset,
           value: Number(input.value),
         });
       });
@@ -246,6 +265,7 @@ class AquariumLedSimulatorCard extends HTMLElement {
         .alc-duration-head { align-items: center; display: flex; font-size: 12px; gap: 12px; justify-content: space-between; }
         .alc-duration-head strong { color: var(--primary-text-color); white-space: nowrap; }
         .alc-duration input { accent-color: var(--primary-color); cursor: pointer; margin: 8px 0 0; width: 100%; }
+        .alc-sunrise-offset { display: block; margin-top: 14px; }
         .alc-preview-note { color: var(--secondary-text-color); font-size: 11px; line-height: 1.4; margin-top: 8px; }
         .alc-timeline-section { border-top: 1px solid var(--divider-color); margin-top: 20px; padding-top: 18px; }
         .alc-timeline-title { font-size: 16px; font-weight: 650; }
@@ -749,6 +769,36 @@ class AquariumLedSimulatorCard extends HTMLElement {
         />
       </label>
     `;
+  }
+
+  sunriseOffsetControl(entity, value) {
+    if (!entity) {
+      return "";
+    }
+    const offset = Math.max(-6, Math.min(6, Number(value) || 0));
+    return `
+      <label class="alc-duration alc-sunrise-offset">
+        <span class="alc-duration-head">
+          <span>Sonnenaufgang verschieben</span>
+          <strong>${this.escape(this.formatSignedHours(offset))}</strong>
+        </span>
+        <input
+          type="range"
+          min="-6"
+          max="6"
+          step="0.25"
+          value="${offset}"
+          data-sunrise-offset="${this.escape(entity)}"
+          aria-label="Sonnenaufgang in Stunden verschieben"
+        />
+      </label>
+    `;
+  }
+
+  formatSignedHours(value) {
+    const number = Number(value) || 0;
+    const sign = number > 0 ? "+" : "";
+    return `${sign}${number.toLocaleString("de-DE", { maximumFractionDigits: 2 })} h`;
   }
 
   transitionColorControls(sunriseRgbw, sunsetRgbw, configEntryId) {
