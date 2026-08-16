@@ -25,8 +25,10 @@ from .const import (
     CONTROL_SIMULATION,
     CONTROL_SIMULATION_TIME,
     CONTROL_SUNRISE_DURATION,
+    CONTROL_SUNRISE_END_RGBW,
     CONTROL_SUNRISE_OFFSET,
     CONTROL_SUNRISE_RGBW,
+    CONTROL_SUNSET_START_RGBW,
     CONTROL_SUNSET_RGBW,
     CONTROL_SUNSET_DURATION,
     CONTROL_TIME_LAPSE_DURATION,
@@ -48,6 +50,7 @@ from .const import (
 from .engine import calculate_target
 from .solar import (
     DAWN_DUSK_RGBW,
+    DAYLIGHT_RGBW,
     normalize_rgbw,
     normalize_sunrise_offset,
     normalize_transition_duration,
@@ -74,6 +77,8 @@ DEFAULT_CONTROLS = {
     CONTROL_SUNSET_DURATION: DEFAULT_SUNSET_DURATION_MINUTES,
     CONTROL_TIME_LAPSE_DURATION: DEFAULT_TIME_LAPSE_DURATION_MINUTES,
     CONTROL_SUNRISE_RGBW: list(DAWN_DUSK_RGBW),
+    CONTROL_SUNRISE_END_RGBW: list(DAYLIGHT_RGBW),
+    CONTROL_SUNSET_START_RGBW: list(DAYLIGHT_RGBW),
     CONTROL_SUNSET_RGBW: list(DAWN_DUSK_RGBW),
 }
 
@@ -138,6 +143,18 @@ class AquariumLedCockpitRuntime:
         self._controls[CONTROL_SUNRISE_RGBW] = list(
             normalize_rgbw(self._controls.get(CONTROL_SUNRISE_RGBW))
         )
+        self._controls[CONTROL_SUNRISE_END_RGBW] = list(
+            normalize_rgbw(
+                self._controls.get(CONTROL_SUNRISE_END_RGBW),
+                DAYLIGHT_RGBW,
+            )
+        )
+        self._controls[CONTROL_SUNSET_START_RGBW] = list(
+            normalize_rgbw(
+                self._controls.get(CONTROL_SUNSET_START_RGBW),
+                DAYLIGHT_RGBW,
+            )
+        )
         self._controls[CONTROL_SUNSET_RGBW] = list(
             normalize_rgbw(self._controls.get(CONTROL_SUNSET_RGBW))
         )
@@ -185,8 +202,18 @@ class AquariumLedCockpitRuntime:
             value = normalize_transition_duration(value, DEFAULT_SUNRISE_DURATION_MINUTES)
         if key == CONTROL_SUNSET_DURATION:
             value = normalize_transition_duration(value, DEFAULT_SUNSET_DURATION_MINUTES)
-        if key in {CONTROL_SUNRISE_RGBW, CONTROL_SUNSET_RGBW}:
-            value = list(normalize_rgbw(value))
+        if key in {
+            CONTROL_SUNRISE_RGBW,
+            CONTROL_SUNRISE_END_RGBW,
+            CONTROL_SUNSET_START_RGBW,
+            CONTROL_SUNSET_RGBW,
+        }:
+            fallback = (
+                DAYLIGHT_RGBW
+                if key in {CONTROL_SUNRISE_END_RGBW, CONTROL_SUNSET_START_RGBW}
+                else DAWN_DUSK_RGBW
+            )
+            value = list(normalize_rgbw(value, fallback))
         if key == CONTROL_SIMULATION_TIME and self._controls.get(CONTROL_TIME_LAPSE):
             self._time_lapse_position = float(value)
             self._time_lapse_last_tick = self.hass.loop.time()

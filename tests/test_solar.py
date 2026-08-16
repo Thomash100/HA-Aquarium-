@@ -34,15 +34,13 @@ class SolarProfileTests(unittest.TestCase):
         self.assertEqual(SOLAR.DAWN_DUSK_RGBW, profile.rgbw)
         self.assertEqual(2, profile.base_pct)
 
-    def test_sunrise_reaches_white_after_one_hour(self) -> None:
+    def test_sunrise_reaches_configured_daylight_after_one_hour(self) -> None:
         midpoint = self.profile(390)
         daylight = self.profile(420)
 
         self.assertEqual("sunrise", midpoint.phase)
         self.assertAlmostEqual(46, midpoint.base_pct)
-        self.assertGreater(midpoint.rgbw[0], midpoint.rgbw[1])
-        self.assertGreater(midpoint.rgbw[1], midpoint.rgbw[2])
-        self.assertLess(midpoint.rgbw[3], 30)
+        self.assertEqual((222, 110, 128, 128), midpoint.rgbw)
         self.assertEqual("day", daylight.phase)
         self.assertEqual(SOLAR.DAYLIGHT_RGBW, daylight.rgbw)
         self.assertEqual(90, daylight.base_pct)
@@ -100,32 +98,50 @@ class SolarProfileTests(unittest.TestCase):
         self.assertLess(cloudy, clear)
         self.assertEqual(SOLAR.MIN_MOONLIGHT_BRIGHTNESS_PCT, new_moon_cloudy)
 
-    def test_colour_stops_pass_through_orange_gold_and_warm_white(self) -> None:
-        self.assertEqual(
-            SOLAR.ORANGE_RGBW,
-            SOLAR._interpolate_rgbw_stops(SOLAR.SUNRISE_RGBW_STOPS, 0.22),
-        )
-        self.assertEqual(
-            SOLAR.GOLD_RGBW,
-            SOLAR._interpolate_rgbw_stops(SOLAR.SUNRISE_RGBW_STOPS, 0.55),
-        )
-        self.assertEqual(
-            SOLAR.WARM_WHITE_RGBW,
-            SOLAR._interpolate_rgbw_stops(SOLAR.SUNRISE_RGBW_STOPS, 0.82),
+    def test_all_four_transition_endpoints_are_independently_configurable(self) -> None:
+        sunrise_start = (220, 10, 20, 0)
+        sunrise_end = (180, 200, 240, 230)
+        sunset_start = (210, 180, 120, 160)
+        sunset_end = (250, 30, 5, 4)
+
+        profiles = [
+            SOLAR.calculate_solar_profile(
+                minute,
+                360,
+                1200,
+                90,
+                2,
+                sunrise_start,
+                sunset_end,
+                60,
+                90,
+                sunrise_end,
+                sunset_start,
+            )
+            for minute in (360, 420, 1110, 1199)
+        ]
+
+        self.assertEqual(sunrise_start, profiles[0].rgbw)
+        self.assertEqual(sunrise_end, profiles[1].rgbw)
+        self.assertEqual(sunset_start, profiles[2].rgbw)
+        self.assertEqual((250, 32, 6, 6), profiles[3].rgbw)
+
+    def test_rgbw_channels_are_interpolated_linearly(self) -> None:
+        midpoint = SOLAR.calculate_solar_profile(
+            390,
+            360,
+            1200,
+            90,
+            2,
+            (10, 20, 30, 40),
+            (50, 60, 70, 80),
+            60,
+            90,
+            (110, 120, 130, 140),
+            (150, 160, 170, 180),
         )
 
-    def test_sunrise_and_sunset_endpoints_are_independently_configurable(self) -> None:
-        sunrise_color = (210, 20, 80, 15)
-        sunset_color = (255, 80, 0, 25)
-
-        sunrise = SOLAR.calculate_solar_profile(
-            360, 360, 1200, 90, 2, sunrise_color, sunset_color
-        )
-        sunset_stops = SOLAR.build_transition_stops(sunset_color, reverse=True)
-
-        self.assertEqual(sunrise_color, sunrise.rgbw)
-        self.assertEqual(sunset_color, sunset_stops[-1][1])
-        self.assertNotEqual(sunrise.rgbw, sunset_stops[-1][1])
+        self.assertEqual((60, 70, 80, 90), midpoint.rgbw)
 
     def test_invalid_configured_colour_falls_back_to_deep_red(self) -> None:
         profile = SOLAR.calculate_solar_profile(

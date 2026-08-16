@@ -38,8 +38,8 @@ set_dashboard_status:
           multiline: true
 
 set_transition_color:
-  name: Farbe fuer Auf- oder Untergang setzen
-  description: Speichert die RGBW-Endfarbe fuer Sonnenaufgang oder Sonnenuntergang und berechnet das Lichtprofil neu.
+  name: RGBW-Farbpunkt eines Uebergangs setzen
+  description: Speichert die RGBW-Farbe am Anfang oder Ende von Sonnenaufgang beziehungsweise Sonnenuntergang und berechnet das Lichtprofil stufenlos neu.
   fields:
     config_entry_id:
       name: Aquarium-Konfiguration
@@ -53,10 +53,14 @@ set_transition_color:
       selector:
         select:
           options:
-            - label: Sonnenaufgang
-              value: sunrise
-            - label: Sonnenuntergang
-              value: sunset
+            - label: Sonnenaufgang Anfang
+              value: sunrise_start
+            - label: Sonnenaufgang Ende
+              value: sunrise_end
+            - label: Sonnenuntergang Anfang
+              value: sunset_start
+            - label: Sonnenuntergang Ende
+              value: sunset_end
     rgbw_color:
       name: RGBW-Farbe
       description: Vier Kanalwerte in der Reihenfolge Rot, Gruen, Blau und Weiss, jeweils von 0 bis 255.

@@ -67,5 +67,8 @@ CONTROL_TIME_LAPSE_DURATION = "simulation_step_minutes"
 CONTROL_SUNRISE_OFFSET = "sunrise_offset_hours"
 CONTROL_SUNRISE_DURATION = "sunrise_duration_minutes"
 CONTROL_SUNSET_DURATION = "sunset_duration_minutes"
+# Keep the original keys as the outer (night-side) endpoints for upgrades.
 CONTROL_SUNRISE_RGBW = "sunrise_rgbw"
+CONTROL_SUNRISE_END_RGBW = "sunrise_end_rgbw"
+CONTROL_SUNSET_START_RGBW = "sunset_start_rgbw"
 CONTROL_SUNSET_RGBW = "sunset_rgbw"

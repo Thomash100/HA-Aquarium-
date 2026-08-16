@@ -2,9 +2,9 @@
 
 Aquarium LED Cockpit ist eine Home-Assistant-Custom-Integration fuer eine dynamische Aquarium-Beleuchtung mit strompreisabhaengiger Dimmung, wetterbasierter Wolkensimulation, Sonnenaufgangs-/Sonnenuntergangsphasen und Lovelace-Simulator-Karte.
 
-Veroeffentlichungskennzeichen: `V260816.020_BETA.00`
+Veroeffentlichungskennzeichen: `V260816.021_BETA.00`
 
-Home-Assistant-Manifest-Version: `26.8.16-beta.20`
+Home-Assistant-Manifest-Version: `26.8.16-beta.21`
 
 [![Home Assistant oeffnen und dieses Repository in HACS anzeigen.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Thomash100&repository=HA-Aquarium-&category=integration)
 ![HACS Custom](https://img.shields.io/badge/HACS-Custom-orange.svg)
@@ -36,9 +36,9 @@ Die Integration verwandelt deine Aquarium-Beleuchtung in einen dynamischen Tages
 - Eigene Switch- und Number-Entitaeten fuer Normalbetrieb, sichere Simulation und Zeitraffer-Test
 - Mehrere Aquarien mit eigenem Namen, eigener Runtime und eigenen Entitaeten
 - Dienste mit Aquarium-Auswahl, damit Status und Ressourcen gezielt einem Aquarium zugeordnet werden
-- Echter RGBW-Sonnenverlauf aus `sun.sun` mit getrennt einstellbarer Dauer fuer Auf- und Untergang: Wunschfarbe ueber Orange, Gold und Warmweiss zu Tagesweiss und abends exakt rueckwaerts
-- Getrennt einstellbare RGBW-Endfarben fuer Sonnenaufgang und Sonnenuntergang direkt in der Simulator-Karte
-- Gemeinsames Sonnenbahn-Diagramm mit integrierter, farbcodierter 24-Stunden-Vorschau der Lichtintensitaet
+- Echter RGBW-Sonnenverlauf aus `sun.sun` mit getrennt einstellbarer Dauer fuer Auf- und Untergang
+- Vier frei einstellbare RGBW-Farbpunkte fuer Anfang und Ende von Sonnenaufgang sowie Sonnenuntergang; alle Kanaele werden dazwischen stufenlos linear ueberblendet
+- Eigenstaendiges 24-Stunden-Wirkungsdiagramm fuer Grundprofil, effektive Lichtintensitaet, Wolkenfaktor, Preisfaktor und Growatt-Akku-Ladezustand
 - Durchgaengiges blaues Mondlicht nach Sonnenuntergang ohne Weisskanal; die eingestellte Nachtlicht-Helligkeit bildet die Vollmond-Obergrenze
 - Mondphasenabhaengige Nachthelligkeit mit sanfter Wolkensimulation und mindestens einem Prozent Licht statt Ein/Aus-Schalten
 - Sonnenbahn mit echten Auf-/Untergangszeiten und realer Mondphase aus `sensor.moon_phase`
@@ -121,11 +121,11 @@ Wenn der Preissensor Tagesdurchschnitt und Tageshoechstpreis bereitstellt, bleib
 
 Optional kann ein Speicher-Ladezustand sowie eine Solarleistungs-Entitaet ausgewaehlt werden. Ab der konfigurierten Voll-Schwelle, standardmaessig 95 Prozent, wird die Preis-Dimmung ignoriert: Bereits gespeicherte Solarenergie hat dann Vorrang vor dem Netzpreis. Regionale Sonne wird aus der ausgewaehlten Wetter-Entitaet erkannt und zusammen mit der realen Solarleistung im Statussensor dargestellt.
 
-Die Simulator-Karte laedt die letzten 12 Stunden Strompreis und 24 Stunden Batterie-Ladezustand direkt aus der Home-Assistant-Historie. Wenn die Tibber-Aktion `tibber.get_prices` verfuegbar ist, ergaenzt sie die Preislinie um die bereits veroeffentlichten Viertelstundenpreise der naechsten 24 Stunden. Fuer den Batterie-Ladezustand wird bewusst keine kuenstliche Zukunftsprognose erzeugt.
+Die Simulator-Karte laedt die letzten 12 Stunden Strompreis und 24 Stunden Batterie-Ladezustand direkt aus der Home-Assistant-Historie. Wenn die Tibber-Aktion `tibber.get_prices` verfuegbar ist, ergaenzt sie die Preislinie um die bereits veroeffentlichten Viertelstundenpreise der naechsten 24 Stunden. Das separate Wirkungsdiagramm berechnet daraus die effektive Tageshelligkeit inklusive Preisregel, Wolken und Akku-Vollgrenze. Fuer die Zukunft wird der letzte echte Akku-Ladezustand gehalten und als solcher gekennzeichnet; eine kuenstliche Akku-Prognose wird nicht erzeugt.
 
 ### Sonnenaufgang und Mondlicht
 
-Das Mondlicht beginnt am echten Sonnenuntergang und bleibt bis zum eingestellten Licht-Sonnenaufgang aktiv. Mit `number.<aquarium>_sonnenaufgang_verschiebung` laesst sich dieser Morgenzeitpunkt relativ zur echten Sonne verschieben: `+2` startet den roten Sonnenaufgang zwei Stunden spaeter und verlaengert das Mondlicht entsprechend; `-1` startet ihn eine Stunde frueher. Die Dauer-Regler legen getrennt fest, wie lange der Morgen von der Wunschfarbe zu Tagesweiss und der Abend von Tagesweiss zur Wunschfarbe ueberblendet. Die Simulator-Karte zeigt echte Sonnenzeit, Lichtstart, Versatz, Farben und Intensitaetsverlauf gemeinsam an.
+Das Mondlicht beginnt am echten Sonnenuntergang und bleibt bis zum eingestellten Licht-Sonnenaufgang aktiv. Mit `number.<aquarium>_sonnenaufgang_verschiebung` laesst sich dieser Morgenzeitpunkt relativ zur echten Sonne verschieben: `+2` startet den roten Sonnenaufgang zwei Stunden spaeter und verlaengert das Mondlicht entsprechend; `-1` startet ihn eine Stunde frueher. Die Dauer-Felder mit grossen Minus-/Plus-Tasten legen getrennt fest, wie lange Auf- und Untergang dauern. Fuer Anfang und Ende jedes Uebergangs lassen sich Rot, Gruen, Blau und Weiss mit grossen Reglern von 0 bis 255 einstellen. Die Integration interpoliert jeden Kanal stufenlos. Die Sonnenbahn bleibt dabei eine reine Himmelsdarstellung; die wirksame Intensitaet steht in einem eigenen Diagramm darunter.
 
 ### Zeitraffer-Simulation
 
@@ -164,12 +164,12 @@ Aktualisiert den Live-Statussensor aus einer Automation oder einem Skript.
 
 #### `aquarium_led_cockpit.set_transition_color`
 
-Speichert die RGBW-Endfarbe eines Sonnenaufgangs oder Sonnenuntergangs. Die Simulator-Karte ruft diesen Dienst ueber ihre beiden Farbfelder auf.
+Speichert einen RGBW-Farbpunkt am Anfang oder Ende eines Sonnenaufgangs beziehungsweise Sonnenuntergangs. Die Simulator-Karte ruft diesen Dienst ueber ihre vier RGBW-Reglergruppen auf.
 
 | Feld | Erforderlich | Beschreibung |
 | --- | --- | --- |
 | `config_entry_id` | Nein | Aquarium-Konfiguration; bei mehreren Eintraegen erforderlich |
-| `phase` | Ja | `sunrise` oder `sunset` |
+| `phase` | Ja | `sunrise_start`, `sunrise_end`, `sunset_start` oder `sunset_end`; `sunrise` und `sunset` bleiben als kompatible Kurzformen erhalten |
 | `rgbw_color` | Ja | Vier Werte von 0 bis 255 in der Reihenfolge Rot, Gruen, Blau, Weiss |
 
 Wenn mehrere Aquarien eingerichtet sind, trennt die Integration Runtime, Speicher, Sensoren, Schalter, Zahlen und Dienstaufrufe pro Config-Entry. Dadurch koennen unterschiedliche Aquarium-Lichtsteuerungen parallel laufen, ohne sich gegenseitig Status oder Simulation zu ueberschreiben.
