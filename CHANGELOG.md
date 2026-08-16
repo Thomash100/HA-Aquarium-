@@ -1,5 +1,17 @@
 # Aenderungsprotokoll
 
+## V260816.022_BETA.00
+
+Tagesprofil geschwungen sowie Preis- und Wolkeneinfluss deutlich verstaerkt.
+
+- Ersetzt das geradlinige Tagesplateau durch einen weichen Lichtbogen mit dem eingestellten Sollmaximum um 12:00 Uhr.
+- Laesst die Grundhelligkeit zu Ende des Sonnenaufgangs und Beginn des Sonnenuntergangs auf 55 Prozent des Tagesmaximums abfallen.
+- Verstaerkt die Preisreaktion oberhalb des Tagesmittels progressiv, ohne die eingestellte maximale Preisdimmung zu ueberschreiten.
+- Kombiniert reale Bewoelkung und Wolkenstaerke zu staerkeren, ueber den Tag sichtbaren Wolkenwellen.
+- Markiert das 12-Uhr-Maximum im Wirkungsdiagramm und zeigt die wirksame Bewoelkung an.
+- Behaelt die Akku-Vollregel als Vorrang bei: Ein voller Speicher setzt den Preisfaktor weiterhin auf 100 Prozent.
+- Erhoeht die Home-Assistant-Manifest-Version auf `26.8.16-beta.22`.
+
 ## V260816.021_BETA.00
 
 RGBW-Uebergaenge mobil bedienbar gemacht und die wirksame Tageshelligkeit separat dargestellt.

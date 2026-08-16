@@ -100,6 +100,10 @@ class FrontendResourceTests(unittest.TestCase):
         self.assertIn("Preisfaktor", source)
         self.assertIn("Wolkenfaktor", source)
         self.assertIn("Akku-SOC", source)
+        self.assertIn("midday_peak_minute", source)
+        self.assertIn("price_response_exponent", source)
+        self.assertIn("cloud_simulation_coverage", source)
+        self.assertIn("alc-effect-noon", source)
         self.assertNotIn("alc-intensity-panel", source)
 
     def test_transition_durations_are_adjustable_in_the_card(self) -> None:
