@@ -413,8 +413,9 @@ class AquariumLedSimulatorCard extends HTMLElement {
     const cloudDimming = Math.round(
       (1 - ((Number(attr.weather_factor) || 1) * (Number(attr.cloud_factor) || 1))) * 100,
     );
+    const batteryBoostPct = Math.max(0, Number(attr.battery_brightness_boost_pct) || 15);
     const batteryText = attr.battery_full
-      ? `Akku ${this.formatPercent(attr.battery_soc)}: Preis ignoriert`
+      ? `Akku ${this.formatPercent(attr.battery_soc)}: Preis ignoriert · Lichtbonus +${Math.round(batteryBoostPct)} %`
       : `Akku ${this.formatPercent(attr.battery_soc)}`;
 
     return `
@@ -487,7 +488,10 @@ class AquariumLedSimulatorCard extends HTMLElement {
     const ceiling = this.numberOrNull(attr.price_ceiling);
     const maxDimming = Math.max(0, Math.min(100, Number(attr.price_dimming_max_pct) || 0)) / 100;
     const priceResponseExponent = Math.max(0.1, Math.min(1, Number(attr.price_response_exponent) || 0.65));
-    const batteryThreshold = this.numberOrNull(attr.battery_full_threshold) ?? 95;
+    const batteryThreshold = this.numberOrNull(attr.battery_full_threshold) ?? 90;
+    const batteryBoostFactor = 1 + (
+      Math.max(0, Math.min(50, Number(attr.battery_brightness_boost_pct) || 15)) / 100
+    );
     const cloudiness = Math.max(0, Math.min(1, (Number(attr.cloudiness_pct) || 0) / 100));
     const cloudStrength = Math.max(0, Math.min(1, (Number(attr.cloud_strength_pct) || 0) / 100));
     const cloudSimulationCoverage = Math.max(0, Math.min(1, Number(attr.cloud_simulation_coverage) || 0.25));
@@ -561,7 +565,10 @@ class AquariumLedSimulatorCard extends HTMLElement {
           ),
         );
         cloudFactor = weatherFactor * waveFactor;
-        result = base * priceFactor * cloudFactor;
+        result = Math.min(
+          dayPct,
+          base * priceFactor * cloudFactor * (batteryFull ? batteryBoostFactor : 1),
+        );
       }
       basePoints.push({ time, value: Math.max(0, Math.min(100, base)) });
       resultPoints.push({ time, value: Math.max(0, Math.min(100, result)) });
@@ -720,7 +727,8 @@ class AquariumLedSimulatorCard extends HTMLElement {
 
   batteryTimeline(attr, batteryEntity) {
     const current = this.numberOrNull(attr.battery_soc ?? this._hass.states[batteryEntity]?.state);
-    const threshold = this.numberOrNull(attr.battery_full_threshold) ?? 95;
+    const threshold = this.numberOrNull(attr.battery_full_threshold) ?? 90;
+    const boostPct = Math.max(0, Number(attr.battery_brightness_boost_pct) || 15);
     const history = this._timeline?.batteryHistory || [];
 
     if (this._timeline?.loading && history.length === 0) {
@@ -749,7 +757,7 @@ class AquariumLedSimulatorCard extends HTMLElement {
         <div class="alc-timeline-head">
           <div>
             <div class="alc-timeline-name">Batterieverlauf</div>
-            <div class="alc-timeline-range">24 h Rückblick · voll ab ${Math.round(threshold)} %</div>
+            <div class="alc-timeline-range">24 h Rückblick · Lichtbonus ab ${Math.round(threshold)} % SOC</div>
           </div>
           <div class="alc-timeline-value">${this.escape(this.formatPercent(current))}</div>
         </div>
@@ -767,7 +775,7 @@ class AquariumLedSimulatorCard extends HTMLElement {
         </svg>
         <div class="alc-legend">
           <span class="alc-legend-item"><span class="alc-legend-swatch alc-legend-battery"></span>Growatt SOC</span>
-          <span class="alc-legend-item"><span class="alc-legend-swatch alc-legend-threshold"></span>Vollgrenze ${Math.round(threshold)} %</span>
+          <span class="alc-legend-item"><span class="alc-legend-swatch alc-legend-threshold"></span>Preis frei + ${Math.round(boostPct)} % Bonus ab ${Math.round(threshold)} %</span>
         </div>
         <div class="alc-timeline-stats">
           ${this.timelineStat("Minimum", this.formatPercent(minimum))}

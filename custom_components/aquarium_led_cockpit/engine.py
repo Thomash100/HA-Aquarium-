@@ -45,7 +45,14 @@ from .const import (
     DEFAULT_SUNSET_DURATION_MINUTES,
     DEFAULT_SUN_ENTITY,
 )
-from .price import PRICE_RESPONSE_EXPONENT, calculate_price_adjustment, is_battery_full
+from .price import (
+    BATTERY_BRIGHTNESS_BOOST_PCT,
+    PRICE_RESPONSE_EXPONENT,
+    apply_battery_brightness_boost,
+    calculate_battery_brightness_factor,
+    calculate_price_adjustment,
+    is_battery_full,
+)
 from .solar import (
     DAWN_DUSK_RGBW,
     DAY_CLOUD_SIMULATION_COVERAGE,
@@ -258,6 +265,11 @@ def calculate_target(
         settings.get(CONF_BATTERY_FULL_THRESHOLD, DEFAULT_BATTERY_FULL_THRESHOLD)
     )
     battery_full = is_battery_full(battery_soc, battery_full_threshold)
+    battery_brightness_factor = calculate_battery_brightness_factor(
+        battery_soc,
+        battery_full_threshold,
+    )
+    battery_boost_active = phase != "night" and battery_full
     price_ignored = phase == "night" or battery_full
     price_factor = 1.0 if price_ignored else price_adjustment["factor"]
     price_strategy = "battery_full_override" if battery_full else price_adjustment["strategy"]
@@ -293,7 +305,21 @@ def calculate_target(
                 wave,
             )
         )
-        brightness = int(round(_clamp(base_pct * price_factor * weather_factor * cloud_factor, 0, 100)))
+        brightness_without_boost = _clamp(
+            base_pct * price_factor * weather_factor * cloud_factor,
+            0,
+            day,
+        )
+        brightness = int(
+            round(
+                apply_battery_brightness_boost(
+                    brightness_without_boost,
+                    day,
+                    battery_soc,
+                    battery_full_threshold,
+                )
+            )
+        )
     if phase == "night":
         effective_cloudiness = cloudiness
     rgbw = solar_profile.rgbw
@@ -377,6 +403,17 @@ def calculate_target(
         "battery_soc_entity": settings.get(CONF_BATTERY_SOC_ENTITY) or "",
         "battery_full_threshold": round(battery_full_threshold, 1),
         "battery_full": battery_full,
+        "battery_boost_active": battery_boost_active,
+        "battery_brightness_boost_pct": BATTERY_BRIGHTNESS_BOOST_PCT,
+        "battery_brightness_factor": round(
+            battery_brightness_factor if battery_boost_active else 1.0,
+            3,
+        ),
+        "battery_boost_added_pct": (
+            max(0, brightness - int(round(brightness_without_boost)))
+            if phase != "night"
+            else 0
+        ),
         "solar_power": solar_power if solar_power is not None else "-",
         "solar_power_entity": settings.get(CONF_SOLAR_POWER_ENTITY) or "",
         "regional_sun": regional_sun,

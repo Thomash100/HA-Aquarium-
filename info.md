@@ -2,9 +2,9 @@
 
 Aquarium LED Cockpit ist eine ueber HACS installierbare Home-Assistant-Custom-Integration fuer dynamische Aquarium-Beleuchtung.
 
-Veroeffentlichungskennzeichen: `V260816.022_BETA.00`
+Veroeffentlichungskennzeichen: `V260816.023_BETA.00`
 
-Home-Assistant-Manifest-Version: `26.8.16-beta.22`
+Home-Assistant-Manifest-Version: `26.8.16-beta.23`
 
 Die Integration kombiniert:
 

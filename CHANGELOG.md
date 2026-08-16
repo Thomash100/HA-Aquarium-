@@ -1,5 +1,15 @@
 # Aenderungsprotokoll
 
+## V260816.023_BETA.00
+
+Akku-Prioritaet ab 90 Prozent um einen begrenzten Helligkeitsbonus erweitert.
+
+- Senkt die Standard-Vollgrenze fuer neue Konfigurationen von 95 auf 90 Prozent SOC.
+- Ignoriert ab der Vollgrenze weiterhin die Strompreis-Dimmung und erhoeht die Tageshelligkeit zusaetzlich um 15 Prozent.
+- Begrenzt den Akku-Bonus auf die eingestellte Tageshelligkeit, damit die konfigurierte Maximalhelligkeit nicht ueberschritten wird.
+- Zeigt den aktiven Akku-Bonus im Live-Status, Wirkungsdiagramm und Batterieverlauf an.
+- Erhoeht die Home-Assistant-Manifest-Version auf `26.8.16-beta.23`.
+
 ## V260816.022_BETA.00
 
 Tagesprofil geschwungen sowie Preis- und Wolkeneinfluss deutlich verstaerkt.
