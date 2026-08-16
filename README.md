@@ -2,9 +2,9 @@
 
 Aquarium LED Cockpit ist eine Home-Assistant-Custom-Integration fuer eine dynamische Aquarium-Beleuchtung mit strompreisabhaengiger Dimmung, wetterbasierter Wolkensimulation, Sonnenaufgangs-/Sonnenuntergangsphasen und Lovelace-Simulator-Karte.
 
-Veroeffentlichungskennzeichen: `V260816.025_BETA.00`
+Veroeffentlichungskennzeichen: `V260816.026_BETA.00`
 
-Home-Assistant-Manifest-Version: `26.8.16-beta.25`
+Home-Assistant-Manifest-Version: `26.8.16-beta.26`
 
 [![Home Assistant oeffnen und dieses Repository in HACS anzeigen.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Thomash100&repository=HA-Aquarium-&category=integration)
 ![HACS Custom](https://img.shields.io/badge/HACS-Custom-orange.svg)
@@ -43,7 +43,7 @@ Die Integration verwandelt deine Aquarium-Beleuchtung in einen dynamischen Tages
 - Durchgaengiges blaues Mondlicht nach Sonnenuntergang ohne Weisskanal; die eingestellte Nachtlicht-Helligkeit bildet die Vollmond-Obergrenze
 - Mondphasenabhaengige Nachthelligkeit mit sanfter Wolkensimulation und mindestens einem Prozent Licht statt Ein/Aus-Schalten
 - Sonnenbahn mit echten Auf-/Untergangszeiten und realer Mondphase aus `sensor.moon_phase`
-- Einstellbare Sonnenaufgangs-Verschiebung von minus sechs bis plus sechs Stunden; positive Werte verlaengern das Mondlicht am Morgen
+- Einstellbare Aquarium-Sonnenaufgangs-Verschiebung von minus sechs bis plus sechs Stunden mit grossen 15-Minuten-Tasten und direktem Stundenfeld; die reale Sonnenbahn und der Untergang bleiben davon unberuehrt
 - Deutlich sichtbare Wolkensimulation tagsueber: reale Bewoelkung und eingestellte Wolkenstaerke erzeugen einen staerkeren Grundabschlag und dynamische Wolkenwellen
 - Simulationsmodus, der den Cockpit-Status aktualisiert, ohne Lichtbefehle zu senden
 - Konfigurierbarer 24-Stunden-Zeitraffer: ein kompletter Tag in einer bis zehn realen Minuten
@@ -51,7 +51,7 @@ Die Integration verwandelt deine Aquarium-Beleuchtung in einen dynamischen Tages
 - Adaptive strompreisabhaengige Dimmung: bis zum Tagesdurchschnitt ungedimmt, danach progressiv und deutlich staerker bis zur eingestellten maximalen Dimmung am Tageshoechstpreis
 - Growatt-/NOAH-Speicherprioritaet: Ab 90 Prozent SOC wird die Strompreis-Dimmung nur ignoriert, solange die Akku-Ladeleistung groesser als die Entladeleistung ist
 - Stufenloser PV-/SOC-Energiefaktor: Bei niedriger PV-Deckung und niedrigem Akku-SOC sinkt das normale Tagesprofil bis auf 30 Prozent; gute PV-Deckung und hoher SOC geben es bis 100 Prozent frei
-- Gemeinsame Intensitaetssteuerung fuer beliebig viele Ausgaenge, einschliesslich einer RGBW-Steuerung und zwei separaten Weisskanaelen
+- Gemeinsame Intensitaetssteuerung fuer beliebig viele Ausgaenge, einschliesslich einer RGBW-Steuerung und zwei separat einstellbaren Weisskanaelen
 - Anzeige von Speicher-Ladezustand, Solarleistung und regionalem Sonnenschein im Live-Status
 - Strompreis-Diagramm mit 12 Stunden Rueckblick und bis zu 24 Stunden echter Tibber-Vorschau
 - Batterie-Diagramm mit 24 Stunden Ladezustands-Rueckblick und konfigurierbarer Vollgrenze
@@ -117,6 +117,8 @@ Fuer die Simulator-Karte muss die Lovelace-Ressource `/local/aquarium_led_cockpi
 | `number.<aquarium>_sonnenaufgang_dauer` | Dauer des farbigen Sonnenaufgangs von 10 bis 240 Minuten |
 | `number.<aquarium>_sonnenuntergang_dauer` | Dauer des farbigen Sonnenuntergangs von 10 bis 240 Minuten |
 | `number.<aquarium>_zeitraffer_schritt` | Gesamtdauer eines simulierten 24-Stunden-Tages, einstellbar von 1 bis 10 Minuten |
+| `number.<aquarium>_weisskanal_1` | Anteil des ersten separaten Weissausgangs am berechneten RGBW-W-Kanal von 0 bis 100 Prozent |
+| `number.<aquarium>_weisskanal_2` | Anteil des zweiten separaten Weissausgangs am berechneten RGBW-W-Kanal von 0 bis 100 Prozent |
 
 ### Strompreis-Dimmung
 
@@ -130,7 +132,9 @@ Die Simulator-Karte laedt die letzten 12 Stunden Strompreis und 24 Stunden Batte
 
 ### Sonnenaufgang und Mondlicht
 
-Das Mondlicht beginnt am echten Sonnenuntergang und bleibt bis zum eingestellten Licht-Sonnenaufgang aktiv. Mit `number.<aquarium>_sonnenaufgang_verschiebung` laesst sich dieser Morgenzeitpunkt relativ zur echten Sonne verschieben: `+2` startet den roten Sonnenaufgang zwei Stunden spaeter und verlaengert das Mondlicht entsprechend; `-1` startet ihn eine Stunde frueher. Die Dauer-Felder mit grossen Minus-/Plus-Tasten legen getrennt fest, wie lange Auf- und Untergang dauern. Fuer Anfang und Ende jedes Uebergangs lassen sich Rot, Gruen, Blau und Weiss mit grossen Reglern von 0 bis 255 einstellen. Die Integration interpoliert jeden Kanal stufenlos. Die Sonnenbahn bleibt dabei eine reine Himmelsdarstellung; die wirksame Intensitaet steht in einem eigenen Diagramm darunter.
+Das Mondlicht beginnt am echten Sonnenuntergang und bleibt bis zum eingestellten Licht-Sonnenaufgang aktiv. Mit `number.<aquarium>_sonnenaufgang_verschiebung` laesst sich nur dieser Aquarium-Morgenzeitpunkt relativ zur echten Sonne verschieben: `+2` startet den roten Lichtaufgang zwei Stunden spaeter und verlaengert das Mondlicht entsprechend; `-1` startet ihn eine Stunde frueher. Die reale Sonnen- und Mondbahn sowie der Sonnenuntergang werden nicht mitverschoben. In der Cockpit-Karte erfolgt die Einstellung mobil bedienbar ueber grosse Minus-/Plus-Tasten in 15-Minuten-Schritten oder direkt ueber das Stundenfeld. Die Dauer-Felder mit grossen Minus-/Plus-Tasten legen getrennt fest, wie lange Auf- und Untergang dauern. Fuer Anfang und Ende jedes Uebergangs lassen sich Rot, Gruen, Blau und Weiss mit grossen Reglern von 0 bis 255 einstellen. Die Integration interpoliert jeden Kanal stufenlos. Die Sonnenbahn bleibt dabei eine reine Himmelsdarstellung; die wirksame Intensitaet steht in einem eigenen Diagramm darunter.
+
+Die beiden separaten Weiss-Leuchten besitzen eigene Regler von 0 bis 100 Prozent. Diese Werte skalieren den jeweils berechneten RGBW-Weissanteil: 100 Prozent folgt dem W-Kanal vollstaendig, 50 Prozent gibt die Haelfte davon aus und 0 Prozent schaltet nur den betreffenden Weissausgang ab. RGB und der jeweils andere Weisskanal bleiben davon unberuehrt.
 
 ### Zeitraffer-Simulation
 

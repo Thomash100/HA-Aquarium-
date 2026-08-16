@@ -35,6 +35,7 @@ DAY_CLOUD_WAVE_STRENGTH = 0.60
 SOLAR_ENERGY_MIN_FACTOR = 0.30
 SOLAR_ENERGY_SOC_FLOOR = 20.0
 SOLAR_ENERGY_SOC_TARGET = 90.0
+DEFAULT_WHITE_CHANNEL_LEVEL = 100.0
 
 
 @dataclass(frozen=True)
@@ -60,6 +61,33 @@ class SolarEnergyAdjustment:
 
 def _clamp(value: float, minimum: float, maximum: float) -> float:
     return max(minimum, min(maximum, value))
+
+
+def normalize_white_channel_level(value: object) -> float:
+    """Return a valid per-channel share of the RGBW white component."""
+    try:
+        level = float(value)
+    except (TypeError, ValueError):
+        level = DEFAULT_WHITE_CHANNEL_LEVEL
+    return _clamp(level, 0, 100)
+
+
+def calculate_white_channel_targets(
+    white_pct: float,
+    levels_pct: list[object] | tuple[object, ...],
+    channel_count: int,
+) -> tuple[int, ...]:
+    """Scale the RGBW white component independently for each white output."""
+    base = _clamp(float(white_pct), 0, 100)
+    targets: list[int] = []
+    for index in range(max(0, int(channel_count))):
+        level = normalize_white_channel_level(
+            levels_pct[index]
+            if index < len(levels_pct)
+            else DEFAULT_WHITE_CHANNEL_LEVEL
+        )
+        targets.append(int(round(base * (level / 100))))
+    return tuple(targets)
 
 
 def calculate_solar_energy_adjustment(

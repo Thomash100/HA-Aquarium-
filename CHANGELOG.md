@@ -1,5 +1,16 @@
 # Aenderungsprotokoll
 
+## V260816.026_BETA.00
+
+Aquarium-Aufgang von der realen Sonnenbahn getrennt und beide Weissausgaenge einstellbar gemacht.
+
+- Zeichnet die astronomische Sonnen- und Mondbahn immer mit den echten Auf- und Untergangszeiten; der Aquarium-Aufgang wird als eigener Lichtmarker angezeigt.
+- Ersetzt den schwer bedienbaren Aufgangs-Slider durch grosse Minus-/Plus-Tasten in 15-Minuten-Schritten und ein direktes Stundenfeld.
+- Begrenzt die Wirkung der Aufgangsverschiebung auf den Aquarium-Lichtstart; Sonnenbahn und Untergang bleiben fest.
+- Fuegt fuer die ersten beiden konfigurierten Weiss-Leuchten je eine dauerhaft gespeicherte 0-bis-100-Prozent-Einstellung hinzu.
+- Skaliert jeden Weissausgang unabhaengig mit dem berechneten RGBW-W-Anteil und zeigt Anteil sowie aktuelles Ziel im Cockpit.
+- Erhoeht die Home-Assistant-Manifest-Version auf `26.8.16-beta.26`.
+
 ## V260816.025_BETA.00
 
 Tageshelligkeit stufenlos an aktuelle PV-Deckung und Akku-Ladung gekoppelt.

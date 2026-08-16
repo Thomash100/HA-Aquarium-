@@ -38,6 +38,8 @@ from .const import (
     CONTROL_SUNSET_DURATION,
     CONTROL_TIME_LAPSE_DURATION,
     CONTROL_TIME_LAPSE,
+    CONTROL_WHITE_CHANNEL_1_LEVEL,
+    CONTROL_WHITE_CHANNEL_2_LEVEL,
     DEFAULT_CLOUD_STRENGTH,
     DEFAULT_BATTERY_FULL_THRESHOLD,
     DEFAULT_DAY_BRIGHTNESS,
@@ -71,12 +73,14 @@ from .solar import (
     SOLAR_ENERGY_SOC_FLOOR,
     SOLAR_ENERGY_SOC_TARGET,
     calculate_solar_energy_adjustment,
+    calculate_white_channel_targets,
     calculate_moonlight_target,
     calculate_daylight_cloud_factors,
     calculate_solar_profile,
     normalize_rgbw,
     normalize_sunrise_offset,
     normalize_transition_duration,
+    normalize_white_channel_level,
     shift_sunrise_minute,
 )
 from .time_lapse import MINUTES_PER_DAY, normalize_time_lapse_duration
@@ -138,6 +142,15 @@ def _entity_count(value: object) -> int:
     if isinstance(value, (list, tuple, set)):
         return sum(1 for entity_id in value if str(entity_id).strip())
     return 0
+
+
+def _entity_list(value: object) -> list[str]:
+    """Return configured entity IDs in their persisted order."""
+    if isinstance(value, str):
+        return [value.strip()] if value.strip() else []
+    if isinstance(value, (list, tuple, set)):
+        return [str(entity_id).strip() for entity_id in value if str(entity_id).strip()]
+    return []
 
 
 def _regional_sun(hass: HomeAssistant, entity_id: str | None) -> bool:
@@ -371,6 +384,17 @@ def calculate_target(
     if phase == "night":
         effective_cloudiness = cloudiness
     rgbw = solar_profile.rgbw
+    white_pct = int(round(brightness * (rgbw[3] / 255)))
+    white_light_entities = _entity_list(settings.get(CONF_WHITE_LIGHTS))
+    white_channel_levels = [
+        normalize_white_channel_level(controls.get(CONTROL_WHITE_CHANNEL_1_LEVEL)),
+        normalize_white_channel_level(controls.get(CONTROL_WHITE_CHANNEL_2_LEVEL)),
+    ]
+    white_channel_targets = calculate_white_channel_targets(
+        white_pct,
+        white_channel_levels,
+        len(white_light_entities),
+    )
 
     status = {
         "phase": phase,
@@ -385,6 +409,9 @@ def calculate_target(
         ),
         "sunrise": _minutes_to_clock(sunrise_start),
         "sunrise_actual": _minutes_to_clock(sunrise_actual),
+        "celestial_sunrise": _minutes_to_clock(sunrise_actual),
+        "sunrise_light_start": _minutes_to_clock(sunrise_start),
+        "sunrise_control_scope": "aquarium_dawn_only",
         "sunrise_offset_hours": sunrise_offset_hours,
         "sunrise_duration_minutes": sunrise_duration,
         "sunrise_end": _minutes_to_clock(sunrise_start + sunrise_duration),
@@ -428,7 +455,10 @@ def calculate_target(
         "night_brightness_pct": round(night, 1),
         "base_pct": round(base_pct, 1),
         "target_pct": brightness,
-        "white_pct": int(round(brightness * (rgbw[3] / 255))),
+        "white_pct": white_pct,
+        "white_light_entities": white_light_entities,
+        "white_channel_levels_pct": [round(level, 1) for level in white_channel_levels],
+        "white_channel_targets_pct": list(white_channel_targets),
         "rgbw": list(rgbw),
         "price": price_value if price_value is not None else "-",
         "price_entity": settings.get(CONF_PRICE_ENTITY) or "",
