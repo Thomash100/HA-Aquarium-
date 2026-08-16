@@ -83,6 +83,17 @@ class PriceAdjustmentTests(unittest.TestCase):
     def test_unavailable_battery_is_not_full(self) -> None:
         self.assertFalse(PRICE.is_battery_full(None, 95))
 
+    def test_high_battery_adds_daylight_brightness_factor(self) -> None:
+        self.assertEqual(1.0, PRICE.calculate_battery_brightness_factor(89.9, 90))
+        self.assertEqual(1.15, PRICE.calculate_battery_brightness_factor(90, 90))
+        self.assertEqual(1.15, PRICE.calculate_battery_brightness_factor(100, 90))
+
+    def test_battery_boost_is_bounded(self) -> None:
+        self.assertEqual(1.5, PRICE.calculate_battery_brightness_factor(90, 90, 80))
+        self.assertEqual(90, PRICE.apply_battery_brightness_boost(80, 90, 90, 90))
+        self.assertEqual(80.5, PRICE.apply_battery_brightness_boost(70, 90, 90, 90))
+        self.assertEqual(70, PRICE.apply_battery_brightness_boost(70, 90, 89.9, 90))
+
 
 if __name__ == "__main__":
     unittest.main()

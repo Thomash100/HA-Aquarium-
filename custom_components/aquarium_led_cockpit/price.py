@@ -16,6 +16,7 @@ class PriceAdjustment(TypedDict):
 
 
 PRICE_RESPONSE_EXPONENT = 0.65
+BATTERY_BRIGHTNESS_BOOST_PCT = 15.0
 
 
 def _clamp(value: float, minimum: float, maximum: float) -> float:
@@ -118,3 +119,26 @@ def is_battery_full(soc: float | None, threshold: float) -> bool:
     if soc is None:
         return False
     return soc >= _clamp(float(threshold), 50, 100)
+
+
+def calculate_battery_brightness_factor(
+    soc: float | None,
+    threshold: float,
+    boost_pct: float = BATTERY_BRIGHTNESS_BOOST_PCT,
+) -> float:
+    """Return the daylight brightness multiplier for a high battery SOC."""
+    if not is_battery_full(soc, threshold):
+        return 1.0
+    return 1.0 + (_clamp(float(boost_pct), 0, 50) / 100)
+
+
+def apply_battery_brightness_boost(
+    brightness_pct: float,
+    maximum_pct: float,
+    soc: float | None,
+    threshold: float,
+    boost_pct: float = BATTERY_BRIGHTNESS_BOOST_PCT,
+) -> float:
+    """Apply the high-SOC bonus without exceeding the configured day maximum."""
+    factor = calculate_battery_brightness_factor(soc, threshold, boost_pct)
+    return _clamp(float(brightness_pct) * factor, 0, float(maximum_pct))
