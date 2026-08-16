@@ -26,7 +26,9 @@ from .const import (
     DEFAULT_EXPORT_FRONTEND_RESOURCES,
     DEFAULT_OVERWRITE_EXISTING,
     DOMAIN,
+    CONTROL_SUNRISE_END_RGBW,
     CONTROL_SUNRISE_RGBW,
+    CONTROL_SUNSET_START_RGBW,
     CONTROL_SUNSET_RGBW,
     PLATFORMS,
     SERVICE_INSTALL_RESOURCES,
@@ -129,7 +131,16 @@ async def async_setup_integration(hass: HomeAssistant, config: dict[str, Any]) -
     set_transition_color_schema = vol.Schema(
         {
             vol.Optional(CONF_CONFIG_ENTRY_ID): cv.string,
-            vol.Required(CONF_PHASE): vol.In({"sunrise", "sunset"}),
+            vol.Required(CONF_PHASE): vol.In(
+                {
+                    "sunrise",
+                    "sunrise_start",
+                    "sunrise_end",
+                    "sunset_start",
+                    "sunset",
+                    "sunset_end",
+                }
+            ),
             vol.Required(CONF_RGBW_COLOR): vol.All(
                 [vol.All(vol.Coerce(int), vol.Range(min=0, max=255))],
                 vol.Length(min=4, max=4),
@@ -180,11 +191,14 @@ async def async_setup_integration(hass: HomeAssistant, config: dict[str, Any]) -
     async def async_handle_set_transition_color(call: ServiceCall) -> None:
         entry = _resolve_entry(hass, call.data.get(CONF_CONFIG_ENTRY_ID))
         runtime = await async_get_runtime(hass, entry.entry_id)
-        control = (
-            CONTROL_SUNRISE_RGBW
-            if call.data[CONF_PHASE] == "sunrise"
-            else CONTROL_SUNSET_RGBW
-        )
+        control = {
+            "sunrise": CONTROL_SUNRISE_RGBW,
+            "sunrise_start": CONTROL_SUNRISE_RGBW,
+            "sunrise_end": CONTROL_SUNRISE_END_RGBW,
+            "sunset_start": CONTROL_SUNSET_START_RGBW,
+            "sunset": CONTROL_SUNSET_RGBW,
+            "sunset_end": CONTROL_SUNSET_RGBW,
+        }[call.data[CONF_PHASE]]
         await runtime.async_set_control(control, list(call.data[CONF_RGBW_COLOR]))
 
     hass.services.async_register(

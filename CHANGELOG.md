@@ -1,5 +1,18 @@
 # Aenderungsprotokoll
 
+## V260816.021_BETA.00
+
+RGBW-Uebergaenge mobil bedienbar gemacht und die wirksame Tageshelligkeit separat dargestellt.
+
+- Fuegt fuer Sonnenaufgang und Sonnenuntergang je einen frei einstellbaren RGBW-Anfangs- und Endpunkt hinzu.
+- Interpoliert Rot, Gruen, Blau und Weiss zwischen den beiden Punkten stufenlos linear; feste Gold- und Warmweiss-Zwischenstufen werden nicht mehr erzwungen.
+- Ersetzt die kleinen Dauer-Schieberegler durch grosse Minus-/Plus-Tasten und ein direkt editierbares Minutenfeld.
+- Vergroessert die vier Farbkanal-Regler und zeigt Kanalwert sowie gemischte Farbvorschau unmittelbar an.
+- Trennt die Lichtintensitaet wieder von der Sonnen- und Mondbahn.
+- Zeigt im neuen 24-Stunden-Wirkungsdiagramm Grundprofil, effektives Ergebnis, Preisfaktor, Wolkenfaktor und Growatt-Akku-SOC.
+- Berechnet die Ergebnislinie mit Preisprognose, Akku-Vollgrenze, aktueller Bewoelkung, Wolkensimulation und Mondphase.
+- Erhoeht die Home-Assistant-Manifest-Version auf `26.8.16-beta.21`.
+
 ## V260816.020_BETA.00
 
 Sonnenbahn und Lichtintensitaet zusammengefuehrt sowie Uebergangszeiten einstellbar gemacht.

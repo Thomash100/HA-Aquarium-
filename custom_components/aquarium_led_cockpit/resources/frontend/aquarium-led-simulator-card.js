@@ -56,8 +56,10 @@ class AquariumLedSimulatorCard extends HTMLElement {
     const sunset = attr.sunset || "18:00";
     const sunriseDuration = Number(attr.sunrise_duration_minutes ?? 60);
     const sunsetDuration = Number(attr.sunset_duration_minutes ?? 90);
-    const sunriseRgbw = this.normalizeRgbw(attr.sunrise_rgbw, [255, 0, 0, 0]);
-    const sunsetRgbw = this.normalizeRgbw(attr.sunset_rgbw, [255, 0, 0, 0]);
+    const sunriseStartRgbw = this.normalizeRgbw(attr.sunrise_start_rgbw || attr.sunrise_rgbw, [255, 0, 0, 0]);
+    const sunriseEndRgbw = this.normalizeRgbw(attr.sunrise_end_rgbw, [190, 220, 255, 255]);
+    const sunsetStartRgbw = this.normalizeRgbw(attr.sunset_start_rgbw, [190, 220, 255, 255]);
+    const sunsetEndRgbw = this.normalizeRgbw(attr.sunset_end_rgbw || attr.sunset_rgbw, [255, 0, 0, 0]);
     const celestial = this.celestialGeometry(currentTime, sunrise, sunset);
     const moonPhaseIcon = attr.moon_phase_icon || "🌙";
     const moonPhaseLabel = attr.moon_phase_label || "Mondphase";
@@ -65,14 +67,6 @@ class AquariumLedSimulatorCard extends HTMLElement {
     const moonCloudDimming = Number(attr.moon_cloud_dimming_pct ?? 0);
     const dayBrightness = Number(attr.day_brightness_pct ?? Math.max(base, target, 70));
     const nightBrightness = Number(attr.night_brightness_pct ?? 3);
-    const curve = this.buildCurve(
-      sunrise,
-      sunset,
-      nightBrightness,
-      dayBrightness,
-      sunriseDuration,
-      sunsetDuration,
-    );
     const rgb = `rgb(${rgbw[0] || 0}, ${rgbw[1] || 0}, ${rgbw[2] || 0})`;
     const whiteAlpha = Math.max(0.08, Math.min(0.85, (rgbw[3] || 0) / 255));
     const priceEntity = this.config.price_entity || attr.price_entity || "";
@@ -104,16 +98,8 @@ class AquariumLedSimulatorCard extends HTMLElement {
       this._hass.states[sunsetDurationEntity]?.state
       ?? sunsetDuration,
     );
-    const sunriseCss = this.rgbwCss(sunriseRgbw);
-    const sunsetCss = this.rgbwCss(sunsetRgbw);
-    const intensityGradient = this.intensityGradientStops(
-      sunrise,
-      sunset,
-      configuredSunriseDuration,
-      configuredSunsetDuration,
-      sunriseRgbw,
-      sunsetRgbw,
-    );
+    const sunriseCss = this.rgbwCss(sunriseStartRgbw);
+    const sunsetCss = this.rgbwCss(sunsetEndRgbw);
 
     this.innerHTML = `
       <ha-card>
@@ -128,46 +114,43 @@ class AquariumLedSimulatorCard extends HTMLElement {
           </div>
 
           <div class="alc-celestial" style="--alc-rgb: ${rgb}; --alc-white: ${whiteAlpha}; --alc-sunrise: ${sunriseCss}; --alc-sunset: ${sunsetCss};">
-            <svg class="alc-sky" viewBox="0 0 720 310" role="img" aria-label="Sonnenbahn, Mondphase und Lichtintensitaet ueber 24 Stunden">
-              <defs>
-                <linearGradient id="alc-intensity-gradient" x1="0" x2="1" y1="0" y2="0">
-                  ${intensityGradient}
-                </linearGradient>
-                <linearGradient id="alc-intensity-fill" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stop-color="${rgb}" stop-opacity="0.42"></stop>
-                  <stop offset="100%" stop-color="${rgb}" stop-opacity="0.04"></stop>
-                </linearGradient>
-              </defs>
+            <svg class="alc-sky" viewBox="0 0 720 190" role="img" aria-label="Sonnenbahn und Mondphase ueber 24 Stunden">
               <path d="${celestial.sunArc}" class="alc-sun-arc"></path>
               <path d="${celestial.moonEveningArc}" class="alc-moon-arc"></path>
               <path d="${celestial.moonMorningArc}" class="alc-moon-arc"></path>
               <line x1="0" y1="138" x2="720" y2="138" class="alc-horizon-line"></line>
-              <line x1="${celestial.nowX}" y1="12" x2="${celestial.nowX}" y2="298" class="alc-sky-now"></line>
+              <line x1="${celestial.nowX}" y1="12" x2="${celestial.nowX}" y2="166" class="alc-sky-now"></line>
               ${celestial.isDay
                 ? `<circle cx="${celestial.bodyX}" cy="${celestial.bodyY}" r="14" class="alc-sun-body"></circle>`
                 : `<text x="${celestial.bodyX}" y="${celestial.bodyY + 9}" class="alc-moon-body" text-anchor="middle">${this.escape(moonPhaseIcon)}</text>`}
               <text x="${celestial.sunriseX}" y="160" class="alc-sky-label" text-anchor="middle">${this.escape(sunrise)}</text>
               <text x="${celestial.sunsetX}" y="160" class="alc-sky-label" text-anchor="middle">${this.escape(sunset)}</text>
               <text x="360" y="181" class="alc-moon-label" text-anchor="middle">${this.escape(moonPhaseIcon)} ${this.escape(moonPhaseLabel)} · Mond ${Math.round(moonPhaseBrightness)}% · Wolken −${Math.round(moonCloudDimming)}%</text>
-              <rect x="0" y="192" width="720" height="118" class="alc-intensity-panel"></rect>
-              <text x="18" y="211" class="alc-intensity-label">LICHTINTENSITÄT</text>
-              <text x="702" y="211" class="alc-intensity-value" text-anchor="end">aktuell ${target}%</text>
-              <line x1="0" y1="292" x2="720" y2="292" class="alc-intensity-axis"></line>
-              <path d="${curve.fill}" fill="url(#alc-intensity-fill)" class="alc-intensity-fill"></path>
-              <path d="${curve.line}" fill="none" stroke="url(#alc-intensity-gradient)" class="alc-intensity-line"></path>
             </svg>
           </div>
 
           <div class="alc-times">
-            <span>Reale Sonne ${this.escape(sunriseActual)} · Lichtstart ${this.escape(sunrise)} (${this.escape(this.formatSignedHours(sunriseOffsetHours))}) · Wunschfarbe → Gold → Weiss ${configuredSunriseDuration} Min.</span>
-            <span>Weiss → Gold → Wunschfarbe ${configuredSunsetDuration} Min. · ab ${this.escape(attr.sunset_phase_start || sunset)} · Untergang ${this.escape(sunset)}</span>
+            <span>Reale Sonne ${this.escape(sunriseActual)} · Lichtstart ${this.escape(sunrise)} (${this.escape(this.formatSignedHours(sunriseOffsetHours))}) · Anfang → Ende ${configuredSunriseDuration} Min.</span>
+            <span>Anfang → Ende ${configuredSunsetDuration} Min. · ab ${this.escape(attr.sunset_phase_start || sunset)} · Untergang ${this.escape(sunset)}</span>
           </div>
+
+          ${this.intensitySection(
+            attr,
+            sunrise,
+            sunset,
+            nightBrightness,
+            dayBrightness,
+            configuredSunriseDuration,
+            configuredSunsetDuration,
+          )}
 
           ${this.sunriseOffsetControl(sunriseOffsetEntity, sunriseOffsetHours)}
 
           ${this.transitionColorControls(
-            sunriseRgbw,
-            sunsetRgbw,
+            sunriseStartRgbw,
+            sunriseEndRgbw,
+            sunsetStartRgbw,
+            sunsetEndRgbw,
             attr.config_entry_id || this.config.config_entry_id || "",
             sunriseDurationEntity,
             configuredSunriseDuration,
@@ -249,15 +232,29 @@ class AquariumLedSimulatorCard extends HTMLElement {
 
     this.querySelectorAll("[data-transition-duration]").forEach((input) => {
       input.addEventListener("change", () => {
+        const value = Math.max(10, Math.min(240, Math.round(Number(input.value) / 5) * 5));
+        input.value = String(value);
         this._hass.callService("number", "set_value", {
           entity_id: input.dataset.transitionDuration,
-          value: Number(input.value),
+          value,
         });
       });
     });
 
+    this.querySelectorAll("[data-duration-delta]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const input = this.querySelector(`[data-transition-duration="${button.dataset.durationEntity}"]`);
+        if (!input) {
+          return;
+        }
+        input.value = String(Math.max(10, Math.min(240, Number(input.value) + Number(button.dataset.durationDelta))));
+        input.dispatchEvent(new Event("change"));
+      });
+    });
+
     this.querySelectorAll("[data-rgbw-editor]").forEach((editor) => {
-      editor.querySelectorAll("[data-rgb-picker], [data-white-picker]").forEach((input) => {
+      editor.querySelectorAll("[data-rgbw-channel]").forEach((input) => {
+        input.addEventListener("input", () => this.previewTransitionColor(editor));
         input.addEventListener("change", () => this.saveTransitionColor(editor));
       });
     });
@@ -285,23 +282,52 @@ class AquariumLedSimulatorCard extends HTMLElement {
         .alc-moon-body { dominant-baseline: central; font-family: "Segoe UI Emoji", "Apple Color Emoji", sans-serif; font-size: 32px; filter: drop-shadow(0 0 8px rgba(202,218,255,0.72)); }
         .alc-sky-label { fill: rgba(255,255,255,0.82); font-size: 11px; font-weight: 650; }
         .alc-moon-label { fill: rgba(230,237,255,0.88); font-family: var(--paper-font-body1_-_font-family, sans-serif); font-size: 11px; }
-        .alc-intensity-panel { fill: rgba(3, 10, 25, 0.68); }
-        .alc-intensity-axis { stroke: rgba(255,255,255,0.24); stroke-width: 1; }
-        .alc-intensity-label { fill: rgba(230,237,255,0.76); font-family: var(--paper-font-body1_-_font-family, sans-serif); font-size: 10px; font-weight: 700; letter-spacing: 1.2px; }
-        .alc-intensity-value { fill: rgba(255,255,255,0.90); font-family: var(--paper-font-body1_-_font-family, sans-serif); font-size: 11px; font-weight: 650; }
-        .alc-intensity-fill { opacity: 0.72; }
-        .alc-intensity-line { filter: drop-shadow(0 0 5px rgba(255,255,255,0.32)); stroke-linecap: round; stroke-linejoin: round; stroke-width: 5; }
         .alc-times { color: var(--secondary-text-color); display: flex; font-size: 12px; justify-content: space-between; gap: 12px; margin-top: 4px; }
-        .alc-color-grid { display: grid; gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 14px; }
-        .alc-color-editor { background: var(--secondary-background-color); border: 1px solid color-mix(in srgb, var(--divider-color) 70%, transparent); border-radius: 10px; padding: 10px; }
-        .alc-color-main { align-items: center; display: grid; gap: 8px; grid-template-columns: auto minmax(0, 1fr); }
-        .alc-color-picker { background: transparent; border: 0; cursor: pointer; height: 46px; padding: 0; width: 54px; }
+        .alc-effect { background: color-mix(in srgb, var(--secondary-background-color) 86%, transparent); border: 1px solid color-mix(in srgb, var(--divider-color) 76%, transparent); border-radius: 12px; margin-top: 16px; overflow: hidden; padding: 13px; }
+        .alc-effect-head { align-items: flex-start; display: flex; gap: 12px; justify-content: space-between; }
+        .alc-effect-title { font-size: 15px; font-weight: 700; }
+        .alc-effect-sub { color: var(--secondary-text-color); font-size: 11px; line-height: 1.35; margin-top: 3px; }
+        .alc-effect-current { background: color-mix(in srgb, var(--primary-color) 22%, transparent); border-radius: 999px; flex: 0 0 auto; font-size: 12px; font-weight: 700; padding: 6px 9px; }
+        .alc-effect-chart { display: block; height: 205px; margin-top: 7px; overflow: visible; width: 100%; }
+        .alc-effect-chart text { fill: var(--secondary-text-color); font-family: var(--paper-font-body1_-_font-family, sans-serif); font-size: 14px; }
+        .alc-effect-area { fill: #26b7df; opacity: 0.13; }
+        .alc-effect-base { fill: none; stroke: #86a6c7; stroke-dasharray: 8 6; stroke-linecap: round; stroke-linejoin: round; stroke-width: 3; }
+        .alc-effect-result { fill: none; filter: drop-shadow(0 0 4px rgba(38,183,223,0.35)); stroke: #26b7df; stroke-linecap: round; stroke-linejoin: round; stroke-width: 5; }
+        .alc-effect-price { fill: none; stroke: #ffad42; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2.5; }
+        .alc-effect-cloud { fill: none; stroke: #a58dd7; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2.5; }
+        .alc-effect-battery { fill: none; stroke: #48c98b; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2.5; }
+        .alc-effect-now { stroke: var(--primary-text-color); stroke-dasharray: 3 5; stroke-opacity: 0.72; stroke-width: 2; }
+        .alc-effect-dot { fill: #26b7df; stroke: var(--card-background-color); stroke-width: 3; }
+        .alc-effect-factors { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+        .alc-effect-pill { background: color-mix(in srgb, var(--primary-background-color) 65%, transparent); border-radius: 999px; color: var(--secondary-text-color); font-size: 10px; padding: 5px 8px; }
+        .alc-legend-base { background: repeating-linear-gradient(90deg, #86a6c7 0 6px, transparent 6px 9px); }
+        .alc-legend-result { background: #26b7df; }
+        .alc-legend-price { background: #ffad42; }
+        .alc-legend-cloud { background: #a58dd7; }
+        .alc-color-grid { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 14px; }
+        .alc-color-editor { background: var(--secondary-background-color); border: 1px solid color-mix(in srgb, var(--divider-color) 70%, transparent); border-radius: 12px; padding: 12px; }
+        .alc-color-editor-title { font-size: 15px; font-weight: 700; }
+        .alc-color-points { display: grid; gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 12px; }
+        .alc-color-point { background: color-mix(in srgb, var(--primary-background-color) 64%, transparent); border-radius: 10px; min-width: 0; padding: 10px; }
+        .alc-color-main { align-items: center; display: flex; gap: 9px; }
+        .alc-color-swatch { border: 2px solid rgba(255,255,255,0.48); border-radius: 50%; box-shadow: 0 0 0 1px rgba(0,0,0,0.25); flex: 0 0 auto; height: 36px; width: 36px; }
         .alc-color-copy { min-width: 0; }
         .alc-color-title { font-size: 13px; font-weight: 650; }
-        .alc-color-values { color: var(--secondary-text-color); font-size: 11px; margin-top: 2px; }
-        .alc-white-control { color: var(--secondary-text-color); display: block; font-size: 11px; margin-top: 10px; }
-        .alc-white-slider { accent-color: var(--primary-color); cursor: pointer; margin-top: 5px; width: 100%; }
-        .alc-transition-duration { display: block; margin-top: 10px; padding: 0; }
+        .alc-color-values { color: var(--secondary-text-color); font-size: 10px; margin-top: 2px; }
+        .alc-channel { align-items: center; display: grid; gap: 7px; grid-template-columns: 18px minmax(0, 1fr) 30px; margin-top: 9px; }
+        .alc-channel-label { font-size: 12px; font-weight: 750; text-align: center; }
+        .alc-channel-value { color: var(--secondary-text-color); font-variant-numeric: tabular-nums; font-size: 11px; text-align: right; }
+        .alc-channel-slider { appearance: none; background: color-mix(in srgb, currentColor 18%, transparent); border-radius: 999px; cursor: pointer; height: 12px; margin: 0; touch-action: pan-y; width: 100%; }
+        .alc-channel-slider::-webkit-slider-thumb { appearance: none; background: currentColor; border: 2px solid var(--card-background-color); border-radius: 50%; box-shadow: 0 1px 4px rgba(0,0,0,0.36); height: 28px; width: 28px; }
+        .alc-channel-slider::-moz-range-thumb { background: currentColor; border: 2px solid var(--card-background-color); border-radius: 50%; box-shadow: 0 1px 4px rgba(0,0,0,0.36); height: 24px; width: 24px; }
+        .alc-channel-r { color: #f44336; }
+        .alc-channel-g { color: #43a047; }
+        .alc-channel-b { color: #3f82ff; }
+        .alc-channel-w { color: #d2d6db; }
+        .alc-transition-duration { margin-top: 12px; }
+        .alc-duration-stepper { align-items: center; display: grid; gap: 8px; grid-template-columns: 46px minmax(72px, 1fr) 46px; margin-top: 7px; }
+        .alc-duration-stepper button { background: color-mix(in srgb, var(--primary-color) 18%, var(--card-background-color)); border: 1px solid color-mix(in srgb, var(--primary-color) 50%, transparent); border-radius: 9px; color: var(--primary-text-color); cursor: pointer; font: inherit; font-size: 22px; min-height: 44px; }
+        .alc-duration-stepper input { background: var(--card-background-color); border: 1px solid var(--divider-color); border-radius: 9px; color: var(--primary-text-color); font: inherit; font-size: 16px; font-weight: 700; height: 42px; min-width: 0; text-align: center; width: 100%; }
         .alc-grid { display: grid; gap: 8px; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 14px; }
         .alc-metric { background: var(--secondary-background-color); border-radius: 8px; padding: 9px 10px; min-width: 0; }
         .alc-metric-label { color: var(--secondary-text-color); font-size: 11px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -354,6 +380,8 @@ class AquariumLedSimulatorCard extends HTMLElement {
           .alc-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
           .alc-times { flex-direction: column; gap: 2px; }
           .alc-color-grid { grid-template-columns: 1fr; }
+          .alc-color-points { grid-template-columns: 1fr; }
+          .alc-effect-chart { height: 184px; }
           .alc-controls button { flex: 1 1 100%; justify-content: center; }
           .alc-timeline-grid { grid-template-columns: 1fr; }
           .alc-timeline-chart { height: 154px; }
@@ -363,6 +391,187 @@ class AquariumLedSimulatorCard extends HTMLElement {
         }
       </style>
     `;
+  }
+
+  intensitySection(attr, sunrise, sunset, nightPct, dayPct, sunriseDuration, sunsetDuration) {
+    const projection = this.buildIntensityProjection(
+      attr,
+      sunrise,
+      sunset,
+      nightPct,
+      dayPct,
+      sunriseDuration,
+      sunsetDuration,
+    );
+    const chart = projection.chart;
+    const currentX = chart.x(projection.now);
+    const currentTarget = Math.max(0, Math.min(100, Number(attr.target_pct) || 0));
+    const currentY = chart.y(currentTarget);
+    const cloudDimming = Math.round(
+      (1 - ((Number(attr.weather_factor) || 1) * (Number(attr.cloud_factor) || 1))) * 100,
+    );
+    const batteryText = attr.battery_full
+      ? `Akku ${this.formatPercent(attr.battery_soc)}: Preis ignoriert`
+      : `Akku ${this.formatPercent(attr.battery_soc)}`;
+
+    return `
+      <section class="alc-effect">
+        <div class="alc-effect-head">
+          <div>
+            <div class="alc-effect-title">Lichtintensität über den Tag</div>
+            <div class="alc-effect-sub">Grundprofil und wirksames Ergebnis nach Wolken, Strompreis und Growatt-Akku.</div>
+          </div>
+          <div class="alc-effect-current">Jetzt ${Math.round(currentTarget)} %</div>
+        </div>
+        <svg class="alc-effect-chart" viewBox="0 0 640 210" role="img" aria-label="Wirksame Lichtintensitaet mit Wolken-, Preis- und Batterieeinfluss">
+          ${this.chartGrid(chart, 0, 100, (value) => `${Math.round(value)} %`)}
+          <path d="${projection.resultArea}" class="alc-effect-area"></path>
+          <path d="${projection.basePath}" class="alc-effect-base"></path>
+          <path d="${projection.resultPath}" class="alc-effect-result"></path>
+          <path d="${projection.pricePath}" class="alc-effect-price"></path>
+          <path d="${projection.cloudPath}" class="alc-effect-cloud"></path>
+          ${projection.batteryPath ? `<path d="${projection.batteryPath}" class="alc-effect-battery"></path>` : ""}
+          <line x1="${currentX.toFixed(1)}" y1="${chart.top}" x2="${currentX.toFixed(1)}" y2="${chart.bottomEdge}" class="alc-effect-now"></line>
+          <circle cx="${currentX.toFixed(1)}" cy="${currentY.toFixed(1)}" r="6" class="alc-effect-dot"></circle>
+          ${this.chartTimeLabels(chart, [
+            [projection.start, "00"],
+            [projection.start + (6 * 60 * 60 * 1000), "06"],
+            [projection.start + (12 * 60 * 60 * 1000), "12"],
+            [projection.start + (18 * 60 * 60 * 1000), "18"],
+            [projection.end, "24 Uhr"],
+          ])}
+        </svg>
+        <div class="alc-legend">
+          <span class="alc-legend-item"><span class="alc-legend-swatch alc-legend-base"></span>Grundprofil</span>
+          <span class="alc-legend-item"><span class="alc-legend-swatch alc-legend-result"></span>Ergebnis</span>
+          <span class="alc-legend-item"><span class="alc-legend-swatch alc-legend-price"></span>Preisfaktor</span>
+          <span class="alc-legend-item"><span class="alc-legend-swatch alc-legend-cloud"></span>Wolkenfaktor</span>
+          ${projection.batteryPath ? `<span class="alc-legend-item"><span class="alc-legend-swatch alc-legend-battery"></span>Akku-SOC</span>` : ""}
+        </div>
+        <div class="alc-effect-factors">
+          <span class="alc-effect-pill">Wolken aktuell −${Math.max(0, cloudDimming)} %</span>
+          <span class="alc-effect-pill">Preis aktuell −${Math.round(Number(attr.price_dimming_pct) || 0)} %</span>
+          <span class="alc-effect-pill">${this.escape(batteryText)}</span>
+          <span class="alc-effect-pill">Zukunft: Preisprognose · Akku-SOC gehalten · Wolken aktuell</span>
+        </div>
+      </section>
+    `;
+  }
+
+  buildIntensityProjection(attr, sunrise, sunset, nightPct, dayPct, sunriseDuration, sunsetDuration) {
+    const startDate = new Date();
+    startDate.setHours(0, 0, 0, 0);
+    const start = startDate.getTime();
+    const end = start + (24 * 60 * 60 * 1000);
+    const realNow = new Date();
+    const fallbackMinute = (realNow.getHours() * 60) + realNow.getMinutes();
+    const displayMinute = this.parseMinute(attr.time, fallbackMinute);
+    const now = start + (displayMinute * 60 * 1000);
+    const chart = this.chartGeometry(start, end, 0, 100);
+    const sunriseMinute = this.parseMinute(sunrise, 360);
+    const sunsetMinute = this.parseMinute(sunset, 1080);
+    const pricePoints = [
+      ...(this._timeline?.priceHistory || []),
+      ...(this._timeline?.priceForecast || []),
+    ].sort((left, right) => left.time - right.time);
+    const batteryPoints = [...(this._timeline?.batteryHistory || [])]
+      .sort((left, right) => left.time - right.time);
+    const currentPrice = this.numberOrNull(attr.price);
+    const currentBattery = this.numberOrNull(attr.battery_soc);
+    const reference = this.numberOrNull(attr.price_reference);
+    const ceiling = this.numberOrNull(attr.price_ceiling);
+    const maxDimming = Math.max(0, Math.min(100, Number(attr.price_dimming_max_pct) || 0)) / 100;
+    const batteryThreshold = this.numberOrNull(attr.battery_full_threshold) ?? 95;
+    const cloudiness = Math.max(0, Math.min(1, (Number(attr.cloudiness_pct) || 0) / 100));
+    const cloudStrength = Math.max(0, Math.min(1, (Number(attr.cloud_strength_pct) || 0) / 100));
+    const moonPhaseFactor = Math.max(0, Math.min(1, Number(attr.moon_phase_factor) || 0.6));
+    const basePoints = [];
+    const resultPoints = [];
+    const priceFactorPoints = [];
+    const cloudFactorPoints = [];
+    const batterySocPoints = [];
+
+    for (let minute = 0; minute <= 1440; minute += 15) {
+      const time = start + (minute * 60 * 1000);
+      const wrappedMinute = minute === 1440 ? 1439 : minute;
+      const base = this.profileAt(
+        wrappedMinute,
+        sunriseMinute,
+        sunsetMinute,
+        nightPct,
+        dayPct,
+        sunriseDuration,
+        sunsetDuration,
+      );
+      const night = wrappedMinute < sunriseMinute || wrappedMinute >= sunsetMinute;
+      const wave = (Math.sin((wrappedMinute / 1440) * Math.PI * 2 * 8) + 1) / 2;
+      const battery = this.timelineValueAt(batteryPoints, time, currentBattery);
+      const price = this.timelineValueAt(pricePoints, time, currentPrice);
+      const batteryFull = battery !== null && battery >= batteryThreshold;
+      const priceFactor = night || batteryFull
+        ? 1
+        : this.priceFactorAt(price, reference, ceiling, maxDimming, attr.price_factor);
+      let cloudFactor;
+      let result;
+      if (night) {
+        cloudFactor = Math.max(
+          0.35,
+          Math.min(1, 1 - (cloudiness * cloudStrength * (0.25 + (0.75 * wave)) * 0.55)),
+        );
+        result = Math.max(1, Number(nightPct) * moonPhaseFactor * cloudFactor);
+      } else {
+        const weatherFactor = Math.max(0.5, Math.min(1, 1 - (cloudiness * 0.2)));
+        const waveFactor = Math.max(
+          0.4,
+          Math.min(1, 1 - (cloudiness * cloudStrength * wave * 0.25)),
+        );
+        cloudFactor = weatherFactor * waveFactor;
+        result = base * priceFactor * cloudFactor;
+      }
+      basePoints.push({ time, value: Math.max(0, Math.min(100, base)) });
+      resultPoints.push({ time, value: Math.max(0, Math.min(100, result)) });
+      priceFactorPoints.push({ time, value: priceFactor * 100 });
+      cloudFactorPoints.push({ time, value: cloudFactor * 100 });
+      if (battery !== null) {
+        batterySocPoints.push({ time, value: Math.max(0, Math.min(100, battery)) });
+      }
+    }
+
+    return {
+      batteryPath: this.pointPath(batterySocPoints, chart),
+      basePath: this.pointPath(basePoints, chart),
+      chart,
+      cloudPath: this.pointPath(cloudFactorPoints, chart),
+      end,
+      now,
+      pricePath: this.pointPath(priceFactorPoints, chart),
+      resultArea: this.areaPath(resultPoints, chart),
+      resultPath: this.pointPath(resultPoints, chart),
+      start,
+    };
+  }
+
+  timelineValueAt(points, time, fallback) {
+    if (!points.length) {
+      return fallback;
+    }
+    let value = points[0].value;
+    for (const point of points) {
+      if (point.time > time) {
+        break;
+      }
+      value = point.value;
+    }
+    return this.numberOrNull(value) ?? fallback;
+  }
+
+  priceFactorAt(price, reference, ceiling, maxDimming, currentFactor) {
+    if (price !== null && reference !== null && ceiling !== null && ceiling > reference) {
+      const load = Math.max(0, Math.min(1, (price - reference) / (ceiling - reference)));
+      return 1 - (load * maxDimming);
+    }
+    const fallback = this.numberOrNull(currentFactor);
+    return fallback === null ? 1 : Math.max(0, Math.min(1, fallback));
   }
 
   timelineSection(attr, priceEntity, batteryEntity) {
@@ -849,8 +1058,10 @@ class AquariumLedSimulatorCard extends HTMLElement {
   }
 
   transitionColorControls(
-    sunriseRgbw,
-    sunsetRgbw,
+    sunriseStartRgbw,
+    sunriseEndRgbw,
+    sunsetStartRgbw,
+    sunsetEndRgbw,
     configEntryId,
     sunriseDurationEntity,
     sunriseDuration,
@@ -862,7 +1073,8 @@ class AquariumLedSimulatorCard extends HTMLElement {
         ${this.transitionColorEditor(
           "sunrise",
           "Sonnenaufgang",
-          sunriseRgbw,
+          sunriseStartRgbw,
+          sunriseEndRgbw,
           configEntryId,
           sunriseDurationEntity,
           sunriseDuration,
@@ -870,7 +1082,8 @@ class AquariumLedSimulatorCard extends HTMLElement {
         ${this.transitionColorEditor(
           "sunset",
           "Sonnenuntergang",
-          sunsetRgbw,
+          sunsetStartRgbw,
+          sunsetEndRgbw,
           configEntryId,
           sunsetDurationEntity,
           sunsetDuration,
@@ -879,48 +1092,75 @@ class AquariumLedSimulatorCard extends HTMLElement {
     `;
   }
 
-  transitionColorEditor(phase, title, rgbw, configEntryId, durationEntity, durationValue) {
+  transitionColorEditor(phase, title, startRgbw, endRgbw, configEntryId, durationEntity, durationValue) {
     const duration = Math.max(10, Math.min(240, Math.round(Number(durationValue) || (phase === "sunrise" ? 60 : 90))));
     return `
-      <section class="alc-color-editor" data-rgbw-editor data-phase="${phase}" data-config-entry-id="${this.escape(configEntryId)}">
-        <label class="alc-color-main">
-          <input class="alc-color-picker" type="color" value="${this.rgbwToHex(rgbw)}" data-rgb-picker aria-label="Farbe ${this.escape(title)}" />
-          <span class="alc-color-copy">
-            <span class="alc-color-title">${this.escape(title)}</span>
-            <span class="alc-color-values">RGBW ${rgbw[0]} / ${rgbw[1]} / ${rgbw[2]} / ${rgbw[3]}</span>
-          </span>
-        </label>
+      <section class="alc-color-editor">
+        <div class="alc-color-editor-title">${this.escape(title)}</div>
         ${durationEntity ? `
-          <label class="alc-transition-duration">
-            <span class="alc-duration-head">
-              <span>Dauer</span>
-              <strong>${duration} Min.</strong>
-            </span>
-            <input
-              type="range"
-              min="10"
-              max="240"
-              step="5"
-              value="${duration}"
-              data-transition-duration="${this.escape(durationEntity)}"
-              aria-label="Dauer ${this.escape(title)} in Minuten"
-            />
-          </label>
+          <div class="alc-transition-duration">
+            <span class="alc-duration-head"><span>Dauer</span><strong>10–240 Min.</strong></span>
+            <div class="alc-duration-stepper">
+              <button type="button" data-duration-delta="-5" data-duration-entity="${this.escape(durationEntity)}" aria-label="${this.escape(title)} fuenf Minuten kuerzer">−</button>
+              <input type="number" min="10" max="240" step="5" value="${duration}" data-transition-duration="${this.escape(durationEntity)}" aria-label="Dauer ${this.escape(title)} in Minuten" />
+              <button type="button" data-duration-delta="5" data-duration-entity="${this.escape(durationEntity)}" aria-label="${this.escape(title)} fuenf Minuten laenger">+</button>
+            </div>
+          </div>
         ` : ""}
-        <label class="alc-white-control">
-          Weisskanal W ${rgbw[3]}
-          <input class="alc-white-slider" type="range" min="0" max="255" step="1" value="${rgbw[3]}" data-white-picker aria-label="Weisskanal fuer ${this.escape(title)}" />
-        </label>
+        <div class="alc-color-points">
+          ${this.rgbwEndpointEditor(`${phase}_start`, "Anfang", startRgbw, title, configEntryId)}
+          ${this.rgbwEndpointEditor(`${phase}_end`, "Ende", endRgbw, title, configEntryId)}
+        </div>
       </section>
     `;
   }
 
+  rgbwEndpointEditor(endpoint, label, rgbw, title, configEntryId) {
+    const channels = ["R", "G", "B", "W"];
+    return `
+      <div class="alc-color-point" data-rgbw-editor data-phase="${endpoint}" data-config-entry-id="${this.escape(configEntryId)}">
+        <div class="alc-color-main">
+          <span class="alc-color-swatch" data-rgbw-swatch style="background:${this.rgbwPreviewCss(rgbw)}"></span>
+          <span class="alc-color-copy">
+            <span class="alc-color-title">${this.escape(label)}</span>
+            <span class="alc-color-values" data-rgbw-values>RGBW ${rgbw.join(" / ")}</span>
+          </span>
+        </div>
+        ${channels.map((channel, index) => `
+          <label class="alc-channel alc-channel-${channel.toLowerCase()}">
+            <span class="alc-channel-label">${channel}</span>
+            <input class="alc-channel-slider" type="range" min="0" max="255" step="1" value="${rgbw[index]}" data-rgbw-channel data-channel-index="${index}" aria-label="${channel}-Kanal ${this.escape(title)} ${this.escape(label)}" />
+            <span class="alc-channel-value" data-channel-value="${index}">${rgbw[index]}</span>
+          </label>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  previewTransitionColor(editor) {
+    const rgbw = [...editor.querySelectorAll("[data-rgbw-channel]")]
+      .sort((left, right) => Number(left.dataset.channelIndex) - Number(right.dataset.channelIndex))
+      .map((input) => Math.max(0, Math.min(255, Math.round(Number(input.value) || 0))));
+    editor.querySelectorAll("[data-channel-value]").forEach((value) => {
+      value.textContent = String(rgbw[Number(value.dataset.channelValue)]);
+    });
+    const copy = editor.querySelector("[data-rgbw-values]");
+    if (copy) {
+      copy.textContent = `RGBW ${rgbw.join(" / ")}`;
+    }
+    const swatch = editor.querySelector("[data-rgbw-swatch]");
+    if (swatch) {
+      swatch.style.background = this.rgbwPreviewCss(rgbw);
+    }
+  }
+
   saveTransitionColor(editor) {
-    const rgb = this.hexToRgb(editor.querySelector("[data-rgb-picker]")?.value);
-    const white = Math.max(0, Math.min(255, Math.round(Number(editor.querySelector("[data-white-picker]")?.value) || 0)));
+    const rgbw = [...editor.querySelectorAll("[data-rgbw-channel]")]
+      .sort((left, right) => Number(left.dataset.channelIndex) - Number(right.dataset.channelIndex))
+      .map((input) => Math.max(0, Math.min(255, Math.round(Number(input.value) || 0))));
     const data = {
       phase: editor.dataset.phase,
-      rgbw_color: [...rgb, white],
+      rgbw_color: rgbw,
     };
     if (editor.dataset.configEntryId) {
       data.config_entry_id = editor.dataset.configEntryId;
@@ -939,33 +1179,12 @@ class AquariumLedSimulatorCard extends HTMLElement {
     return `rgb(${rgbw[0]}, ${rgbw[1]}, ${rgbw[2]})`;
   }
 
-  intensityGradientStops(sunrise, sunset, sunriseDuration, sunsetDuration, sunriseRgbw, sunsetRgbw) {
-    const sunriseMinute = this.parseMinute(sunrise, 360);
-    const sunsetMinute = this.parseMinute(sunset, 1080);
-    const positions = [
-      [0, "rgb(0, 10, 90)"],
-      [(sunriseMinute / 1440) * 100, this.rgbwCss(sunriseRgbw)],
-      [((sunriseMinute + sunriseDuration) / 1440) * 100, "rgb(190, 220, 255)"],
-      [((sunsetMinute - sunsetDuration) / 1440) * 100, "rgb(190, 220, 255)"],
-      [(sunsetMinute / 1440) * 100, this.rgbwCss(sunsetRgbw)],
-      [100, "rgb(0, 10, 90)"],
-    ].map(([offset, color]) => [Math.max(0, Math.min(100, offset)), color]);
-    positions.sort((left, right) => left[0] - right[0]);
-    return positions
-      .map(([offset, color]) => `<stop offset="${offset.toFixed(2)}%" stop-color="${color}"></stop>`)
-      .join("");
-  }
-
-  rgbwToHex(rgbw) {
-    return `#${rgbw.slice(0, 3).map((channel) => channel.toString(16).padStart(2, "0")).join("")}`;
-  }
-
-  hexToRgb(value) {
-    const match = String(value || "").match(/^#([0-9a-f]{6})$/i);
-    if (!match) {
-      return [255, 0, 0];
-    }
-    return [0, 2, 4].map((offset) => Number.parseInt(match[1].slice(offset, offset + 2), 16));
+  rgbwPreviewCss(rgbw) {
+    const white = Math.max(0, Math.min(255, Number(rgbw[3]) || 0));
+    const red = Math.min(255, Number(rgbw[0]) + white);
+    const green = Math.min(255, Number(rgbw[1]) + white);
+    const blue = Math.min(255, Number(rgbw[2]) + white);
+    return `rgb(${red}, ${green}, ${blue})`;
   }
 
   priceRuleLabel(attr) {
@@ -1029,32 +1248,6 @@ class AquariumLedSimulatorCard extends HTMLElement {
       points.push(`${index === 0 ? "M" : "L"} ${x.toFixed(1)} ${y.toFixed(1)}`);
     }
     return points.join(" ");
-  }
-
-  buildCurve(sunrise, sunset, nightPct, dayPct, sunriseDuration, sunsetDuration) {
-    const sunriseMinute = this.parseMinute(sunrise, 360);
-    const sunsetMinute = this.parseMinute(sunset, 1080);
-    const points = [];
-
-    for (let index = 0; index <= 96; index += 1) {
-      const minute = index * 15;
-      const pct = this.profileAt(
-        minute,
-        sunriseMinute,
-        sunsetMinute,
-        nightPct,
-        dayPct,
-        sunriseDuration,
-        sunsetDuration,
-      );
-      const x = (index / 96) * 720;
-      const y = 292 - (pct / 100) * 68;
-      points.push([x, y]);
-    }
-
-    const line = points.map((point, index) => `${index === 0 ? "M" : "L"} ${point[0].toFixed(1)} ${point[1].toFixed(1)}`).join(" ");
-    const fill = `${line} L 720 292 L 0 292 Z`;
-    return { line, fill };
   }
 
   profileAt(minute, sunrise, sunset, night, day, sunriseDuration = 60, sunsetDuration = 90) {

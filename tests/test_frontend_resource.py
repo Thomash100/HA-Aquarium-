@@ -63,8 +63,12 @@ class FrontendResourceTests(unittest.TestCase):
     def test_transition_colours_are_editable_as_rgbw(self) -> None:
         source = RESOURCE.read_text(encoding="utf-8")
 
-        self.assertIn('type="color"', source)
-        self.assertIn("data-white-picker", source)
+        self.assertIn("data-rgbw-channel", source)
+        self.assertIn('data-phase="${endpoint}"', source)
+        self.assertIn('`${phase}_start`', source)
+        self.assertIn('`${phase}_end`', source)
+        self.assertIn("alc-channel-r", source)
+        self.assertIn("alc-channel-w", source)
         self.assertIn('callService("aquarium_led_cockpit", "set_transition_color"', source)
         self.assertIn("Pause: Nacht", source)
         self.assertIn("Pause: Speicher voll", source)
@@ -86,14 +90,17 @@ class FrontendResourceTests(unittest.TestCase):
         self.assertIn('data-sunrise-offset=', source)
         self.assertIn('step="0.25"', source)
 
-    def test_intensity_curve_is_integrated_into_celestial_diagram(self) -> None:
+    def test_intensity_curve_is_separate_and_shows_all_effects(self) -> None:
         source = RESOURCE.read_text(encoding="utf-8")
 
-        self.assertIn('viewBox="0 0 720 310"', source)
-        self.assertIn("alc-intensity-panel", source)
-        self.assertIn("alc-intensity-line", source)
-        self.assertIn("intensityGradientStops", source)
-        self.assertNotIn('<svg class="alc-chart"', source)
+        self.assertIn('viewBox="0 0 720 190"', source)
+        self.assertIn("alc-effect-chart", source)
+        self.assertIn("buildIntensityProjection", source)
+        self.assertIn("Grundprofil", source)
+        self.assertIn("Preisfaktor", source)
+        self.assertIn("Wolkenfaktor", source)
+        self.assertIn("Akku-SOC", source)
+        self.assertNotIn("alc-intensity-panel", source)
 
     def test_transition_durations_are_adjustable_in_the_card(self) -> None:
         source = RESOURCE.read_text(encoding="utf-8")
@@ -103,6 +110,8 @@ class FrontendResourceTests(unittest.TestCase):
         self.assertIn("data-transition-duration", source)
         self.assertIn('max="240"', source)
         self.assertIn('step="5"', source)
+        self.assertIn("data-duration-delta", source)
+        self.assertIn('type="number"', source)
 
 
 if __name__ == "__main__":

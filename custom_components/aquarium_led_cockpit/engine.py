@@ -25,8 +25,10 @@ from .const import (
     CONTROL_SIMULATION,
     CONTROL_SIMULATION_TIME,
     CONTROL_SUNRISE_DURATION,
+    CONTROL_SUNRISE_END_RGBW,
     CONTROL_SUNRISE_OFFSET,
     CONTROL_SUNRISE_RGBW,
+    CONTROL_SUNSET_START_RGBW,
     CONTROL_SUNSET_RGBW,
     CONTROL_SUNSET_DURATION,
     CONTROL_TIME_LAPSE_DURATION,
@@ -46,6 +48,7 @@ from .const import (
 from .price import calculate_price_adjustment, is_battery_full
 from .solar import (
     DAWN_DUSK_RGBW,
+    DAYLIGHT_RGBW,
     MIN_MOONLIGHT_BRIGHTNESS_PCT,
     calculate_moonlight_target,
     calculate_solar_profile,
@@ -232,6 +235,8 @@ def calculate_target(
         controls.get(CONTROL_SUNSET_RGBW, DAWN_DUSK_RGBW),
         sunrise_duration,
         sunset_duration,
+        controls.get(CONTROL_SUNRISE_END_RGBW, DAYLIGHT_RGBW),
+        controls.get(CONTROL_SUNSET_START_RGBW, DAYLIGHT_RGBW),
     )
     phase = solar_profile.phase
     base_pct = solar_profile.base_pct
@@ -303,8 +308,23 @@ def calculate_target(
         "moonlight_end": _minutes_to_clock(sunrise_start),
         "light_mode": "moonlight" if phase == "night" else phase,
         "color_control": "rgbw",
+        # The legacy names remain available to existing dashboard consumers.
         "sunrise_rgbw": list(normalize_rgbw(controls.get(CONTROL_SUNRISE_RGBW))),
+        "sunrise_start_rgbw": list(normalize_rgbw(controls.get(CONTROL_SUNRISE_RGBW))),
+        "sunrise_end_rgbw": list(
+            normalize_rgbw(
+                controls.get(CONTROL_SUNRISE_END_RGBW),
+                DAYLIGHT_RGBW,
+            )
+        ),
+        "sunset_start_rgbw": list(
+            normalize_rgbw(
+                controls.get(CONTROL_SUNSET_START_RGBW),
+                DAYLIGHT_RGBW,
+            )
+        ),
         "sunset_rgbw": list(normalize_rgbw(controls.get(CONTROL_SUNSET_RGBW))),
+        "sunset_end_rgbw": list(normalize_rgbw(controls.get(CONTROL_SUNSET_RGBW))),
         "moon_phase": moon_phase,
         "moon_phase_label": moon_phase_label,
         "moon_phase_icon": moon_phase_icon,
@@ -325,6 +345,10 @@ def calculate_target(
         "price_factor": round(price_factor, 3),
         "price_load_pct": int(round(price_adjustment["load"] * 100)),
         "price_dimming_pct": int(round((1 - price_factor) * 100)),
+        "price_dimming_max_pct": round(
+            float(controls.get(CONTROL_PRICE_DIMMING, DEFAULT_PRICE_DIMMING)),
+            1,
+        ),
         "price_reference": price_adjustment["reference"] if price_adjustment["reference"] is not None else "-",
         "price_ceiling": price_adjustment["ceiling"] if price_adjustment["ceiling"] is not None else "-",
         "price_strategy": price_strategy,
