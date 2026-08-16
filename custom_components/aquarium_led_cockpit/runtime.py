@@ -9,6 +9,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_ENTITY_ID
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.storage import Store
 
@@ -33,6 +34,8 @@ from .const import (
     CONTROL_SUNSET_DURATION,
     CONTROL_TIME_LAPSE_DURATION,
     CONTROL_TIME_LAPSE,
+    CONTROL_WHITE_CHANNEL_1_LEVEL,
+    CONTROL_WHITE_CHANNEL_2_LEVEL,
     DATA_RUNTIMES,
     DEFAULT_CLOUD_STRENGTH,
     DEFAULT_DAY_BRIGHTNESS,
@@ -43,6 +46,7 @@ from .const import (
     DEFAULT_SUNRISE_OFFSET_HOURS,
     DEFAULT_SUNSET_DURATION_MINUTES,
     DEFAULT_TRANSITION_SECONDS,
+    DEFAULT_WHITE_CHANNEL_LEVEL,
     DOMAIN,
     STORAGE_KEY_PREFIX,
     STORAGE_VERSION,
@@ -54,6 +58,7 @@ from .solar import (
     normalize_rgbw,
     normalize_sunrise_offset,
     normalize_transition_duration,
+    normalize_white_channel_level,
 )
 from .time_lapse import (
     DEFAULT_TIME_LAPSE_DURATION_MINUTES,
@@ -80,6 +85,8 @@ DEFAULT_CONTROLS = {
     CONTROL_SUNRISE_END_RGBW: list(DAYLIGHT_RGBW),
     CONTROL_SUNSET_START_RGBW: list(DAYLIGHT_RGBW),
     CONTROL_SUNSET_RGBW: list(DAWN_DUSK_RGBW),
+    CONTROL_WHITE_CHANNEL_1_LEVEL: DEFAULT_WHITE_CHANNEL_LEVEL,
+    CONTROL_WHITE_CHANNEL_2_LEVEL: DEFAULT_WHITE_CHANNEL_LEVEL,
 }
 
 
@@ -139,6 +146,12 @@ class AquariumLedCockpitRuntime:
         self._controls[CONTROL_SUNSET_DURATION] = normalize_transition_duration(
             self._controls.get(CONTROL_SUNSET_DURATION),
             DEFAULT_SUNSET_DURATION_MINUTES,
+        )
+        self._controls[CONTROL_WHITE_CHANNEL_1_LEVEL] = normalize_white_channel_level(
+            self._controls.get(CONTROL_WHITE_CHANNEL_1_LEVEL)
+        )
+        self._controls[CONTROL_WHITE_CHANNEL_2_LEVEL] = normalize_white_channel_level(
+            self._controls.get(CONTROL_WHITE_CHANNEL_2_LEVEL)
         )
         self._controls[CONTROL_SUNRISE_RGBW] = list(
             normalize_rgbw(self._controls.get(CONTROL_SUNRISE_RGBW))
@@ -202,6 +215,8 @@ class AquariumLedCockpitRuntime:
             value = normalize_transition_duration(value, DEFAULT_SUNRISE_DURATION_MINUTES)
         if key == CONTROL_SUNSET_DURATION:
             value = normalize_transition_duration(value, DEFAULT_SUNSET_DURATION_MINUTES)
+        if key in {CONTROL_WHITE_CHANNEL_1_LEVEL, CONTROL_WHITE_CHANNEL_2_LEVEL}:
+            value = normalize_white_channel_level(value)
         if key in {
             CONTROL_SUNRISE_RGBW,
             CONTROL_SUNRISE_END_RGBW,
@@ -359,7 +374,24 @@ class AquariumLedCockpitRuntime:
     ) -> None:
         """Calculate the target and optionally apply it to configured lights."""
         target = calculate_target(self.hass, self._settings, self._controls)
-        status = {**target.status, "config_entry_id": self.entry_id}
+        entity_registry = er.async_get(self.hass)
+        white_channel_number_entities = [
+            entity_registry.async_get_entity_id(
+                "number",
+                DOMAIN,
+                f"{DOMAIN}_{self.entry_id}_{control_key}",
+            )
+            or ""
+            for control_key in (
+                CONTROL_WHITE_CHANNEL_1_LEVEL,
+                CONTROL_WHITE_CHANNEL_2_LEVEL,
+            )
+        ]
+        status = {
+            **target.status,
+            "config_entry_id": self.entry_id,
+            "white_channel_number_entities": white_channel_number_entities,
+        }
         await self.async_set_status(status, persist=persist)
 
         if not apply_lights:
@@ -395,21 +427,32 @@ class AquariumLedCockpitRuntime:
                 blocking=False,
             )
 
-        white_pct = int(target.status.get("white_pct") or 0)
-        if white_lights and white_pct > 0:
-            await self.hass.services.async_call(
-                "light",
-                "turn_on",
-                {ATTR_ENTITY_ID: white_lights, "brightness_pct": white_pct, "transition": transition},
-                blocking=False,
+        white_targets = target.status.get("white_channel_targets_pct") or []
+        legacy_white_pct = int(target.status.get("white_pct") or 0)
+        for index, entity_id in enumerate(white_lights):
+            white_pct = int(
+                white_targets[index]
+                if index < len(white_targets)
+                else legacy_white_pct
             )
-        elif white_lights:
-            await self.hass.services.async_call(
-                "light",
-                "turn_off",
-                {ATTR_ENTITY_ID: white_lights, "transition": transition},
-                blocking=False,
-            )
+            if white_pct > 0:
+                await self.hass.services.async_call(
+                    "light",
+                    "turn_on",
+                    {
+                        ATTR_ENTITY_ID: entity_id,
+                        "brightness_pct": white_pct,
+                        "transition": transition,
+                    },
+                    blocking=False,
+                )
+            else:
+                await self.hass.services.async_call(
+                    "light",
+                    "turn_off",
+                    {ATTR_ENTITY_ID: entity_id, "transition": transition},
+                    blocking=False,
+                )
 
     def _snapshot_configured_lights(self) -> dict[str, dict[str, Any]]:
         """Capture all configured lights before a physical preview starts."""

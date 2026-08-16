@@ -106,6 +106,16 @@ class SolarProfileTests(unittest.TestCase):
         self.assertFalse(adjustment.available)
         self.assertEqual(1.0, adjustment.factor)
 
+    def test_two_white_channels_have_independent_levels(self) -> None:
+        targets = SOLAR.calculate_white_channel_targets(80, [100, 60], 2)
+
+        self.assertEqual((80, 48), targets)
+
+    def test_white_channel_levels_are_clamped_and_default_safely(self) -> None:
+        targets = SOLAR.calculate_white_channel_targets(70, [150, "invalid"], 3)
+
+        self.assertEqual((70, 70, 70), targets)
+
     def test_daylight_clouds_have_visible_weather_and_wave_effects(self) -> None:
         weather, calm, effective = SOLAR.calculate_daylight_cloud_factors(
             0.12, 0.45, 0

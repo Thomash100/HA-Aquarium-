@@ -20,6 +20,8 @@ from .const import (
     CONTROL_SUNRISE_OFFSET,
     CONTROL_SUNSET_DURATION,
     CONTROL_TIME_LAPSE_DURATION,
+    CONTROL_WHITE_CHANNEL_1_LEVEL,
+    CONTROL_WHITE_CHANNEL_2_LEVEL,
     DOMAIN,
 )
 from .solar import (
@@ -108,7 +110,7 @@ NUMBERS = (
         MAX_SUNRISE_OFFSET_HOURS,
         0.25,
         UnitOfTime.HOURS,
-        NumberMode.SLIDER,
+        NumberMode.BOX,
     ),
     NumberDescription(
         CONTROL_SUNRISE_DURATION,
@@ -139,6 +141,26 @@ NUMBERS = (
         1,
         UnitOfTime.MINUTES,
         NumberMode.SLIDER,
+    ),
+    NumberDescription(
+        CONTROL_WHITE_CHANNEL_1_LEVEL,
+        "Weisskanal 1",
+        "mdi:lightbulb-on-outline",
+        0,
+        100,
+        5,
+        PERCENTAGE,
+        NumberMode.BOX,
+    ),
+    NumberDescription(
+        CONTROL_WHITE_CHANNEL_2_LEVEL,
+        "Weisskanal 2",
+        "mdi:lightbulb-on-outline",
+        0,
+        100,
+        5,
+        PERCENTAGE,
+        NumberMode.BOX,
     ),
 )
 

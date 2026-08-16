@@ -42,6 +42,7 @@ DEFAULT_SIMULATION_TIME = 360
 DEFAULT_SUNRISE_OFFSET_HOURS = 0
 DEFAULT_SUNRISE_DURATION_MINUTES = 60
 DEFAULT_SUNSET_DURATION_MINUTES = 90
+DEFAULT_WHITE_CHANNEL_LEVEL = 100
 
 DATA_RUNTIMES = "runtimes"
 DATA_SERVICES_REGISTERED = "services_registered"
@@ -70,6 +71,8 @@ CONTROL_TIME_LAPSE_DURATION = "simulation_step_minutes"
 CONTROL_SUNRISE_OFFSET = "sunrise_offset_hours"
 CONTROL_SUNRISE_DURATION = "sunrise_duration_minutes"
 CONTROL_SUNSET_DURATION = "sunset_duration_minutes"
+CONTROL_WHITE_CHANNEL_1_LEVEL = "white_channel_1_level_pct"
+CONTROL_WHITE_CHANNEL_2_LEVEL = "white_channel_2_level_pct"
 # Keep the original keys as the outer (night-side) endpoints for upgrades.
 CONTROL_SUNRISE_RGBW = "sunrise_rgbw"
 CONTROL_SUNRISE_END_RGBW = "sunrise_end_rgbw"

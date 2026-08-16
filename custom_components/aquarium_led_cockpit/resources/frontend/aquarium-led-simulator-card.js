@@ -50,6 +50,13 @@ class AquariumLedSimulatorCard extends HTMLElement {
     const target = Number(attr.target_pct || 0);
     const base = Number(attr.base_pct || target || 0);
     const white = Number(attr.white_pct || 0);
+    const whiteLightEntities = Array.isArray(attr.white_light_entities) ? attr.white_light_entities : [];
+    const whiteChannelLevels = Array.isArray(attr.white_channel_levels_pct)
+      ? attr.white_channel_levels_pct
+      : [100, 100];
+    const whiteChannelTargets = Array.isArray(attr.white_channel_targets_pct)
+      ? attr.white_channel_targets_pct
+      : whiteLightEntities.map(() => white);
     const currentTime = attr.time || "--:--";
     const sunrise = attr.sunrise || "06:00";
     const sunriseActual = attr.sunrise_actual || sunrise;
@@ -60,7 +67,8 @@ class AquariumLedSimulatorCard extends HTMLElement {
     const sunriseEndRgbw = this.normalizeRgbw(attr.sunrise_end_rgbw, [190, 220, 255, 255]);
     const sunsetStartRgbw = this.normalizeRgbw(attr.sunset_start_rgbw, [190, 220, 255, 255]);
     const sunsetEndRgbw = this.normalizeRgbw(attr.sunset_end_rgbw || attr.sunset_rgbw, [255, 0, 0, 0]);
-    const celestial = this.celestialGeometry(currentTime, sunrise, sunset);
+    const celestial = this.celestialGeometry(currentTime, sunriseActual, sunset);
+    const lightStartX = ((this.parseMinute(sunrise, 360) / 1440) * 720).toFixed(1);
     const moonPhaseIcon = attr.moon_phase_icon || "🌙";
     const moonPhaseLabel = attr.moon_phase_label || "Mondphase";
     const moonPhaseBrightness = Number(attr.moon_phase_brightness_pct ?? 60);
@@ -73,6 +81,10 @@ class AquariumLedSimulatorCard extends HTMLElement {
     const batteryEntity = this.config.battery_entity || attr.battery_soc_entity || "";
     const timeLapseDurationEntity = this.config.time_lapse_duration_number || "";
     const sunriseOffsetEntity = this.config.sunrise_offset_number || "";
+    const whiteChannelNumberEntities = [
+      this.config.white_channel_1_number || attr.white_channel_number_entities?.[0] || "",
+      this.config.white_channel_2_number || attr.white_channel_number_entities?.[1] || "",
+    ];
     const sunriseDurationEntity = this.config.sunrise_duration_number || "";
     const sunsetDurationEntity = this.config.sunset_duration_number || "";
     const aquariumPreviewEntity = this.config.aquarium_preview_switch || "";
@@ -120,17 +132,19 @@ class AquariumLedSimulatorCard extends HTMLElement {
               <path d="${celestial.moonMorningArc}" class="alc-moon-arc"></path>
               <line x1="0" y1="138" x2="720" y2="138" class="alc-horizon-line"></line>
               <line x1="${celestial.nowX}" y1="12" x2="${celestial.nowX}" y2="166" class="alc-sky-now"></line>
+              <line x1="${lightStartX}" y1="118" x2="${lightStartX}" y2="166" class="alc-light-start"></line>
               ${celestial.isDay
                 ? `<circle cx="${celestial.bodyX}" cy="${celestial.bodyY}" r="14" class="alc-sun-body"></circle>`
                 : `<text x="${celestial.bodyX}" y="${celestial.bodyY + 9}" class="alc-moon-body" text-anchor="middle">${this.escape(moonPhaseIcon)}</text>`}
-              <text x="${celestial.sunriseX}" y="160" class="alc-sky-label" text-anchor="middle">${this.escape(sunrise)}</text>
+              <text x="${celestial.sunriseX}" y="160" class="alc-sky-label" text-anchor="middle">Sonne ${this.escape(sunriseActual)}</text>
+              <text x="${lightStartX}" y="112" class="alc-light-start-label" text-anchor="middle">Licht ${this.escape(sunrise)}</text>
               <text x="${celestial.sunsetX}" y="160" class="alc-sky-label" text-anchor="middle">${this.escape(sunset)}</text>
               <text x="360" y="181" class="alc-moon-label" text-anchor="middle">${this.escape(moonPhaseIcon)} ${this.escape(moonPhaseLabel)} · Mond ${Math.round(moonPhaseBrightness)}% · Wolken −${Math.round(moonCloudDimming)}%</text>
             </svg>
           </div>
 
           <div class="alc-times">
-            <span>Reale Sonne ${this.escape(sunriseActual)} · Lichtstart ${this.escape(sunrise)} (${this.escape(this.formatSignedHours(sunriseOffsetHours))}) · Anfang → Ende ${configuredSunriseDuration} Min.</span>
+            <span>Sonnenbahn fest: ${this.escape(sunriseActual)} · Aquarium-Aufgang ${this.escape(sunrise)} (${this.escape(this.formatSignedHours(sunriseOffsetHours))}) · ${configuredSunriseDuration} Min.</span>
             <span>Anfang → Ende ${configuredSunsetDuration} Min. · ab ${this.escape(attr.sunset_phase_start || sunset)} · Untergang ${this.escape(sunset)}</span>
           </div>
 
@@ -145,6 +159,13 @@ class AquariumLedSimulatorCard extends HTMLElement {
           )}
 
           ${this.sunriseOffsetControl(sunriseOffsetEntity, sunriseOffsetHours)}
+
+          ${this.whiteChannelControls(
+            whiteLightEntities,
+            whiteChannelNumberEntities,
+            whiteChannelLevels,
+            whiteChannelTargets,
+          )}
 
           ${this.transitionColorControls(
             sunriseStartRgbw,
@@ -162,7 +183,8 @@ class AquariumLedSimulatorCard extends HTMLElement {
             ${this.metric("Basis", `${base}%`)}
             ${this.metric("Tagesmaximum", `${attr.midday_peak_time || "12:00"} · ${dayBrightness}%`)}
             ${this.metric("RGBW", rgbw.map((channel) => Math.round(Number(channel) || 0)).join(" / "))}
-            ${this.metric("Weiss", `${white}%`)}
+            ${this.metric("RGBW-Weissanteil", `${white}%`)}
+            ${whiteChannelTargets.map((value, index) => this.metric(`Weiss ${index + 1}`, `${Math.round(Number(value) || 0)}%`)).join("")}
             ${this.metric("Preis", this.formatPrice(attr.price, this._hass.states[priceEntity]?.attributes?.unit_of_measurement))}
             ${this.metric("Preis-Dimmung", this.formatPercent(attr.price_dimming_pct))}
             ${this.metric("Speicher", this.formatPercent(attr.battery_soc))}
@@ -230,10 +252,49 @@ class AquariumLedSimulatorCard extends HTMLElement {
 
     this.querySelectorAll("[data-sunrise-offset]").forEach((input) => {
       input.addEventListener("change", () => {
+        const value = Math.max(-6, Math.min(6, Math.round(Number(input.value) * 4) / 4));
+        input.value = String(value);
         this._hass.callService("number", "set_value", {
           entity_id: input.dataset.sunriseOffset,
-          value: Number(input.value),
+          value,
         });
+      });
+    });
+
+    this.querySelectorAll("[data-sunrise-offset-delta]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const input = this.querySelector(`[data-sunrise-offset="${button.dataset.sunriseOffsetEntity}"]`);
+        if (!input) {
+          return;
+        }
+        input.value = String(
+          Math.max(-6, Math.min(6, Number(input.value) + Number(button.dataset.sunriseOffsetDelta))),
+        );
+        input.dispatchEvent(new Event("change"));
+      });
+    });
+
+    this.querySelectorAll("[data-white-channel-level]").forEach((input) => {
+      input.addEventListener("change", () => {
+        const value = Math.max(0, Math.min(100, Math.round(Number(input.value) / 5) * 5));
+        input.value = String(value);
+        this._hass.callService("number", "set_value", {
+          entity_id: input.dataset.whiteChannelLevel,
+          value,
+        });
+      });
+    });
+
+    this.querySelectorAll("[data-white-level-delta]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const input = this.querySelector(`[data-white-channel-level="${button.dataset.whiteLevelEntity}"]`);
+        if (!input) {
+          return;
+        }
+        input.value = String(
+          Math.max(0, Math.min(100, Number(input.value) + Number(button.dataset.whiteLevelDelta))),
+        );
+        input.dispatchEvent(new Event("change"));
       });
     });
 
@@ -285,6 +346,8 @@ class AquariumLedSimulatorCard extends HTMLElement {
         .alc-moon-arc { fill: none; stroke: rgba(181,203,255,0.55); stroke-dasharray: 5 7; stroke-linecap: round; stroke-width: 2.5; }
         .alc-horizon-line { stroke: rgba(255,255,255,0.38); stroke-width: 2; }
         .alc-sky-now { stroke: rgba(255,255,255,0.72); stroke-dasharray: 3 5; stroke-width: 1.5; }
+        .alc-light-start { stroke: #ff7043; stroke-dasharray: 4 4; stroke-width: 2; }
+        .alc-light-start-label { fill: #ffb199; font-size: 10px; font-weight: 700; }
         .alc-sun-body { fill: #ffd75e; filter: drop-shadow(0 0 12px rgba(255,211,82,0.95)); }
         .alc-moon-body { dominant-baseline: central; font-family: "Segoe UI Emoji", "Apple Color Emoji", sans-serif; font-size: 32px; filter: drop-shadow(0 0 8px rgba(202,218,255,0.72)); }
         .alc-sky-label { fill: rgba(255,255,255,0.82); font-size: 11px; font-weight: 650; }
@@ -350,6 +413,18 @@ class AquariumLedSimulatorCard extends HTMLElement {
         .alc-duration-head strong { color: var(--primary-text-color); white-space: nowrap; }
         .alc-duration input { accent-color: var(--primary-color); cursor: pointer; margin: 8px 0 0; width: 100%; }
         .alc-sunrise-offset { display: block; margin-top: 14px; }
+        .alc-control-note { color: var(--secondary-text-color); font-size: 11px; line-height: 1.4; margin-top: 7px; }
+        .alc-offset-stepper { align-items: center; display: grid; gap: 8px; grid-template-columns: 52px minmax(90px, 1fr) 52px; margin-top: 9px; }
+        .alc-offset-stepper button, .alc-white-stepper button { background: color-mix(in srgb, var(--primary-color) 18%, var(--card-background-color)); border: 1px solid color-mix(in srgb, var(--primary-color) 50%, transparent); border-radius: 10px; color: var(--primary-text-color); cursor: pointer; font: inherit; font-size: 24px; min-height: 48px; touch-action: manipulation; }
+        .alc-offset-stepper input, .alc-white-stepper input { background: var(--card-background-color); border: 1px solid var(--divider-color); border-radius: 10px; color: var(--primary-text-color); cursor: text; font: inherit; font-size: 17px; font-weight: 700; height: 46px; margin: 0; min-width: 0; text-align: center; width: 100%; }
+        .alc-white-controls { background: color-mix(in srgb, var(--secondary-background-color) 88%, transparent); border: 1px solid color-mix(in srgb, var(--divider-color) 76%, transparent); border-radius: 12px; margin-top: 14px; padding: 13px; }
+        .alc-white-title { font-size: 15px; font-weight: 700; }
+        .alc-white-grid { display: grid; gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 10px; }
+        .alc-white-channel { background: var(--card-background-color); border-radius: 10px; min-width: 0; padding: 11px; }
+        .alc-white-channel-head { align-items: flex-start; display: flex; gap: 8px; justify-content: space-between; }
+        .alc-white-channel-name { font-size: 13px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .alc-white-channel-target { background: color-mix(in srgb, #fff 18%, transparent); border-radius: 999px; flex: 0 0 auto; font-size: 11px; font-weight: 700; padding: 4px 7px; }
+        .alc-white-stepper { align-items: center; display: grid; gap: 8px; grid-template-columns: 48px minmax(72px, 1fr) 48px; margin-top: 8px; }
         .alc-preview-note { color: var(--secondary-text-color); font-size: 11px; line-height: 1.4; margin-top: 8px; }
         .alc-timeline-section { border-top: 1px solid var(--divider-color); margin-top: 20px; padding-top: 18px; }
         .alc-timeline-title { font-size: 16px; font-weight: 650; }
@@ -392,6 +467,7 @@ class AquariumLedSimulatorCard extends HTMLElement {
           .alc-times { flex-direction: column; gap: 2px; }
           .alc-color-grid { grid-template-columns: 1fr; }
           .alc-color-points { grid-template-columns: 1fr; }
+          .alc-white-grid { grid-template-columns: 1fr; }
           .alc-effect-chart { height: 184px; }
           .alc-controls button { flex: 1 1 100%; justify-content: center; }
           .alc-timeline-grid { grid-template-columns: 1fr; }
@@ -1142,21 +1218,62 @@ class AquariumLedSimulatorCard extends HTMLElement {
     }
     const offset = Math.max(-6, Math.min(6, Number(value) || 0));
     return `
-      <label class="alc-duration alc-sunrise-offset">
-        <span class="alc-duration-head">
+      <section class="alc-duration alc-sunrise-offset">
+        <div class="alc-duration-head">
           <span>Sonnenaufgang verschieben</span>
           <strong>${this.escape(this.formatSignedHours(offset))}</strong>
-        </span>
-        <input
-          type="range"
-          min="-6"
-          max="6"
-          step="0.25"
-          value="${offset}"
-          data-sunrise-offset="${this.escape(entity)}"
-          aria-label="Sonnenaufgang in Stunden verschieben"
-        />
-      </label>
+        </div>
+        <div class="alc-offset-stepper">
+          <button type="button" data-sunrise-offset-delta="-0.25" data-sunrise-offset-entity="${this.escape(entity)}" aria-label="Aquarium-Sonnenaufgang 15 Minuten frueher">−</button>
+          <input
+            type="number"
+            min="-6"
+            max="6"
+            step="0.25"
+            value="${offset}"
+            data-sunrise-offset="${this.escape(entity)}"
+            aria-label="Aquarium-Sonnenaufgang in Stunden verschieben"
+          />
+          <button type="button" data-sunrise-offset-delta="0.25" data-sunrise-offset-entity="${this.escape(entity)}" aria-label="Aquarium-Sonnenaufgang 15 Minuten spaeter">+</button>
+        </div>
+        <div class="alc-control-note">Verschiebt nur den Aquarium-Lichtaufgang in 15-Minuten-Schritten. Die echte Sonnenbahn und der Sonnenuntergang bleiben fest.</div>
+      </section>
+    `;
+  }
+
+  whiteChannelControls(lightEntities, numberEntities, levels, targets) {
+    if (!lightEntities.length) {
+      return "";
+    }
+    return `
+      <section class="alc-white-controls">
+        <div class="alc-white-title">Separate Weiss-LED-Kanaele</div>
+        <div class="alc-control-note">Jeder Wert skaliert den berechneten RGBW-Weissanteil separat. 100 % folgt dem W-Kanal vollständig, 0 % schaltet diesen Weissausgang aus.</div>
+        <div class="alc-white-grid">
+          ${lightEntities.map((lightEntity, index) => {
+            const numberEntity = numberEntities[index] || "";
+            const liveLevel = this.numberOrNull(this._hass.states[numberEntity]?.state);
+            const level = Math.max(0, Math.min(100, liveLevel ?? Number(levels[index] ?? 100)));
+            const target = Math.max(0, Math.min(100, Number(targets[index] ?? 0)));
+            const name = this._hass.states[lightEntity]?.attributes?.friendly_name || `Weisskanal ${index + 1}`;
+            return `
+              <div class="alc-white-channel">
+                <div class="alc-white-channel-head">
+                  <div class="alc-white-channel-name">${this.escape(name)}</div>
+                  <div class="alc-white-channel-target">Ziel ${Math.round(target)} %</div>
+                </div>
+                ${numberEntity ? `
+                  <div class="alc-white-stepper">
+                    <button type="button" data-white-level-delta="-5" data-white-level-entity="${this.escape(numberEntity)}" aria-label="${this.escape(name)} fuenf Prozent reduzieren">−</button>
+                    <input type="number" min="0" max="100" step="5" value="${Math.round(level)}" data-white-channel-level="${this.escape(numberEntity)}" aria-label="${this.escape(name)} Anteil in Prozent" />
+                    <button type="button" data-white-level-delta="5" data-white-level-entity="${this.escape(numberEntity)}" aria-label="${this.escape(name)} fuenf Prozent erhoehen">+</button>
+                  </div>
+                ` : `<div class="alc-control-note">Anteil ${Math.round(level)} % · Number-Entitaet noch nicht in der Karte hinterlegt.</div>`}
+              </div>
+            `;
+          }).join("")}
+        </div>
+      </section>
     `;
   }
 

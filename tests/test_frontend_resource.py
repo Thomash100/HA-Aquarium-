@@ -89,7 +89,21 @@ class FrontendResourceTests(unittest.TestCase):
         self.assertIn("sunrise_actual", source)
         self.assertIn("Sonnenaufgang verschieben", source)
         self.assertIn('data-sunrise-offset=', source)
+        self.assertIn("data-sunrise-offset-delta", source)
+        self.assertIn('type="number"', source)
         self.assertIn('step="0.25"', source)
+        self.assertIn("celestialGeometry(currentTime, sunriseActual, sunset)", source)
+        self.assertIn("Die echte Sonnenbahn und der Sonnenuntergang bleiben fest", source)
+
+    def test_two_separate_white_channels_are_adjustable(self) -> None:
+        source = RESOURCE.read_text(encoding="utf-8")
+
+        self.assertIn("white_channel_1_number", source)
+        self.assertIn("white_channel_2_number", source)
+        self.assertIn("white_channel_targets_pct", source)
+        self.assertIn("Separate Weiss-LED-Kanaele", source)
+        self.assertIn("data-white-channel-level", source)
+        self.assertIn("data-white-level-delta", source)
 
     def test_intensity_curve_is_separate_and_shows_all_effects(self) -> None:
         source = RESOURCE.read_text(encoding="utf-8")
