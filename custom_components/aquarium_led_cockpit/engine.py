@@ -10,6 +10,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.util import dt as dt_util
 
 from .const import (
+    CONF_BATTERY_CHARGING_POWER_ENTITY,
+    CONF_BATTERY_DISCHARGE_POWER_ENTITY,
     CONF_BATTERY_FULL_THRESHOLD,
     CONF_BATTERY_SOC_ENTITY,
     CONF_MOON_ENTITY,
@@ -50,8 +52,8 @@ from .price import (
     PRICE_RESPONSE_EXPONENT,
     apply_battery_brightness_boost,
     calculate_battery_brightness_factor,
+    calculate_battery_priority,
     calculate_price_adjustment,
-    is_battery_full,
 )
 from .solar import (
     DAWN_DUSK_RGBW,
@@ -264,15 +266,33 @@ def calculate_target(
     battery_full_threshold = float(
         settings.get(CONF_BATTERY_FULL_THRESHOLD, DEFAULT_BATTERY_FULL_THRESHOLD)
     )
-    battery_full = is_battery_full(battery_soc, battery_full_threshold)
-    battery_brightness_factor = calculate_battery_brightness_factor(
+    battery_charging_power = _number_state(
+        hass,
+        settings.get(CONF_BATTERY_CHARGING_POWER_ENTITY),
+    )
+    battery_discharge_power = _number_state(
+        hass,
+        settings.get(CONF_BATTERY_DISCHARGE_POWER_ENTITY),
+    )
+    battery_priority = calculate_battery_priority(
         battery_soc,
         battery_full_threshold,
+        battery_charging_power,
+        battery_discharge_power,
     )
-    battery_boost_active = phase != "night" and battery_full
-    price_ignored = phase == "night" or battery_full
+    battery_full = battery_priority["full"]
+    battery_priority_active = phase != "night" and battery_priority["active"]
+    battery_brightness_factor = calculate_battery_brightness_factor(
+        battery_priority_active,
+    )
+    battery_boost_active = battery_priority_active
+    price_ignored = phase == "night" or battery_priority_active
     price_factor = 1.0 if price_ignored else price_adjustment["factor"]
-    price_strategy = "battery_full_override" if battery_full else price_adjustment["strategy"]
+    price_strategy = (
+        "battery_pv_surplus_override"
+        if battery_priority_active
+        else price_adjustment["strategy"]
+    )
     solar_power = _number_state(hass, settings.get(CONF_SOLAR_POWER_ENTITY))
     regional_sun = _regional_sun(hass, settings.get(CONF_WEATHER_ENTITY))
     moon_phase, moon_phase_label, moon_phase_icon = _moon_phase(
@@ -315,8 +335,7 @@ def calculate_target(
                 apply_battery_brightness_boost(
                     brightness_without_boost,
                     day,
-                    battery_soc,
-                    battery_full_threshold,
+                    battery_priority_active,
                 )
             )
         )
@@ -397,12 +416,61 @@ def calculate_target(
         "price_ceiling": price_adjustment["ceiling"] if price_adjustment["ceiling"] is not None else "-",
         "price_strategy": price_strategy,
         "price_ignored": price_ignored,
-        "price_ignored_reason": "battery_full" if battery_full else ("night" if phase == "night" else "-"),
-        "price_rule": "pause_battery_full" if battery_full else ("pause_night" if phase == "night" else "active"),
+        "price_ignored_reason": (
+            "battery_pv_surplus"
+            if battery_priority_active
+            else ("night" if phase == "night" else "-")
+        ),
+        "price_rule": (
+            "pause_battery_pv_surplus"
+            if battery_priority_active
+            else ("pause_night" if phase == "night" else "active")
+        ),
         "battery_soc": battery_soc if battery_soc is not None else "-",
         "battery_soc_entity": settings.get(CONF_BATTERY_SOC_ENTITY) or "",
         "battery_full_threshold": round(battery_full_threshold, 1),
         "battery_full": battery_full,
+        "battery_charging_power": (
+            battery_priority["charging_power"]
+            if battery_priority["charging_power"] is not None
+            else "-"
+        ),
+        "battery_charging_power_entity": (
+            settings.get(CONF_BATTERY_CHARGING_POWER_ENTITY) or ""
+        ),
+        "battery_discharge_power": (
+            battery_priority["discharging_power"]
+            if battery_priority["discharging_power"] is not None
+            else "-"
+        ),
+        "battery_discharge_power_entity": (
+            settings.get(CONF_BATTERY_DISCHARGE_POWER_ENTITY) or ""
+        ),
+        "battery_net_charging_power": (
+            round(battery_priority["net_charging_power"], 1)
+            if battery_priority["net_charging_power"] is not None
+            else "-"
+        ),
+        "battery_charge_surplus": battery_priority["charge_surplus"],
+        "battery_priority_active": battery_priority_active,
+        "battery_priority_blocked_reason": (
+            "night"
+            if phase == "night"
+            else (
+                "soc_below_threshold"
+                if not battery_full
+                else (
+                    "power_unavailable"
+                    if battery_priority["charging_power"] is None
+                    or battery_priority["discharging_power"] is None
+                    else (
+                        "charging_not_greater_than_discharging"
+                        if not battery_priority["charge_surplus"]
+                        else "-"
+                    )
+                )
+            )
+        ),
         "battery_boost_active": battery_boost_active,
         "battery_brightness_boost_pct": BATTERY_BRIGHTNESS_BOOST_PCT,
         "battery_brightness_factor": round(

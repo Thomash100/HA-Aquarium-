@@ -2,9 +2,9 @@
 
 Aquarium LED Cockpit ist eine Home-Assistant-Custom-Integration fuer eine dynamische Aquarium-Beleuchtung mit strompreisabhaengiger Dimmung, wetterbasierter Wolkensimulation, Sonnenaufgangs-/Sonnenuntergangsphasen und Lovelace-Simulator-Karte.
 
-Veroeffentlichungskennzeichen: `V260816.023_BETA.00`
+Veroeffentlichungskennzeichen: `V260816.024_BETA.00`
 
-Home-Assistant-Manifest-Version: `26.8.16-beta.23`
+Home-Assistant-Manifest-Version: `26.8.16-beta.24`
 
 [![Home Assistant oeffnen und dieses Repository in HACS anzeigen.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Thomash100&repository=HA-Aquarium-&category=integration)
 ![HACS Custom](https://img.shields.io/badge/HACS-Custom-orange.svg)
@@ -49,7 +49,7 @@ Die Integration verwandelt deine Aquarium-Beleuchtung in einen dynamischen Tages
 - Konfigurierbarer 24-Stunden-Zeitraffer: ein kompletter Tag in einer bis zehn realen Minuten
 - Tibber-Unterstuetzung und generische Preis-Entitaeten fuer andere Anbieter
 - Adaptive strompreisabhaengige Dimmung: bis zum Tagesdurchschnitt ungedimmt, danach progressiv und deutlich staerker bis zur eingestellten maximalen Dimmung am Tageshoechstpreis
-- Growatt-/NOAH-Speicherprioritaet: Bei vollem Speicher wird die Strompreis-Dimmung ignoriert
+- Growatt-/NOAH-Speicherprioritaet: Ab 90 Prozent SOC wird die Strompreis-Dimmung nur ignoriert, solange die Akku-Ladeleistung groesser als die Entladeleistung ist
 - Anzeige von Speicher-Ladezustand, Solarleistung und regionalem Sonnenschein im Live-Status
 - Strompreis-Diagramm mit 12 Stunden Rueckblick und bis zu 24 Stunden echter Tibber-Vorschau
 - Batterie-Diagramm mit 24 Stunden Ladezustands-Rueckblick und konfigurierbarer Vollgrenze
@@ -120,9 +120,9 @@ Fuer die Simulator-Karte muss die Lovelace-Ressource `/local/aquarium_led_cockpi
 
 Wenn der Preissensor Tagesdurchschnitt und Tageshoechstpreis bereitstellt, bleibt die Beleuchtung bis zum Durchschnitt ungedimmt. Oberhalb des Durchschnitts steigt die Dimmung progressiv an: Schon im mittleren Hochpreisbereich ist der Einfluss deutlich sichtbar, am Tageshoechstpreis erreicht sie weiterhin exakt den Wert von `number.<aquarium>_preisdimmung`. Bei 72 Prozent Preisdimmung bleiben am Tageshoechstpreis somit 28 Prozent der normalen Helligkeit uebrig. Fuer generische Preissensoren nutzt die Integration alternativ die Tagesrangfolge oder ein zur Einheit passendes Preisfenster.
 
-Optional kann ein Speicher-Ladezustand sowie eine Solarleistungs-Entitaet ausgewaehlt werden. Ab der konfigurierten Voll-Schwelle, standardmaessig 90 Prozent, wird die Preis-Dimmung ignoriert und tagsueber ein Lichtbonus von 15 Prozent angewendet. Das Ergebnis bleibt zum Schutz des Aquariums auf die eingestellte Tageshelligkeit begrenzt. Bereits gespeicherte Solarenergie hat damit Vorrang vor dem Netzpreis. Regionale Sonne wird aus der ausgewaehlten Wetter-Entitaet erkannt und zusammen mit der realen Solarleistung im Statussensor dargestellt.
+Optional koennen Speicher-Ladezustand, Akku-Ladeleistung, Akku-Entladeleistung und Solarleistung ausgewaehlt werden. Ab der konfigurierten SOC-Schwelle, standardmaessig 90 Prozent, wird die Preis-Dimmung nur dann ignoriert und tagsueber ein Lichtbonus von 15 Prozent angewendet, wenn die aktuelle Ladeleistung strikt groesser als die Entladeleistung ist. Sobald der Speicher gleich stark oder staerker entlaedt, endet die Akku-Prioritaet sofort und die Preisregel greift wieder. Das Ergebnis bleibt zum Schutz des Aquariums auf die eingestellte Tageshelligkeit begrenzt. Regionale Sonne wird aus der ausgewaehlten Wetter-Entitaet erkannt und zusammen mit den realen Leistungswerten im Statussensor dargestellt.
 
-Die Simulator-Karte laedt die letzten 12 Stunden Strompreis und 24 Stunden Batterie-Ladezustand direkt aus der Home-Assistant-Historie. Wenn die Tibber-Aktion `tibber.get_prices` verfuegbar ist, ergaenzt sie die Preislinie um die bereits veroeffentlichten Viertelstundenpreise der naechsten 24 Stunden. Das separate Wirkungsdiagramm berechnet daraus die effektive Tageshelligkeit inklusive staerkerer Preisregel, sichtbarer Wolkenwellen und Akku-Vollgrenze. Das Grundprofil erreicht sein Sollmaximum um 12:00 Uhr; die Ergebnislinie kann durch Preis und Wolken darunter liegen. Fuer die Zukunft wird der letzte echte Akku-Ladezustand gehalten und als solcher gekennzeichnet; eine kuenstliche Akku-Prognose wird nicht erzeugt.
+Die Simulator-Karte laedt die letzten 12 Stunden Strompreis und 24 Stunden Batterie-Ladezustand direkt aus der Home-Assistant-Historie. Wenn die Tibber-Aktion `tibber.get_prices` verfuegbar ist, ergaenzt sie die Preislinie um die bereits veroeffentlichten Viertelstundenpreise der naechsten 24 Stunden. Das separate Wirkungsdiagramm berechnet daraus die effektive Tageshelligkeit inklusive staerkerer Preisregel, sichtbarer Wolkenwellen, Akku-SOC und der aktuellen Lade-/Entladebilanz. Das Grundprofil erreicht sein Sollmaximum um 12:00 Uhr; die Ergebnislinie kann durch Preis und Wolken darunter liegen. Fuer die Zukunft werden der letzte echte Akku-Ladezustand und die aktuelle Leistungsbilanz gehalten und als solche gekennzeichnet; eine kuenstliche Akku-Prognose wird nicht erzeugt.
 
 ### Sonnenaufgang und Mondlicht
 

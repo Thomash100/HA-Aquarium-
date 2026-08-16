@@ -167,6 +167,9 @@ class AquariumLedSimulatorCard extends HTMLElement {
             ${this.metric("Preis-Dimmung", this.formatPercent(attr.price_dimming_pct))}
             ${this.metric("Speicher", this.formatPercent(attr.battery_soc))}
             ${this.metric("Preisregel", this.priceRuleLabel(attr))}
+            ${this.metric("Akku laden", this.formatPower(attr.battery_charging_power))}
+            ${this.metric("Akku entladen", this.formatPower(attr.battery_discharge_power))}
+            ${this.metric("Akku-Bonus", attr.battery_priority_active ? "Freigegeben" : "Gesperrt")}
             ${this.metric("Solar", this.formatPower(attr.solar_power))}
             ${this.metric("Sonne regional", attr.regional_sun ? "Ja" : "Nein")}
             ${this.metric("Wolken", `${attr.cloudiness_pct ?? "-"}%`)}
@@ -414,9 +417,16 @@ class AquariumLedSimulatorCard extends HTMLElement {
       (1 - ((Number(attr.weather_factor) || 1) * (Number(attr.cloud_factor) || 1))) * 100,
     );
     const batteryBoostPct = Math.max(0, Number(attr.battery_brightness_boost_pct) || 15);
-    const batteryText = attr.battery_full
-      ? `Akku ${this.formatPercent(attr.battery_soc)}: Preis ignoriert · Lichtbonus +${Math.round(batteryBoostPct)} %`
-      : `Akku ${this.formatPercent(attr.battery_soc)}`;
+    const chargingPower = this.numberOrNull(attr.battery_charging_power);
+    const dischargePower = this.numberOrNull(attr.battery_discharge_power);
+    const powerBalance = chargingPower !== null && dischargePower !== null
+      ? `${this.formatPower(chargingPower)} Laden / ${this.formatPower(dischargePower)} Entladen`
+      : "Leistungsbilanz fehlt";
+    const batteryText = attr.battery_priority_active
+      ? `Akku ${this.formatPercent(attr.battery_soc)}: ${powerBalance} · Preis ignoriert · Lichtbonus +${Math.round(batteryBoostPct)} %`
+      : attr.battery_full
+        ? `Akku ${this.formatPercent(attr.battery_soc)}: Bonus wartet · ${powerBalance}`
+        : `Akku ${this.formatPercent(attr.battery_soc)} · ${powerBalance}`;
 
     return `
       <section class="alc-effect">
@@ -458,7 +468,7 @@ class AquariumLedSimulatorCard extends HTMLElement {
           <span class="alc-effect-pill">Wolken aktuell −${Math.max(0, cloudDimming)} % · wirksam ${Math.round(Number(attr.effective_cloudiness_pct) || 0)} %</span>
           <span class="alc-effect-pill">Preis aktuell −${Math.round(Number(attr.price_dimming_pct) || 0)} %</span>
           <span class="alc-effect-pill">${this.escape(batteryText)}</span>
-          <span class="alc-effect-pill">Zukunft: Preisprognose · Akku-SOC gehalten · Wolken aktuell</span>
+          <span class="alc-effect-pill">Zukunft: Preisprognose · Akku-SOC und PV-Bilanz gehalten · Wolken aktuell</span>
         </div>
       </section>
     `;
@@ -489,6 +499,7 @@ class AquariumLedSimulatorCard extends HTMLElement {
     const maxDimming = Math.max(0, Math.min(100, Number(attr.price_dimming_max_pct) || 0)) / 100;
     const priceResponseExponent = Math.max(0.1, Math.min(1, Number(attr.price_response_exponent) || 0.65));
     const batteryThreshold = this.numberOrNull(attr.battery_full_threshold) ?? 90;
+    const batteryChargeSurplus = attr.battery_charge_surplus === true;
     const batteryBoostFactor = 1 + (
       Math.max(0, Math.min(50, Number(attr.battery_brightness_boost_pct) || 15)) / 100
     );
@@ -525,7 +536,8 @@ class AquariumLedSimulatorCard extends HTMLElement {
       const battery = this.timelineValueAt(batteryPoints, time, currentBattery);
       const price = this.timelineValueAt(pricePoints, time, currentPrice);
       const batteryFull = battery !== null && battery >= batteryThreshold;
-      const priceFactor = night || batteryFull
+      const batteryPriority = batteryFull && batteryChargeSurplus;
+      const priceFactor = night || batteryPriority
         ? 1
         : this.priceFactorAt(
             price,
@@ -567,7 +579,7 @@ class AquariumLedSimulatorCard extends HTMLElement {
         cloudFactor = weatherFactor * waveFactor;
         result = Math.min(
           dayPct,
-          base * priceFactor * cloudFactor * (batteryFull ? batteryBoostFactor : 1),
+          base * priceFactor * cloudFactor * (batteryPriority ? batteryBoostFactor : 1),
         );
       }
       basePoints.push({ time, value: Math.max(0, Math.min(100, base)) });
@@ -757,7 +769,7 @@ class AquariumLedSimulatorCard extends HTMLElement {
         <div class="alc-timeline-head">
           <div>
             <div class="alc-timeline-name">Batterieverlauf</div>
-            <div class="alc-timeline-range">24 h Rückblick · Lichtbonus ab ${Math.round(threshold)} % SOC</div>
+            <div class="alc-timeline-range">24 h Rückblick · Bonus ab ${Math.round(threshold)} % SOC nur bei Laden &gt; Entladen</div>
           </div>
           <div class="alc-timeline-value">${this.escape(this.formatPercent(current))}</div>
         </div>
@@ -775,7 +787,7 @@ class AquariumLedSimulatorCard extends HTMLElement {
         </svg>
         <div class="alc-legend">
           <span class="alc-legend-item"><span class="alc-legend-swatch alc-legend-battery"></span>Growatt SOC</span>
-          <span class="alc-legend-item"><span class="alc-legend-swatch alc-legend-threshold"></span>Preis frei + ${Math.round(boostPct)} % Bonus ab ${Math.round(threshold)} %</span>
+          <span class="alc-legend-item"><span class="alc-legend-swatch alc-legend-threshold"></span>SOC-Schwelle ${Math.round(threshold)} % · Bonus ${Math.round(boostPct)} % nur mit PV-Überschuss</span>
         </div>
         <div class="alc-timeline-stats">
           ${this.timelineStat("Minimum", this.formatPercent(minimum))}
@@ -1241,6 +1253,9 @@ class AquariumLedSimulatorCard extends HTMLElement {
     }
     if (reason === "battery_full") {
       return "Pause: Speicher voll";
+    }
+    if (reason === "battery_pv_surplus") {
+      return "Pause: PV-Überschuss";
     }
     return attr.price_ignored ? "Pausiert" : "Aktiv";
   }

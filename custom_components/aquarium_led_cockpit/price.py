@@ -15,6 +15,17 @@ class PriceAdjustment(TypedDict):
     strategy: str
 
 
+class BatteryPriority(TypedDict):
+    """Normalized battery-priority decision."""
+
+    active: bool
+    charge_surplus: bool
+    charging_power: float | None
+    discharging_power: float | None
+    full: bool
+    net_charging_power: float | None
+
+
 PRICE_RESPONSE_EXPONENT = 0.65
 BATTERY_BRIGHTNESS_BOOST_PCT = 15.0
 
@@ -121,13 +132,41 @@ def is_battery_full(soc: float | None, threshold: float) -> bool:
     return soc >= _clamp(float(threshold), 50, 100)
 
 
-def calculate_battery_brightness_factor(
+def calculate_battery_priority(
     soc: float | None,
     threshold: float,
+    charging_power: float | None,
+    discharging_power: float | None,
+) -> BatteryPriority:
+    """Enable battery priority only while PV charging exceeds discharging."""
+    charge = _as_float(charging_power)
+    discharge = _as_float(discharging_power)
+    charge_surplus = (
+        charge is not None
+        and discharge is not None
+        and charge > discharge
+    )
+    full = is_battery_full(soc, threshold)
+    return {
+        "active": full and charge_surplus,
+        "charge_surplus": charge_surplus,
+        "charging_power": charge,
+        "discharging_power": discharge,
+        "full": full,
+        "net_charging_power": (
+            charge - discharge
+            if charge is not None and discharge is not None
+            else None
+        ),
+    }
+
+
+def calculate_battery_brightness_factor(
+    priority_active: bool,
     boost_pct: float = BATTERY_BRIGHTNESS_BOOST_PCT,
 ) -> float:
     """Return the daylight brightness multiplier for a high battery SOC."""
-    if not is_battery_full(soc, threshold):
+    if not priority_active:
         return 1.0
     return 1.0 + (_clamp(float(boost_pct), 0, 50) / 100)
 
@@ -135,10 +174,9 @@ def calculate_battery_brightness_factor(
 def apply_battery_brightness_boost(
     brightness_pct: float,
     maximum_pct: float,
-    soc: float | None,
-    threshold: float,
+    priority_active: bool,
     boost_pct: float = BATTERY_BRIGHTNESS_BOOST_PCT,
 ) -> float:
     """Apply the high-SOC bonus without exceeding the configured day maximum."""
-    factor = calculate_battery_brightness_factor(soc, threshold, boost_pct)
+    factor = calculate_battery_brightness_factor(priority_active, boost_pct)
     return _clamp(float(brightness_pct) * factor, 0, float(maximum_pct))
