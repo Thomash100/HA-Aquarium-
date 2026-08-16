@@ -9,9 +9,13 @@ class PriceAdjustment(TypedDict):
 
     factor: float
     load: float
+    raw_load: float
     reference: float | None
     ceiling: float | None
     strategy: str
+
+
+PRICE_RESPONSE_EXPONENT = 0.65
 
 
 def _clamp(value: float, minimum: float, maximum: float) -> float:
@@ -59,6 +63,7 @@ def calculate_price_adjustment(
         return {
             "factor": 1.0,
             "load": 0.0,
+            "raw_load": 0.0,
             "reference": None,
             "ceiling": None,
             "strategy": "unavailable",
@@ -77,25 +82,31 @@ def calculate_price_adjustment(
         reference = average
         ceiling = maximum
         strategy = "daily_average_to_maximum"
-        load = _clamp((price - reference) / (ceiling - reference), 0, 1)
+        raw_load = _clamp((price - reference) / (ceiling - reference), 0, 1)
     elif minimum is not None and maximum is not None and maximum > minimum:
         reference = minimum + ((maximum - minimum) / 2)
         ceiling = maximum
         strategy = "daily_midpoint_to_maximum"
-        load = _clamp((price - reference) / (ceiling - reference), 0, 1)
+        raw_load = _clamp((price - reference) / (ceiling - reference), 0, 1)
     elif ranking is not None:
         reference = 0.5
         ceiling = 1.0
         strategy = "intraday_ranking"
-        load = _clamp((ranking - reference) / (ceiling - reference), 0, 1)
+        raw_load = _clamp((ranking - reference) / (ceiling - reference), 0, 1)
     else:
         reference, ceiling = _generic_price_window(str(attributes.get("unit_of_measurement") or ""))
         strategy = "unit_threshold"
-        load = _clamp((price - reference) / (ceiling - reference), 0, 1)
+        raw_load = _clamp((price - reference) / (ceiling - reference), 0, 1)
+
+    # Values just above the daily average must already be visible. The curve
+    # stays continuous and still reaches the configured maximum at the daily
+    # high, but reacts more strongly than the previous linear response.
+    load = raw_load ** PRICE_RESPONSE_EXPONENT
 
     return {
         "factor": _clamp(1 - (load * dim_strength), 0.1, 1),
         "load": load,
+        "raw_load": raw_load,
         "reference": reference,
         "ceiling": ceiling,
         "strategy": strategy,

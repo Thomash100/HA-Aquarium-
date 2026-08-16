@@ -35,14 +35,17 @@ class PriceAdjustmentTests(unittest.TestCase):
                 self.assertEqual(result["factor"], 1.0)
                 self.assertEqual(result["load"], 0.0)
 
-    def test_dimming_increases_linearly_above_average(self) -> None:
+    def test_dimming_reacts_progressively_above_average(self) -> None:
         result = PRICE.calculate_price_adjustment(0.36, self.ATTRIBUTES, 72)
-        self.assertAlmostEqual(result["load"], 0.5)
-        self.assertAlmostEqual(result["factor"], 0.64)
+        self.assertAlmostEqual(result["raw_load"], 0.5)
+        self.assertAlmostEqual(result["load"], 0.5 ** PRICE.PRICE_RESPONSE_EXPONENT)
+        self.assertAlmostEqual(result["factor"], 0.5411581741650656)
+        self.assertLess(result["factor"], 0.64)
 
     def test_configured_dimming_is_reached_at_daily_maximum(self) -> None:
         result = PRICE.calculate_price_adjustment(0.41, self.ATTRIBUTES, 72)
         self.assertEqual(result["load"], 1.0)
+        self.assertEqual(result["raw_load"], 1.0)
         self.assertAlmostEqual(result["factor"], 0.28)
 
     def test_intraday_ranking_is_used_as_fallback(self) -> None:
@@ -52,8 +55,9 @@ class PriceAdjustmentTests(unittest.TestCase):
             60,
         )
         self.assertEqual(result["strategy"], "intraday_ranking")
-        self.assertAlmostEqual(result["load"], 0.5)
-        self.assertAlmostEqual(result["factor"], 0.7)
+        self.assertAlmostEqual(result["raw_load"], 0.5)
+        self.assertAlmostEqual(result["load"], 0.5 ** PRICE.PRICE_RESPONSE_EXPONENT)
+        self.assertLess(result["factor"], 0.7)
 
     def test_cent_per_kwh_sensor_uses_scaled_thresholds(self) -> None:
         result = PRICE.calculate_price_adjustment(
@@ -69,6 +73,7 @@ class PriceAdjustmentTests(unittest.TestCase):
         result = PRICE.calculate_price_adjustment(None, {}, 90)
         self.assertEqual(result["strategy"], "unavailable")
         self.assertEqual(result["factor"], 1.0)
+        self.assertEqual(result["raw_load"], 0.0)
 
     def test_battery_full_uses_configured_threshold(self) -> None:
         self.assertFalse(PRICE.is_battery_full(94.9, 95))

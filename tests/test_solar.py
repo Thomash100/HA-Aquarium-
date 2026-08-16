@@ -39,11 +39,11 @@ class SolarProfileTests(unittest.TestCase):
         daylight = self.profile(420)
 
         self.assertEqual("sunrise", midpoint.phase)
-        self.assertAlmostEqual(46, midpoint.base_pct)
+        self.assertAlmostEqual(25.75, midpoint.base_pct)
         self.assertEqual((222, 110, 128, 128), midpoint.rgbw)
         self.assertEqual("day", daylight.phase)
         self.assertEqual(SOLAR.DAYLIGHT_RGBW, daylight.rgbw)
-        self.assertEqual(90, daylight.base_pct)
+        self.assertAlmostEqual(49.5, daylight.base_pct)
 
     def test_sunset_starts_ninety_minutes_before_real_sunset(self) -> None:
         start = self.profile(1110)
@@ -51,9 +51,9 @@ class SolarProfileTests(unittest.TestCase):
 
         self.assertEqual("sunset", start.phase)
         self.assertEqual(SOLAR.DAYLIGHT_RGBW, start.rgbw)
-        self.assertEqual(90, start.base_pct)
+        self.assertAlmostEqual(49.5, start.base_pct)
         self.assertEqual("sunset", midpoint.phase)
-        self.assertAlmostEqual(46, midpoint.base_pct)
+        self.assertAlmostEqual(25.75, midpoint.base_pct)
         self.assertEqual(self.profile(390).rgbw, midpoint.rgbw)
 
     def test_real_sunset_switches_to_dim_moonlight(self) -> None:
@@ -68,6 +68,28 @@ class SolarProfileTests(unittest.TestCase):
         self.assertGreater(night.rgbw[2], night.rgbw[1])
         self.assertEqual(0, night.rgbw[3])
         self.assertEqual(2, night.base_pct)
+
+    def test_daylight_has_its_unique_maximum_at_noon(self) -> None:
+        morning = self.profile(600)
+        noon = self.profile(720)
+        afternoon = self.profile(840)
+
+        self.assertLess(morning.base_pct, noon.base_pct)
+        self.assertEqual(90, noon.base_pct)
+        self.assertLess(afternoon.base_pct, noon.base_pct)
+
+    def test_daylight_clouds_have_visible_weather_and_wave_effects(self) -> None:
+        weather, calm, effective = SOLAR.calculate_daylight_cloud_factors(
+            0.12, 0.45, 0
+        )
+        _, cloud_peak, _ = SOLAR.calculate_daylight_cloud_factors(
+            0.12, 0.45, 1
+        )
+
+        self.assertAlmostEqual(0.2325, effective)
+        self.assertLess(weather, 0.95)
+        self.assertLess(cloud_peak, calm)
+        self.assertLess(weather * cloud_peak, 0.88)
 
     def test_moon_phase_controls_continuous_night_brightness(self) -> None:
         new_moon, new_factor, _ = SOLAR.calculate_moonlight_target(
@@ -181,9 +203,9 @@ class SolarProfileTests(unittest.TestCase):
         )
 
         self.assertEqual("sunrise", sunrise_midpoint.phase)
-        self.assertAlmostEqual(46, sunrise_midpoint.base_pct)
+        self.assertAlmostEqual(25.75, sunrise_midpoint.base_pct)
         self.assertEqual("sunset", sunset_midpoint.phase)
-        self.assertAlmostEqual(46, sunset_midpoint.base_pct)
+        self.assertAlmostEqual(25.75, sunset_midpoint.base_pct)
 
     def test_transition_duration_is_clipped_to_safe_range(self) -> None:
         self.assertEqual(

@@ -160,6 +160,7 @@ class AquariumLedSimulatorCard extends HTMLElement {
 
           <div class="alc-grid">
             ${this.metric("Basis", `${base}%`)}
+            ${this.metric("Tagesmaximum", `${attr.midday_peak_time || "12:00"} · ${dayBrightness}%`)}
             ${this.metric("RGBW", rgbw.map((channel) => Math.round(Number(channel) || 0)).join(" / "))}
             ${this.metric("Weiss", `${white}%`)}
             ${this.metric("Preis", this.formatPrice(attr.price, this._hass.states[priceEntity]?.attributes?.unit_of_measurement))}
@@ -297,6 +298,8 @@ class AquariumLedSimulatorCard extends HTMLElement {
         .alc-effect-cloud { fill: none; stroke: #a58dd7; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2.5; }
         .alc-effect-battery { fill: none; stroke: #48c98b; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2.5; }
         .alc-effect-now { stroke: var(--primary-text-color); stroke-dasharray: 3 5; stroke-opacity: 0.72; stroke-width: 2; }
+        .alc-effect-noon { stroke: #ffd45d; stroke-dasharray: 8 6; stroke-opacity: 0.65; stroke-width: 2; }
+        .alc-effect-noon-dot { fill: #ffd45d; stroke: var(--card-background-color); stroke-width: 3; }
         .alc-effect-dot { fill: #26b7df; stroke: var(--card-background-color); stroke-width: 3; }
         .alc-effect-factors { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
         .alc-effect-pill { background: color-mix(in srgb, var(--primary-background-color) 65%, transparent); border-radius: 999px; color: var(--secondary-text-color); font-size: 10px; padding: 5px 8px; }
@@ -419,7 +422,7 @@ class AquariumLedSimulatorCard extends HTMLElement {
         <div class="alc-effect-head">
           <div>
             <div class="alc-effect-title">Lichtintensität über den Tag</div>
-            <div class="alc-effect-sub">Grundprofil und wirksames Ergebnis nach Wolken, Strompreis und Growatt-Akku.</div>
+            <div class="alc-effect-sub">Tagesbogen mit Sollmaximum um 12:00 Uhr; das Ergebnis reagiert deutlich auf Wolken, Strompreis und Growatt-Akku.</div>
           </div>
           <div class="alc-effect-current">Jetzt ${Math.round(currentTarget)} %</div>
         </div>
@@ -431,6 +434,8 @@ class AquariumLedSimulatorCard extends HTMLElement {
           <path d="${projection.pricePath}" class="alc-effect-price"></path>
           <path d="${projection.cloudPath}" class="alc-effect-cloud"></path>
           ${projection.batteryPath ? `<path d="${projection.batteryPath}" class="alc-effect-battery"></path>` : ""}
+          <line x1="${projection.noonX.toFixed(1)}" y1="${chart.top}" x2="${projection.noonX.toFixed(1)}" y2="${chart.bottomEdge}" class="alc-effect-noon"></line>
+          <circle cx="${projection.noonX.toFixed(1)}" cy="${projection.noonY.toFixed(1)}" r="5" class="alc-effect-noon-dot"></circle>
           <line x1="${currentX.toFixed(1)}" y1="${chart.top}" x2="${currentX.toFixed(1)}" y2="${chart.bottomEdge}" class="alc-effect-now"></line>
           <circle cx="${currentX.toFixed(1)}" cy="${currentY.toFixed(1)}" r="6" class="alc-effect-dot"></circle>
           ${this.chartTimeLabels(chart, [
@@ -449,7 +454,7 @@ class AquariumLedSimulatorCard extends HTMLElement {
           ${projection.batteryPath ? `<span class="alc-legend-item"><span class="alc-legend-swatch alc-legend-battery"></span>Akku-SOC</span>` : ""}
         </div>
         <div class="alc-effect-factors">
-          <span class="alc-effect-pill">Wolken aktuell −${Math.max(0, cloudDimming)} %</span>
+          <span class="alc-effect-pill">Wolken aktuell −${Math.max(0, cloudDimming)} % · wirksam ${Math.round(Number(attr.effective_cloudiness_pct) || 0)} %</span>
           <span class="alc-effect-pill">Preis aktuell −${Math.round(Number(attr.price_dimming_pct) || 0)} %</span>
           <span class="alc-effect-pill">${this.escape(batteryText)}</span>
           <span class="alc-effect-pill">Zukunft: Preisprognose · Akku-SOC gehalten · Wolken aktuell</span>
@@ -481,9 +486,15 @@ class AquariumLedSimulatorCard extends HTMLElement {
     const reference = this.numberOrNull(attr.price_reference);
     const ceiling = this.numberOrNull(attr.price_ceiling);
     const maxDimming = Math.max(0, Math.min(100, Number(attr.price_dimming_max_pct) || 0)) / 100;
+    const priceResponseExponent = Math.max(0.1, Math.min(1, Number(attr.price_response_exponent) || 0.65));
     const batteryThreshold = this.numberOrNull(attr.battery_full_threshold) ?? 95;
     const cloudiness = Math.max(0, Math.min(1, (Number(attr.cloudiness_pct) || 0) / 100));
     const cloudStrength = Math.max(0, Math.min(1, (Number(attr.cloud_strength_pct) || 0) / 100));
+    const cloudSimulationCoverage = Math.max(0, Math.min(1, Number(attr.cloud_simulation_coverage) || 0.25));
+    const cloudWeatherWeight = Math.max(0, Math.min(1, Number(attr.cloud_weather_weight) || 0.30));
+    const cloudWaveStrength = Math.max(0, Math.min(1, Number(attr.cloud_wave_strength) || 0.60));
+    const dayEdgeFactor = Math.max(0.1, Math.min(1, Number(attr.day_edge_brightness_factor) || 0.55));
+    const middayPeakMinute = Math.max(0, Math.min(1439, Number(attr.midday_peak_minute) || 720));
     const moonPhaseFactor = Math.max(0, Math.min(1, Number(attr.moon_phase_factor) || 0.6));
     const basePoints = [];
     const resultPoints = [];
@@ -502,6 +513,8 @@ class AquariumLedSimulatorCard extends HTMLElement {
         dayPct,
         sunriseDuration,
         sunsetDuration,
+        dayEdgeFactor,
+        middayPeakMinute,
       );
       const night = wrappedMinute < sunriseMinute || wrappedMinute >= sunsetMinute;
       const wave = (Math.sin((wrappedMinute / 1440) * Math.PI * 2 * 8) + 1) / 2;
@@ -510,7 +523,14 @@ class AquariumLedSimulatorCard extends HTMLElement {
       const batteryFull = battery !== null && battery >= batteryThreshold;
       const priceFactor = night || batteryFull
         ? 1
-        : this.priceFactorAt(price, reference, ceiling, maxDimming, attr.price_factor);
+        : this.priceFactorAt(
+            price,
+            reference,
+            ceiling,
+            maxDimming,
+            priceResponseExponent,
+            attr.price_factor,
+          );
       let cloudFactor;
       let result;
       if (night) {
@@ -520,10 +540,25 @@ class AquariumLedSimulatorCard extends HTMLElement {
         );
         result = Math.max(1, Number(nightPct) * moonPhaseFactor * cloudFactor);
       } else {
-        const weatherFactor = Math.max(0.5, Math.min(1, 1 - (cloudiness * 0.2)));
+        const effectiveCloudiness = Math.max(
+          0,
+          Math.min(1, cloudiness + (cloudStrength * cloudSimulationCoverage)),
+        );
+        const weatherFactor = Math.max(
+          0.5,
+          Math.min(1, 1 - (effectiveCloudiness * cloudWeatherWeight)),
+        );
         const waveFactor = Math.max(
-          0.4,
-          Math.min(1, 1 - (cloudiness * cloudStrength * wave * 0.25)),
+          0.35,
+          Math.min(
+            1,
+            1 - (
+              effectiveCloudiness
+              * cloudStrength
+              * (0.25 + (0.75 * wave))
+              * cloudWaveStrength
+            ),
+          ),
         );
         cloudFactor = weatherFactor * waveFactor;
         result = base * priceFactor * cloudFactor;
@@ -537,6 +572,7 @@ class AquariumLedSimulatorCard extends HTMLElement {
       }
     }
 
+    const noonTime = start + (middayPeakMinute * 60 * 1000);
     return {
       batteryPath: this.pointPath(batterySocPoints, chart),
       basePath: this.pointPath(basePoints, chart),
@@ -544,6 +580,8 @@ class AquariumLedSimulatorCard extends HTMLElement {
       cloudPath: this.pointPath(cloudFactorPoints, chart),
       end,
       now,
+      noonX: chart.x(noonTime),
+      noonY: chart.y(Math.max(0, Math.min(100, Number(dayPct) || 0))),
       pricePath: this.pointPath(priceFactorPoints, chart),
       resultArea: this.areaPath(resultPoints, chart),
       resultPath: this.pointPath(resultPoints, chart),
@@ -565,9 +603,10 @@ class AquariumLedSimulatorCard extends HTMLElement {
     return this.numberOrNull(value) ?? fallback;
   }
 
-  priceFactorAt(price, reference, ceiling, maxDimming, currentFactor) {
+  priceFactorAt(price, reference, ceiling, maxDimming, responseExponent, currentFactor) {
     if (price !== null && reference !== null && ceiling !== null && ceiling > reference) {
-      const load = Math.max(0, Math.min(1, (price - reference) / (ceiling - reference)));
+      const rawLoad = Math.max(0, Math.min(1, (price - reference) / (ceiling - reference)));
+      const load = rawLoad ** responseExponent;
       return 1 - (load * maxDimming);
     }
     const fallback = this.numberOrNull(currentFactor);
@@ -1250,16 +1289,32 @@ class AquariumLedSimulatorCard extends HTMLElement {
     return points.join(" ");
   }
 
-  profileAt(minute, sunrise, sunset, night, day, sunriseDuration = 60, sunsetDuration = 90) {
+  profileAt(
+    minute,
+    sunrise,
+    sunset,
+    night,
+    day,
+    sunriseDuration = 60,
+    sunsetDuration = 90,
+    edgeFactor = 0.55,
+    middayPeakMinute = 720,
+  ) {
+    const sunriseEnd = sunrise + sunriseDuration;
     const sunsetStart = sunset - sunsetDuration;
-    if (minute >= sunrise && minute < sunrise + sunriseDuration) {
-      return night + ((day - night) * ((minute - sunrise) / sunriseDuration));
+    const edge = day * edgeFactor;
+    if (minute >= sunrise && minute < sunriseEnd) {
+      return night + ((edge - night) * ((minute - sunrise) / sunriseDuration));
     }
-    if (minute >= sunrise + sunriseDuration && minute < sunsetStart) {
-      return day;
+    if (minute >= sunriseEnd && minute < sunsetStart) {
+      const peak = Math.max(sunriseEnd, Math.min(sunsetStart, middayPeakMinute));
+      const progress = minute <= peak
+        ? Math.max(0, Math.min(1, (minute - sunriseEnd) / Math.max(1, peak - sunriseEnd)))
+        : Math.max(0, Math.min(1, (sunsetStart - minute) / Math.max(1, sunsetStart - peak)));
+      return edge + ((day - edge) * Math.sin(progress * Math.PI / 2));
     }
     if (minute >= sunsetStart && minute < sunset) {
-      return day + ((night - day) * ((minute - sunsetStart) / sunsetDuration));
+      return edge + ((night - edge) * ((minute - sunsetStart) / sunsetDuration));
     }
     return night;
   }

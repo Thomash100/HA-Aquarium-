@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from math import pi, sin
 
 
 SUNRISE_DURATION_MINUTES = 60
@@ -26,6 +27,11 @@ MOON_PHASE_LIGHT_FACTORS = {
     "waning_crescent": 0.45,
 }
 DEFAULT_MOON_PHASE_LIGHT_FACTOR = 0.6
+MIDDAY_PEAK_MINUTE = 12 * 60
+DAY_EDGE_BRIGHTNESS_FACTOR = 0.55
+DAY_CLOUD_SIMULATION_COVERAGE = 0.25
+DAY_CLOUD_WEATHER_WEIGHT = 0.30
+DAY_CLOUD_WAVE_STRENGTH = 0.60
 
 
 @dataclass(frozen=True)
@@ -139,6 +145,62 @@ def calculate_moonlight_target(
     return target, phase_factor, cloud_factor
 
 
+def calculate_daylight_brightness(
+    minute: int,
+    sunrise_end: int,
+    sunset_start: int,
+    day_brightness_pct: float,
+) -> float:
+    """Return a smooth daytime arc with its configured maximum at 12:00."""
+    maximum = _clamp(float(day_brightness_pct), 1, 100)
+    edge = maximum * DAY_EDGE_BRIGHTNESS_FACTOR
+    if sunset_start <= sunrise_end:
+        return maximum
+
+    peak = int(_clamp(MIDDAY_PEAK_MINUTE, sunrise_end, sunset_start))
+    if minute <= peak:
+        span = max(1, peak - sunrise_end)
+        progress = _clamp((minute - sunrise_end) / span, 0, 1)
+    else:
+        span = max(1, sunset_start - peak)
+        progress = _clamp((sunset_start - minute) / span, 0, 1)
+    shaped = sin(progress * pi / 2)
+    return edge + ((maximum - edge) * shaped)
+
+
+def calculate_daylight_cloud_factors(
+    cloudiness: float,
+    cloud_strength: float,
+    cloud_wave: float,
+) -> tuple[float, float, float]:
+    """Return stronger weather, cloud-wave, and effective cloud factors."""
+    actual = _clamp(float(cloudiness), 0, 1)
+    strength = _clamp(float(cloud_strength), 0, 1)
+    wave = _clamp(float(cloud_wave), 0, 1)
+    effective_cloudiness = _clamp(
+        actual + (strength * DAY_CLOUD_SIMULATION_COVERAGE),
+        0,
+        1,
+    )
+    weather_factor = _clamp(
+        1 - (effective_cloudiness * DAY_CLOUD_WEATHER_WEIGHT),
+        0.5,
+        1,
+    )
+    cloud_factor = _clamp(
+        1
+        - (
+            effective_cloudiness
+            * strength
+            * (0.25 + (0.75 * wave))
+            * DAY_CLOUD_WAVE_STRENGTH
+        ),
+        0.35,
+        1,
+    )
+    return weather_factor, cloud_factor, effective_cloudiness
+
+
 def calculate_solar_profile(
     minute: int,
     sunrise_minute: int,
@@ -175,6 +237,7 @@ def calculate_solar_profile(
     sunrise_end_color = normalize_rgbw(sunrise_end_rgbw, DAYLIGHT_RGBW)
     sunset_start_color = normalize_rgbw(sunset_start_rgbw, DAYLIGHT_RGBW)
     sunset_end_color = normalize_rgbw(sunset_rgbw)
+    day_edge_pct = float(day_brightness_pct) * DAY_EDGE_BRIGHTNESS_FACTOR
 
     if sunrise_minute <= minute < sunrise_end:
         phase = "sunrise"
@@ -184,7 +247,7 @@ def calculate_solar_profile(
             1,
         )
         base_pct = night_brightness_pct + (
-            (day_brightness_pct - night_brightness_pct) * progress
+            (day_edge_pct - night_brightness_pct) * progress
         )
         rgbw = _interpolate_rgbw(
             sunrise_start_color,
@@ -198,7 +261,12 @@ def calculate_solar_profile(
             0,
             1,
         )
-        base_pct = day_brightness_pct
+        base_pct = calculate_daylight_brightness(
+            minute,
+            sunrise_end,
+            sunset_start,
+            day_brightness_pct,
+        )
         rgbw = _interpolate_rgbw(
             sunrise_end_color,
             sunset_start_color,
@@ -211,8 +279,8 @@ def calculate_solar_profile(
             0,
             1,
         )
-        base_pct = day_brightness_pct + (
-            (night_brightness_pct - day_brightness_pct) * progress
+        base_pct = day_edge_pct + (
+            (night_brightness_pct - day_edge_pct) * progress
         )
         rgbw = _interpolate_rgbw(
             sunset_start_color,

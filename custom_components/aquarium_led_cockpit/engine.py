@@ -45,12 +45,18 @@ from .const import (
     DEFAULT_SUNSET_DURATION_MINUTES,
     DEFAULT_SUN_ENTITY,
 )
-from .price import calculate_price_adjustment, is_battery_full
+from .price import PRICE_RESPONSE_EXPONENT, calculate_price_adjustment, is_battery_full
 from .solar import (
     DAWN_DUSK_RGBW,
+    DAY_CLOUD_SIMULATION_COVERAGE,
+    DAY_CLOUD_WAVE_STRENGTH,
+    DAY_CLOUD_WEATHER_WEIGHT,
+    DAY_EDGE_BRIGHTNESS_FACTOR,
     DAYLIGHT_RGBW,
+    MIDDAY_PEAK_MINUTE,
     MIN_MOONLIGHT_BRIGHTNESS_PCT,
     calculate_moonlight_target,
+    calculate_daylight_cloud_factors,
     calculate_solar_profile,
     normalize_rgbw,
     normalize_sunrise_offset,
@@ -280,9 +286,16 @@ def calculate_target(
             int(round(moonlight_target)),
         )
     else:
-        weather_factor = _clamp(1 - (cloudiness * 0.2), 0.5, 1)
-        cloud_factor = _clamp(1 - (cloudiness * cloud_strength * wave * 0.25), 0.4, 1)
+        weather_factor, cloud_factor, effective_cloudiness = (
+            calculate_daylight_cloud_factors(
+                cloudiness,
+                cloud_strength,
+                wave,
+            )
+        )
         brightness = int(round(_clamp(base_pct * price_factor * weather_factor * cloud_factor, 0, 100)))
+    if phase == "night":
+        effective_cloudiness = cloudiness
     rgbw = solar_profile.rgbw
 
     status = {
@@ -335,6 +348,9 @@ def calculate_target(
         "moonlight_target_pct": brightness if phase == "night" else "-",
         "moonlight_continuous": True,
         "day_brightness_pct": round(day, 1),
+        "day_edge_brightness_factor": DAY_EDGE_BRIGHTNESS_FACTOR,
+        "midday_peak_minute": MIDDAY_PEAK_MINUTE,
+        "midday_peak_time": _minutes_to_clock(MIDDAY_PEAK_MINUTE),
         "night_brightness_pct": round(night, 1),
         "base_pct": round(base_pct, 1),
         "target_pct": brightness,
@@ -344,6 +360,8 @@ def calculate_target(
         "price_entity": settings.get(CONF_PRICE_ENTITY) or "",
         "price_factor": round(price_factor, 3),
         "price_load_pct": int(round(price_adjustment["load"] * 100)),
+        "price_raw_load_pct": int(round(price_adjustment["raw_load"] * 100)),
+        "price_response_exponent": PRICE_RESPONSE_EXPONENT,
         "price_dimming_pct": int(round((1 - price_factor) * 100)),
         "price_dimming_max_pct": round(
             float(controls.get(CONTROL_PRICE_DIMMING, DEFAULT_PRICE_DIMMING)),
@@ -366,7 +384,11 @@ def calculate_target(
         if settings.get(CONF_WEATHER_ENTITY) and hass.states.get(settings.get(CONF_WEATHER_ENTITY))
         else "-",
         "cloudiness_pct": int(round(cloudiness * 100)),
+        "effective_cloudiness_pct": int(round(effective_cloudiness * 100)),
         "cloud_strength_pct": int(round(cloud_strength * 100)),
+        "cloud_simulation_coverage": DAY_CLOUD_SIMULATION_COVERAGE,
+        "cloud_weather_weight": DAY_CLOUD_WEATHER_WEIGHT,
+        "cloud_wave_strength": DAY_CLOUD_WAVE_STRENGTH,
         "weather_factor": round(weather_factor, 3),
         "cloud_factor": round(cloud_factor, 3),
         "updated": now.strftime("%Y-%m-%d %H:%M:%S"),
