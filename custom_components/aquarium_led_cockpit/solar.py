@@ -6,6 +6,8 @@ from dataclasses import dataclass
 
 SUNRISE_DURATION_MINUTES = 60
 SUNSET_DURATION_MINUTES = 90
+MIN_SUNRISE_OFFSET_HOURS = -6.0
+MAX_SUNRISE_OFFSET_HOURS = 6.0
 
 DAWN_DUSK_RGBW = (255, 0, 0, 0)
 ORANGE_RGBW = (255, 45, 0, 0)
@@ -39,6 +41,26 @@ class SolarProfile:
 
 def _clamp(value: float, minimum: float, maximum: float) -> float:
     return max(minimum, min(maximum, value))
+
+
+def normalize_sunrise_offset(value: object) -> float:
+    """Return a valid user-selectable sunrise shift in hours."""
+    try:
+        offset = float(value)
+    except (TypeError, ValueError):
+        offset = 0.0
+    return _clamp(offset, MIN_SUNRISE_OFFSET_HOURS, MAX_SUNRISE_OFFSET_HOURS)
+
+
+def shift_sunrise_minute(sunrise_minute: int, offset_hours: object) -> int:
+    """Shift sunrise without wrapping into the previous or following day."""
+    shifted = int(
+        round(
+            int(sunrise_minute)
+            + (normalize_sunrise_offset(offset_hours) * 60)
+        )
+    )
+    return int(_clamp(shifted, 0, 1439))
 
 
 def _interpolate_rgbw(

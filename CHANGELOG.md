@@ -1,5 +1,15 @@
 # Aenderungsprotokoll
 
+## V260816.019_BETA.00
+
+Einstellbare Verschiebung des Sonnenaufgangs ergaenzt.
+
+- Fuegt je Aquarium den Regler `Sonnenaufgang-Verschiebung` von minus sechs bis plus sechs Stunden in Viertelstundenschritten hinzu.
+- Verwendet den verschobenen Lichtstart auch als Ende des durchgaengigen Mondlichts.
+- Zeigt echte Sonnenaufgangszeit, verschobenen Lichtstart und eingestellten Versatz gemeinsam im Simulator an.
+- Begrenzt extreme negative Verschiebungen auf 00:00 Uhr und extreme positive Verschiebungen auf 23:59 Uhr, ohne den Tageswechsel unbeabsichtigt zu ueberspringen.
+- Erhoeht die Home-Assistant-Manifest-Version auf `26.8.16-beta.19`.
+
 ## V260523.018_BETA.00
 
 Dauerhaftes, mondphasen- und wolkenabhaengiges Mondlicht ergaenzt.

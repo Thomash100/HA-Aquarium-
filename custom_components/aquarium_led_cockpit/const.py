@@ -36,6 +36,7 @@ DEFAULT_PRICE_DIMMING = 40
 DEFAULT_BATTERY_FULL_THRESHOLD = 95
 DEFAULT_CLOUD_STRENGTH = 45
 DEFAULT_SIMULATION_TIME = 360
+DEFAULT_SUNRISE_OFFSET_HOURS = 0
 
 DATA_RUNTIMES = "runtimes"
 DATA_SERVICES_REGISTERED = "services_registered"
@@ -61,5 +62,6 @@ CONTROL_CLOUD_STRENGTH = "cloud_strength_pct"
 CONTROL_SIMULATION_TIME = "simulation_time_minutes"
 # The stored key and entity unique ID stay unchanged for upgrade compatibility.
 CONTROL_TIME_LAPSE_DURATION = "simulation_step_minutes"
+CONTROL_SUNRISE_OFFSET = "sunrise_offset_hours"
 CONTROL_SUNRISE_RGBW = "sunrise_rgbw"
 CONTROL_SUNSET_RGBW = "sunset_rgbw"
