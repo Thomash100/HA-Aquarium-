@@ -170,7 +170,10 @@ class AquariumLedSimulatorCard extends HTMLElement {
             ${this.metric("Akku laden", this.formatPower(attr.battery_charging_power))}
             ${this.metric("Akku entladen", this.formatPower(attr.battery_discharge_power))}
             ${this.metric("Akku-Bonus", attr.battery_priority_active ? "Freigegeben" : "Gesperrt")}
-            ${this.metric("Solar", this.formatPower(attr.solar_power))}
+            ${this.metric("PV-Erzeugung", this.formatPower(attr.solar_power))}
+            ${this.metric("PV-Ausgang", this.formatPower(attr.output_power))}
+            ${this.metric("PV-/SOC-Faktor", this.formatPercent(attr.solar_energy_factor_pct))}
+            ${this.metric("Lichtausgänge", `${Math.round(Number(attr.rgbw_light_count) || 0)} RGBW · ${Math.round(Number(attr.white_light_count) || 0)} Weiß`)}
             ${this.metric("Sonne regional", attr.regional_sun ? "Ja" : "Nein")}
             ${this.metric("Wolken", `${attr.cloudiness_pct ?? "-"}%`)}
             ${this.metric("Mondlicht", this.formatPercent(attr.moonlight_target_pct))}
@@ -299,6 +302,7 @@ class AquariumLedSimulatorCard extends HTMLElement {
         .alc-effect-result { fill: none; filter: drop-shadow(0 0 4px rgba(38,183,223,0.35)); stroke: #26b7df; stroke-linecap: round; stroke-linejoin: round; stroke-width: 5; }
         .alc-effect-price { fill: none; stroke: #ffad42; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2.5; }
         .alc-effect-cloud { fill: none; stroke: #a58dd7; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2.5; }
+        .alc-effect-energy { fill: none; stroke: #d6cf55; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2.5; }
         .alc-effect-battery { fill: none; stroke: #48c98b; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2.5; }
         .alc-effect-now { stroke: var(--primary-text-color); stroke-dasharray: 3 5; stroke-opacity: 0.72; stroke-width: 2; }
         .alc-effect-noon { stroke: #ffd45d; stroke-dasharray: 8 6; stroke-opacity: 0.65; stroke-width: 2; }
@@ -310,6 +314,7 @@ class AquariumLedSimulatorCard extends HTMLElement {
         .alc-legend-result { background: #26b7df; }
         .alc-legend-price { background: #ffad42; }
         .alc-legend-cloud { background: #a58dd7; }
+        .alc-legend-energy { background: #d6cf55; }
         .alc-color-grid { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 14px; }
         .alc-color-editor { background: var(--secondary-background-color); border: 1px solid color-mix(in srgb, var(--divider-color) 70%, transparent); border-radius: 12px; padding: 12px; }
         .alc-color-editor-title { font-size: 15px; font-weight: 700; }
@@ -433,7 +438,7 @@ class AquariumLedSimulatorCard extends HTMLElement {
         <div class="alc-effect-head">
           <div>
             <div class="alc-effect-title">Lichtintensität über den Tag</div>
-            <div class="alc-effect-sub">Tagesbogen mit Sollmaximum um 12:00 Uhr; das Ergebnis reagiert deutlich auf Wolken, Strompreis und Growatt-Akku.</div>
+            <div class="alc-effect-sub">Tagesbogen mit Sollmaximum um 12:00 Uhr; Preis, Wolken sowie das Verhältnis aus PV-Erzeugung, Leistungsabgabe und Akku-SOC formen das Ergebnis.</div>
           </div>
           <div class="alc-effect-current">Jetzt ${Math.round(currentTarget)} %</div>
         </div>
@@ -444,6 +449,7 @@ class AquariumLedSimulatorCard extends HTMLElement {
           <path d="${projection.resultPath}" class="alc-effect-result"></path>
           <path d="${projection.pricePath}" class="alc-effect-price"></path>
           <path d="${projection.cloudPath}" class="alc-effect-cloud"></path>
+          <path d="${projection.energyPath}" class="alc-effect-energy"></path>
           ${projection.batteryPath ? `<path d="${projection.batteryPath}" class="alc-effect-battery"></path>` : ""}
           <line x1="${projection.noonX.toFixed(1)}" y1="${chart.top}" x2="${projection.noonX.toFixed(1)}" y2="${chart.bottomEdge}" class="alc-effect-noon"></line>
           <circle cx="${projection.noonX.toFixed(1)}" cy="${projection.noonY.toFixed(1)}" r="5" class="alc-effect-noon-dot"></circle>
@@ -462,13 +468,15 @@ class AquariumLedSimulatorCard extends HTMLElement {
           <span class="alc-legend-item"><span class="alc-legend-swatch alc-legend-result"></span>Ergebnis</span>
           <span class="alc-legend-item"><span class="alc-legend-swatch alc-legend-price"></span>Preisfaktor</span>
           <span class="alc-legend-item"><span class="alc-legend-swatch alc-legend-cloud"></span>Wolkenfaktor</span>
+          <span class="alc-legend-item"><span class="alc-legend-swatch alc-legend-energy"></span>PV-/SOC-Faktor</span>
           ${projection.batteryPath ? `<span class="alc-legend-item"><span class="alc-legend-swatch alc-legend-battery"></span>Akku-SOC</span>` : ""}
         </div>
         <div class="alc-effect-factors">
           <span class="alc-effect-pill">Wolken aktuell −${Math.max(0, cloudDimming)} % · wirksam ${Math.round(Number(attr.effective_cloudiness_pct) || 0)} %</span>
           <span class="alc-effect-pill">Preis aktuell −${Math.round(Number(attr.price_dimming_pct) || 0)} %</span>
+          <span class="alc-effect-pill">PV/SOC aktuell ${Math.round(Number(attr.solar_energy_factor_pct) || 100)} % · PV-Deckung ${Math.round(Number(attr.solar_pv_coverage_pct) || 0)} % · SOC-Anteil ${Math.round(Number(attr.solar_soc_support_pct) || 0)} %</span>
           <span class="alc-effect-pill">${this.escape(batteryText)}</span>
-          <span class="alc-effect-pill">Zukunft: Preisprognose · Akku-SOC und PV-Bilanz gehalten · Wolken aktuell</span>
+          <span class="alc-effect-pill">Zukunft: Preisprognose · Akku-SOC, PV-Erzeugung und Leistungsabgabe gehalten · Wolken aktuell</span>
         </div>
       </section>
     `;
@@ -494,6 +502,8 @@ class AquariumLedSimulatorCard extends HTMLElement {
       .sort((left, right) => left.time - right.time);
     const currentPrice = this.numberOrNull(attr.price);
     const currentBattery = this.numberOrNull(attr.battery_soc);
+    const solarPower = this.numberOrNull(attr.solar_power);
+    const outputPower = this.numberOrNull(attr.output_power);
     const reference = this.numberOrNull(attr.price_reference);
     const ceiling = this.numberOrNull(attr.price_ceiling);
     const maxDimming = Math.max(0, Math.min(100, Number(attr.price_dimming_max_pct) || 0)) / 100;
@@ -502,6 +512,12 @@ class AquariumLedSimulatorCard extends HTMLElement {
     const batteryChargeSurplus = attr.battery_charge_surplus === true;
     const batteryBoostFactor = 1 + (
       Math.max(0, Math.min(50, Number(attr.battery_brightness_boost_pct) || 15)) / 100
+    );
+    const solarEnergyMinFactor = Math.max(0, Math.min(1, Number(attr.solar_energy_min_factor) || 0.30));
+    const solarEnergySocFloor = Math.max(0, Math.min(100, Number(attr.solar_energy_soc_floor) || 20));
+    const solarEnergySocTarget = Math.max(
+      solarEnergySocFloor + 1,
+      Math.min(100, Number(attr.solar_energy_soc_target) || 90),
     );
     const cloudiness = Math.max(0, Math.min(1, (Number(attr.cloudiness_pct) || 0) / 100));
     const cloudStrength = Math.max(0, Math.min(1, (Number(attr.cloud_strength_pct) || 0) / 100));
@@ -515,6 +531,7 @@ class AquariumLedSimulatorCard extends HTMLElement {
     const resultPoints = [];
     const priceFactorPoints = [];
     const cloudFactorPoints = [];
+    const energyFactorPoints = [];
     const batterySocPoints = [];
 
     for (let minute = 0; minute <= 1440; minute += 15) {
@@ -537,6 +554,16 @@ class AquariumLedSimulatorCard extends HTMLElement {
       const price = this.timelineValueAt(pricePoints, time, currentPrice);
       const batteryFull = battery !== null && battery >= batteryThreshold;
       const batteryPriority = batteryFull && batteryChargeSurplus;
+      const energyFactor = night
+        ? 1
+        : this.solarEnergyFactorAt(
+            solarPower,
+            outputPower,
+            battery,
+            solarEnergyMinFactor,
+            solarEnergySocFloor,
+            solarEnergySocTarget,
+          );
       const priceFactor = night || batteryPriority
         ? 1
         : this.priceFactorAt(
@@ -579,13 +606,18 @@ class AquariumLedSimulatorCard extends HTMLElement {
         cloudFactor = weatherFactor * waveFactor;
         result = Math.min(
           dayPct,
-          base * priceFactor * cloudFactor * (batteryPriority ? batteryBoostFactor : 1),
+          base
+            * priceFactor
+            * cloudFactor
+            * energyFactor
+            * (batteryPriority ? batteryBoostFactor : 1),
         );
       }
       basePoints.push({ time, value: Math.max(0, Math.min(100, base)) });
       resultPoints.push({ time, value: Math.max(0, Math.min(100, result)) });
       priceFactorPoints.push({ time, value: priceFactor * 100 });
       cloudFactorPoints.push({ time, value: cloudFactor * 100 });
+      energyFactorPoints.push({ time, value: energyFactor * 100 });
       if (battery !== null) {
         batterySocPoints.push({ time, value: Math.max(0, Math.min(100, battery)) });
       }
@@ -597,6 +629,7 @@ class AquariumLedSimulatorCard extends HTMLElement {
       basePath: this.pointPath(basePoints, chart),
       chart,
       cloudPath: this.pointPath(cloudFactorPoints, chart),
+      energyPath: this.pointPath(energyFactorPoints, chart),
       end,
       now,
       noonX: chart.x(noonTime),
@@ -606,6 +639,23 @@ class AquariumLedSimulatorCard extends HTMLElement {
       resultPath: this.pointPath(resultPoints, chart),
       start,
     };
+  }
+
+  solarEnergyFactorAt(solarPower, outputPower, batterySoc, minFactor, socFloor, socTarget) {
+    if (solarPower === null || outputPower === null || batterySoc === null) {
+      return 1;
+    }
+    const solar = Math.max(0, solarPower);
+    const output = Math.max(0, outputPower);
+    const pvCoverage = output > 0 && solar > 0
+      ? Math.max(0, Math.min(1, solar / output))
+      : 0;
+    const socSupport = Math.max(
+      0,
+      Math.min(1, (batterySoc - socFloor) / Math.max(1, socTarget - socFloor)),
+    );
+    const support = (pvCoverage + socSupport) / 2;
+    return minFactor + ((1 - minFactor) * support);
   }
 
   timelineValueAt(points, time, fallback) {

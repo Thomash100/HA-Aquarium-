@@ -78,6 +78,34 @@ class SolarProfileTests(unittest.TestCase):
         self.assertEqual(90, noon.base_pct)
         self.assertLess(afternoon.base_pct, noon.base_pct)
 
+    def test_solar_energy_factor_reaches_full_with_pv_coverage_and_high_soc(self) -> None:
+        adjustment = SOLAR.calculate_solar_energy_adjustment(500, 400, 90)
+
+        self.assertTrue(adjustment.available)
+        self.assertEqual(1.0, adjustment.pv_coverage)
+        self.assertEqual(1.0, adjustment.soc_support)
+        self.assertEqual(1.0, adjustment.factor)
+
+    def test_solar_energy_factor_reaches_thirty_percent_when_both_are_low(self) -> None:
+        adjustment = SOLAR.calculate_solar_energy_adjustment(0, 400, 20)
+
+        self.assertEqual(0.0, adjustment.pv_coverage)
+        self.assertEqual(0.0, adjustment.soc_support)
+        self.assertEqual(0.30, adjustment.factor)
+
+    def test_solar_energy_factor_is_continuous_between_limits(self) -> None:
+        adjustment = SOLAR.calculate_solar_energy_adjustment(200, 400, 55)
+
+        self.assertEqual(0.5, adjustment.pv_coverage)
+        self.assertEqual(0.5, adjustment.soc_support)
+        self.assertAlmostEqual(0.65, adjustment.factor)
+
+    def test_missing_energy_input_does_not_dim_the_aquarium(self) -> None:
+        adjustment = SOLAR.calculate_solar_energy_adjustment(None, 400, 55)
+
+        self.assertFalse(adjustment.available)
+        self.assertEqual(1.0, adjustment.factor)
+
     def test_daylight_clouds_have_visible_weather_and_wave_effects(self) -> None:
         weather, calm, effective = SOLAR.calculate_daylight_cloud_factors(
             0.12, 0.45, 0

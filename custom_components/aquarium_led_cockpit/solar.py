@@ -32,6 +32,9 @@ DAY_EDGE_BRIGHTNESS_FACTOR = 0.55
 DAY_CLOUD_SIMULATION_COVERAGE = 0.25
 DAY_CLOUD_WEATHER_WEIGHT = 0.30
 DAY_CLOUD_WAVE_STRENGTH = 0.60
+SOLAR_ENERGY_MIN_FACTOR = 0.30
+SOLAR_ENERGY_SOC_FLOOR = 20.0
+SOLAR_ENERGY_SOC_TARGET = 90.0
 
 
 @dataclass(frozen=True)
@@ -44,8 +47,61 @@ class SolarProfile:
     rgbw: tuple[int, int, int, int]
 
 
+@dataclass(frozen=True)
+class SolarEnergyAdjustment:
+    """Daylight factor derived from current PV coverage and battery SOC."""
+
+    available: bool
+    factor: float
+    pv_coverage: float
+    soc_support: float
+    support: float
+
+
 def _clamp(value: float, minimum: float, maximum: float) -> float:
     return max(minimum, min(maximum, value))
+
+
+def calculate_solar_energy_adjustment(
+    solar_power: float | None,
+    output_power: float | None,
+    battery_soc: float | None,
+) -> SolarEnergyAdjustment:
+    """Scale daylight from 30-100% using PV/output coverage and battery SOC.
+
+    PV coverage and stored energy have equal weight. A missing input fails open
+    at 100 percent so a temporarily unavailable sensor cannot darken the tank.
+    """
+    if solar_power is None or output_power is None or battery_soc is None:
+        return SolarEnergyAdjustment(
+            available=False,
+            factor=1.0,
+            pv_coverage=1.0,
+            soc_support=1.0,
+            support=1.0,
+        )
+
+    solar = max(0.0, float(solar_power))
+    output = max(0.0, float(output_power))
+    soc = _clamp(float(battery_soc), 0, 100)
+    pv_coverage = _clamp(solar / output, 0, 1) if output > 0 and solar > 0 else 0.0
+    soc_support = _clamp(
+        (soc - SOLAR_ENERGY_SOC_FLOOR)
+        / (SOLAR_ENERGY_SOC_TARGET - SOLAR_ENERGY_SOC_FLOOR),
+        0,
+        1,
+    )
+    support = (pv_coverage + soc_support) / 2
+    factor = SOLAR_ENERGY_MIN_FACTOR + (
+        (1 - SOLAR_ENERGY_MIN_FACTOR) * support
+    )
+    return SolarEnergyAdjustment(
+        available=True,
+        factor=factor,
+        pv_coverage=pv_coverage,
+        soc_support=soc_support,
+        support=support,
+    )
 
 
 def normalize_sunrise_offset(value: object) -> float:

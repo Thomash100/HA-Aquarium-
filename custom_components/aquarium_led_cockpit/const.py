@@ -18,6 +18,7 @@ CONF_BATTERY_SOC_ENTITY = "battery_soc_entity"
 CONF_BATTERY_CHARGING_POWER_ENTITY = "battery_charging_power_entity"
 CONF_BATTERY_DISCHARGE_POWER_ENTITY = "battery_discharge_power_entity"
 CONF_SOLAR_POWER_ENTITY = "solar_power_entity"
+CONF_OUTPUT_POWER_ENTITY = "output_power_entity"
 CONF_BATTERY_FULL_THRESHOLD = "battery_full_threshold"
 CONF_TRANSITION_SECONDS = "transition_seconds"
 
