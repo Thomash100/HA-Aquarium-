@@ -15,10 +15,13 @@ from .const import (
     CONF_BATTERY_FULL_THRESHOLD,
     CONF_BATTERY_SOC_ENTITY,
     CONF_MOON_ENTITY,
+    CONF_OUTPUT_POWER_ENTITY,
     CONF_PRICE_ENTITY,
+    CONF_RGBW_LIGHTS,
     CONF_SOLAR_POWER_ENTITY,
     CONF_SUN_ENTITY,
     CONF_WEATHER_ENTITY,
+    CONF_WHITE_LIGHTS,
     CONTROL_AQUARIUM_PREVIEW,
     CONTROL_CLOUD_STRENGTH,
     CONTROL_DAY_BRIGHTNESS,
@@ -64,6 +67,10 @@ from .solar import (
     DAYLIGHT_RGBW,
     MIDDAY_PEAK_MINUTE,
     MIN_MOONLIGHT_BRIGHTNESS_PCT,
+    SOLAR_ENERGY_MIN_FACTOR,
+    SOLAR_ENERGY_SOC_FLOOR,
+    SOLAR_ENERGY_SOC_TARGET,
+    calculate_solar_energy_adjustment,
     calculate_moonlight_target,
     calculate_daylight_cloud_factors,
     calculate_solar_profile,
@@ -122,6 +129,15 @@ def _number_state(hass: HomeAssistant, entity_id: str | None) -> float | None:
         return float(state.state)
     except (TypeError, ValueError):
         return None
+
+
+def _entity_count(value: object) -> int:
+    """Count configured entity IDs without assuming a specific container type."""
+    if isinstance(value, str):
+        return 1 if value.strip() else 0
+    if isinstance(value, (list, tuple, set)):
+        return sum(1 for entity_id in value if str(entity_id).strip())
+    return 0
 
 
 def _regional_sun(hass: HomeAssistant, entity_id: str | None) -> bool:
@@ -294,6 +310,15 @@ def calculate_target(
         else price_adjustment["strategy"]
     )
     solar_power = _number_state(hass, settings.get(CONF_SOLAR_POWER_ENTITY))
+    output_power = _number_state(hass, settings.get(CONF_OUTPUT_POWER_ENTITY))
+    solar_energy_adjustment = calculate_solar_energy_adjustment(
+        solar_power,
+        output_power,
+        battery_soc,
+    )
+    solar_energy_factor = (
+        1.0 if phase == "night" else solar_energy_adjustment.factor
+    )
     regional_sun = _regional_sun(hass, settings.get(CONF_WEATHER_ENTITY))
     moon_phase, moon_phase_label, moon_phase_icon = _moon_phase(
         hass,
@@ -326,7 +351,11 @@ def calculate_target(
             )
         )
         brightness_without_boost = _clamp(
-            base_pct * price_factor * weather_factor * cloud_factor,
+            base_pct
+            * price_factor
+            * weather_factor
+            * cloud_factor
+            * solar_energy_factor,
             0,
             day,
         )
@@ -484,6 +513,30 @@ def calculate_target(
         ),
         "solar_power": solar_power if solar_power is not None else "-",
         "solar_power_entity": settings.get(CONF_SOLAR_POWER_ENTITY) or "",
+        "output_power": output_power if output_power is not None else "-",
+        "output_power_entity": settings.get(CONF_OUTPUT_POWER_ENTITY) or "",
+        "solar_energy_available": solar_energy_adjustment.available,
+        "solar_energy_factor": round(solar_energy_factor, 3),
+        "solar_energy_factor_pct": int(round(solar_energy_factor * 100)),
+        "solar_energy_dimming_pct": int(round((1 - solar_energy_factor) * 100)),
+        "solar_pv_coverage_pct": int(
+            round(solar_energy_adjustment.pv_coverage * 100)
+        ),
+        "solar_soc_support_pct": int(
+            round(solar_energy_adjustment.soc_support * 100)
+        ),
+        "solar_energy_support_pct": int(
+            round(solar_energy_adjustment.support * 100)
+        ),
+        "solar_energy_min_factor": SOLAR_ENERGY_MIN_FACTOR,
+        "solar_energy_soc_floor": SOLAR_ENERGY_SOC_FLOOR,
+        "solar_energy_soc_target": SOLAR_ENERGY_SOC_TARGET,
+        "rgbw_light_count": _entity_count(settings.get(CONF_RGBW_LIGHTS)),
+        "white_light_count": _entity_count(settings.get(CONF_WHITE_LIGHTS)),
+        "light_output_count": (
+            _entity_count(settings.get(CONF_RGBW_LIGHTS))
+            + _entity_count(settings.get(CONF_WHITE_LIGHTS))
+        ),
         "regional_sun": regional_sun,
         "weather": hass.states.get(settings.get(CONF_WEATHER_ENTITY)).state
         if settings.get(CONF_WEATHER_ENTITY) and hass.states.get(settings.get(CONF_WEATHER_ENTITY))

@@ -41,6 +41,7 @@ class OptionsFlowCompatibilityTests(unittest.TestCase):
 
         self.assertIn("CONF_BATTERY_CHARGING_POWER_ENTITY", source)
         self.assertIn("CONF_BATTERY_DISCHARGE_POWER_ENTITY", source)
+        self.assertIn("CONF_OUTPUT_POWER_ENTITY", source)
 
 
 if __name__ == "__main__":

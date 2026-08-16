@@ -17,6 +17,7 @@ from .const import (
     CONF_MOON_ENTITY,
     CONF_NAME,
     CONF_OVERWRITE_EXISTING,
+    CONF_OUTPUT_POWER_ENTITY,
     CONF_PRICE_ENTITY,
     CONF_RGBW_LIGHTS,
     CONF_SUN_ENTITY,
@@ -85,6 +86,10 @@ def _build_schema(defaults: dict) -> vol.Schema:
             vol.Optional(
                 CONF_SOLAR_POWER_ENTITY,
                 default=defaults.get(CONF_SOLAR_POWER_ENTITY, ""),
+            ): selector.EntitySelector(selector.EntitySelectorConfig(domain="sensor")),
+            vol.Optional(
+                CONF_OUTPUT_POWER_ENTITY,
+                default=defaults.get(CONF_OUTPUT_POWER_ENTITY, ""),
             ): selector.EntitySelector(selector.EntitySelectorConfig(domain="sensor")),
             vol.Required(
                 CONF_BATTERY_FULL_THRESHOLD,

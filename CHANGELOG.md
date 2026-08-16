@@ -1,5 +1,17 @@
 # Aenderungsprotokoll
 
+## V260816.025_BETA.00
+
+Tageshelligkeit stufenlos an aktuelle PV-Deckung und Akku-Ladung gekoppelt.
+
+- Vergleicht die Growatt-PV-Erzeugung mit der aktuellen Leistungsabgabe und kombiniert die Deckung zu gleichen Teilen mit dem Akku-SOC.
+- Skaliert das normale Tagesprofil bei schwacher PV-Leistung und niedrigem SOC stufenlos bis auf einen Mindestfaktor von 30 Prozent; volle PV-Deckung und 90 Prozent SOC geben 100 Prozent frei.
+- Laesst Preis- und Wolkeneinfluss weiterhin zusaetzlich wirken und faellt bei fehlenden Energiesensoren ausfallsicher auf 100 Prozent zurueck.
+- Zeigt PV-Ausgang, PV-Deckung, SOC-Anteil, Energiefaktor sowie die Zahl der RGBW- und Weiss-Ausgaenge im Dashboard an.
+- Erweitert das Wirkungsdiagramm um eine eigene PV-/SOC-Faktorlinie und wendet dasselbe Ergebnis gemeinsam auf RGBW- und alle Weiss-Leuchten an.
+- Behaelt die Akku-Prioritaet unveraendert bei: Preisfreigabe und Lichtbonus erfordern weiterhin Ladeleistung strikt groesser als Entladeleistung.
+- Erhoeht die Home-Assistant-Manifest-Version auf `26.8.16-beta.25`.
+
 ## V260816.024_BETA.00
 
 Akku-Prioritaet an einen echten PV-Ladeueberschuss gebunden.
