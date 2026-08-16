@@ -79,6 +79,8 @@ class AquariumLedSimulatorCard extends HTMLElement {
     const batteryEntity = this.config.battery_entity || attr.battery_soc_entity || "";
     const timeLapseDurationEntity = this.config.time_lapse_duration_number || "";
     const sunriseOffsetEntity = this.config.sunrise_offset_number || "";
+    const sunriseDurationEntity = this.config.sunrise_duration_number || "";
+    const sunsetDurationEntity = this.config.sunset_duration_number || "";
     const aquariumPreviewEntity = this.config.aquarium_preview_switch || "";
     const aquariumPreviewActive = (
       this._hass.states[aquariumPreviewEntity]?.state === "on"
@@ -94,6 +96,24 @@ class AquariumLedSimulatorCard extends HTMLElement {
       ?? attr.sunrise_offset_hours
       ?? 0,
     );
+    const configuredSunriseDuration = Number(
+      this._hass.states[sunriseDurationEntity]?.state
+      ?? sunriseDuration,
+    );
+    const configuredSunsetDuration = Number(
+      this._hass.states[sunsetDurationEntity]?.state
+      ?? sunsetDuration,
+    );
+    const sunriseCss = this.rgbwCss(sunriseRgbw);
+    const sunsetCss = this.rgbwCss(sunsetRgbw);
+    const intensityGradient = this.intensityGradientStops(
+      sunrise,
+      sunset,
+      configuredSunriseDuration,
+      configuredSunsetDuration,
+      sunriseRgbw,
+      sunsetRgbw,
+    );
 
     this.innerHTML = `
       <ha-card>
@@ -107,42 +127,53 @@ class AquariumLedSimulatorCard extends HTMLElement {
             <div class="alc-badge">${target}%</div>
           </div>
 
-          <div class="alc-celestial" style="--alc-rgb: ${rgb}; --alc-white: ${whiteAlpha};">
-            <svg class="alc-sky" viewBox="0 0 720 190" role="img" aria-label="Sonnenbahn und Mondphase ueber 24 Stunden">
+          <div class="alc-celestial" style="--alc-rgb: ${rgb}; --alc-white: ${whiteAlpha}; --alc-sunrise: ${sunriseCss}; --alc-sunset: ${sunsetCss};">
+            <svg class="alc-sky" viewBox="0 0 720 310" role="img" aria-label="Sonnenbahn, Mondphase und Lichtintensitaet ueber 24 Stunden">
+              <defs>
+                <linearGradient id="alc-intensity-gradient" x1="0" x2="1" y1="0" y2="0">
+                  ${intensityGradient}
+                </linearGradient>
+                <linearGradient id="alc-intensity-fill" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stop-color="${rgb}" stop-opacity="0.42"></stop>
+                  <stop offset="100%" stop-color="${rgb}" stop-opacity="0.04"></stop>
+                </linearGradient>
+              </defs>
               <path d="${celestial.sunArc}" class="alc-sun-arc"></path>
               <path d="${celestial.moonEveningArc}" class="alc-moon-arc"></path>
               <path d="${celestial.moonMorningArc}" class="alc-moon-arc"></path>
               <line x1="0" y1="138" x2="720" y2="138" class="alc-horizon-line"></line>
-              <line x1="${celestial.nowX}" y1="12" x2="${celestial.nowX}" y2="166" class="alc-sky-now"></line>
+              <line x1="${celestial.nowX}" y1="12" x2="${celestial.nowX}" y2="298" class="alc-sky-now"></line>
               ${celestial.isDay
                 ? `<circle cx="${celestial.bodyX}" cy="${celestial.bodyY}" r="14" class="alc-sun-body"></circle>`
                 : `<text x="${celestial.bodyX}" y="${celestial.bodyY + 9}" class="alc-moon-body" text-anchor="middle">${this.escape(moonPhaseIcon)}</text>`}
               <text x="${celestial.sunriseX}" y="160" class="alc-sky-label" text-anchor="middle">${this.escape(sunrise)}</text>
               <text x="${celestial.sunsetX}" y="160" class="alc-sky-label" text-anchor="middle">${this.escape(sunset)}</text>
               <text x="360" y="181" class="alc-moon-label" text-anchor="middle">${this.escape(moonPhaseIcon)} ${this.escape(moonPhaseLabel)} · Mond ${Math.round(moonPhaseBrightness)}% · Wolken −${Math.round(moonCloudDimming)}%</text>
+              <rect x="0" y="192" width="720" height="118" class="alc-intensity-panel"></rect>
+              <text x="18" y="211" class="alc-intensity-label">LICHTINTENSITÄT</text>
+              <text x="702" y="211" class="alc-intensity-value" text-anchor="end">aktuell ${target}%</text>
+              <line x1="0" y1="292" x2="720" y2="292" class="alc-intensity-axis"></line>
+              <path d="${curve.fill}" fill="url(#alc-intensity-fill)" class="alc-intensity-fill"></path>
+              <path d="${curve.line}" fill="none" stroke="url(#alc-intensity-gradient)" class="alc-intensity-line"></path>
             </svg>
           </div>
 
-          <svg class="alc-chart" viewBox="0 0 320 96" role="img" aria-label="24-Stunden-Lichtkurve">
-            <defs>
-              <linearGradient id="alc-fill" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0%" stop-color="${rgb}" stop-opacity="0.44"></stop>
-                <stop offset="100%" stop-color="${rgb}" stop-opacity="0.06"></stop>
-              </linearGradient>
-            </defs>
-            <path d="${curve.fill}" fill="url(#alc-fill)"></path>
-            <path d="${curve.line}" fill="none" stroke="${rgb}" stroke-width="3" stroke-linecap="round"></path>
-            <line x1="${this.minutePercent(currentTime) * 3.2}" y1="8" x2="${this.minutePercent(currentTime) * 3.2}" y2="88" class="alc-chart-now"></line>
-          </svg>
-
           <div class="alc-times">
-            <span>Reale Sonne ${this.escape(sunriseActual)} · Lichtstart ${this.escape(sunrise)} (${this.escape(this.formatSignedHours(sunriseOffsetHours))}) · Wunschfarbe → Gold → Weiss ${sunriseDuration} Min.</span>
-            <span>Weiss → Gold → Wunschfarbe ab ${this.escape(attr.sunset_phase_start || sunset)} · Untergang ${this.escape(sunset)}</span>
+            <span>Reale Sonne ${this.escape(sunriseActual)} · Lichtstart ${this.escape(sunrise)} (${this.escape(this.formatSignedHours(sunriseOffsetHours))}) · Wunschfarbe → Gold → Weiss ${configuredSunriseDuration} Min.</span>
+            <span>Weiss → Gold → Wunschfarbe ${configuredSunsetDuration} Min. · ab ${this.escape(attr.sunset_phase_start || sunset)} · Untergang ${this.escape(sunset)}</span>
           </div>
 
           ${this.sunriseOffsetControl(sunriseOffsetEntity, sunriseOffsetHours)}
 
-          ${this.transitionColorControls(sunriseRgbw, sunsetRgbw, attr.config_entry_id || this.config.config_entry_id || "")}
+          ${this.transitionColorControls(
+            sunriseRgbw,
+            sunsetRgbw,
+            attr.config_entry_id || this.config.config_entry_id || "",
+            sunriseDurationEntity,
+            configuredSunriseDuration,
+            sunsetDurationEntity,
+            configuredSunsetDuration,
+          )}
 
           <div class="alc-grid">
             ${this.metric("Basis", `${base}%`)}
@@ -216,8 +247,17 @@ class AquariumLedSimulatorCard extends HTMLElement {
       });
     });
 
+    this.querySelectorAll("[data-transition-duration]").forEach((input) => {
+      input.addEventListener("change", () => {
+        this._hass.callService("number", "set_value", {
+          entity_id: input.dataset.transitionDuration,
+          value: Number(input.value),
+        });
+      });
+    });
+
     this.querySelectorAll("[data-rgbw-editor]").forEach((editor) => {
-      editor.querySelectorAll("input").forEach((input) => {
+      editor.querySelectorAll("[data-rgb-picker], [data-white-picker]").forEach((input) => {
         input.addEventListener("change", () => this.saveTransitionColor(editor));
       });
     });
@@ -234,7 +274,7 @@ class AquariumLedSimulatorCard extends HTMLElement {
         .alc-sub { color: var(--secondary-text-color); font-size: 13px; margin-top: 3px; }
         .alc-badge { border-radius: 999px; background: var(--primary-color); color: var(--text-primary-color); font-weight: 700; min-width: 54px; padding: 8px 10px; text-align: center; }
         .alc-empty { color: var(--error-color); margin-top: 10px; }
-        .alc-celestial { background: linear-gradient(90deg, #071022 0%, #15254d 17%, #f28b45 25%, #56b9e9 49%, #f06446 77%, #15254d 84%, #071022 100%); border-radius: 12px; box-shadow: inset 0 -34px 58px rgba(0,0,0,0.30); margin-top: 18px; overflow: hidden; position: relative; }
+        .alc-celestial { background: linear-gradient(90deg, #071022 0%, #15254d 17%, var(--alc-sunrise) 25%, #56b9e9 49%, var(--alc-sunset) 77%, #15254d 84%, #071022 100%); border-radius: 12px; box-shadow: inset 0 -34px 58px rgba(0,0,0,0.30); margin-top: 18px; overflow: hidden; position: relative; }
         .alc-celestial::after { background: radial-gradient(circle at 50% 38%, rgba(255,255,255,var(--alc-white)), transparent 34%); content: ""; inset: 0; pointer-events: none; position: absolute; }
         .alc-sky { display: block; height: auto; overflow: visible; position: relative; width: 100%; z-index: 1; }
         .alc-sun-arc { fill: none; stroke: rgba(255,221,119,0.78); stroke-dasharray: 7 6; stroke-linecap: round; stroke-width: 3; }
@@ -245,16 +285,23 @@ class AquariumLedSimulatorCard extends HTMLElement {
         .alc-moon-body { dominant-baseline: central; font-family: "Segoe UI Emoji", "Apple Color Emoji", sans-serif; font-size: 32px; filter: drop-shadow(0 0 8px rgba(202,218,255,0.72)); }
         .alc-sky-label { fill: rgba(255,255,255,0.82); font-size: 11px; font-weight: 650; }
         .alc-moon-label { fill: rgba(230,237,255,0.88); font-family: var(--paper-font-body1_-_font-family, sans-serif); font-size: 11px; }
-        .alc-chart { display: block; height: 96px; margin-top: 14px; width: 100%; }
-        .alc-chart-now { stroke: var(--secondary-text-color); stroke-dasharray: 3 4; stroke-width: 1.5; }
+        .alc-intensity-panel { fill: rgba(3, 10, 25, 0.68); }
+        .alc-intensity-axis { stroke: rgba(255,255,255,0.24); stroke-width: 1; }
+        .alc-intensity-label { fill: rgba(230,237,255,0.76); font-family: var(--paper-font-body1_-_font-family, sans-serif); font-size: 10px; font-weight: 700; letter-spacing: 1.2px; }
+        .alc-intensity-value { fill: rgba(255,255,255,0.90); font-family: var(--paper-font-body1_-_font-family, sans-serif); font-size: 11px; font-weight: 650; }
+        .alc-intensity-fill { opacity: 0.72; }
+        .alc-intensity-line { filter: drop-shadow(0 0 5px rgba(255,255,255,0.32)); stroke-linecap: round; stroke-linejoin: round; stroke-width: 5; }
         .alc-times { color: var(--secondary-text-color); display: flex; font-size: 12px; justify-content: space-between; gap: 12px; margin-top: 4px; }
         .alc-color-grid { display: grid; gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 14px; }
-        .alc-color-editor { align-items: center; background: var(--secondary-background-color); border: 1px solid color-mix(in srgb, var(--divider-color) 70%, transparent); border-radius: 10px; display: grid; gap: 8px; grid-template-columns: auto minmax(0, 1fr); padding: 10px; }
+        .alc-color-editor { background: var(--secondary-background-color); border: 1px solid color-mix(in srgb, var(--divider-color) 70%, transparent); border-radius: 10px; padding: 10px; }
+        .alc-color-main { align-items: center; display: grid; gap: 8px; grid-template-columns: auto minmax(0, 1fr); }
         .alc-color-picker { background: transparent; border: 0; cursor: pointer; height: 46px; padding: 0; width: 54px; }
         .alc-color-copy { min-width: 0; }
         .alc-color-title { font-size: 13px; font-weight: 650; }
         .alc-color-values { color: var(--secondary-text-color); font-size: 11px; margin-top: 2px; }
-        .alc-white-slider { accent-color: var(--primary-color); cursor: pointer; grid-column: 1 / -1; width: 100%; }
+        .alc-white-control { color: var(--secondary-text-color); display: block; font-size: 11px; margin-top: 10px; }
+        .alc-white-slider { accent-color: var(--primary-color); cursor: pointer; margin-top: 5px; width: 100%; }
+        .alc-transition-duration { display: block; margin-top: 10px; padding: 0; }
         .alc-grid { display: grid; gap: 8px; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 14px; }
         .alc-metric { background: var(--secondary-background-color); border-radius: 8px; padding: 9px 10px; min-width: 0; }
         .alc-metric-label { color: var(--secondary-text-color); font-size: 11px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -801,25 +848,70 @@ class AquariumLedSimulatorCard extends HTMLElement {
     return `${sign}${number.toLocaleString("de-DE", { maximumFractionDigits: 2 })} h`;
   }
 
-  transitionColorControls(sunriseRgbw, sunsetRgbw, configEntryId) {
+  transitionColorControls(
+    sunriseRgbw,
+    sunsetRgbw,
+    configEntryId,
+    sunriseDurationEntity,
+    sunriseDuration,
+    sunsetDurationEntity,
+    sunsetDuration,
+  ) {
     return `
       <div class="alc-color-grid">
-        ${this.transitionColorEditor("sunrise", "Farbe Sonnenaufgang", sunriseRgbw, configEntryId)}
-        ${this.transitionColorEditor("sunset", "Farbe Sonnenuntergang", sunsetRgbw, configEntryId)}
+        ${this.transitionColorEditor(
+          "sunrise",
+          "Sonnenaufgang",
+          sunriseRgbw,
+          configEntryId,
+          sunriseDurationEntity,
+          sunriseDuration,
+        )}
+        ${this.transitionColorEditor(
+          "sunset",
+          "Sonnenuntergang",
+          sunsetRgbw,
+          configEntryId,
+          sunsetDurationEntity,
+          sunsetDuration,
+        )}
       </div>
     `;
   }
 
-  transitionColorEditor(phase, title, rgbw, configEntryId) {
+  transitionColorEditor(phase, title, rgbw, configEntryId, durationEntity, durationValue) {
+    const duration = Math.max(10, Math.min(240, Math.round(Number(durationValue) || (phase === "sunrise" ? 60 : 90))));
     return `
-      <label class="alc-color-editor" data-rgbw-editor data-phase="${phase}" data-config-entry-id="${this.escape(configEntryId)}">
-        <input class="alc-color-picker" type="color" value="${this.rgbwToHex(rgbw)}" data-rgb-picker aria-label="${this.escape(title)}" />
-        <span class="alc-color-copy">
-          <span class="alc-color-title">${this.escape(title)}</span>
-          <span class="alc-color-values">R ${rgbw[0]} · G ${rgbw[1]} · B ${rgbw[2]} · W ${rgbw[3]}</span>
-        </span>
-        <input class="alc-white-slider" type="range" min="0" max="255" step="1" value="${rgbw[3]}" data-white-picker aria-label="Weisskanal fuer ${this.escape(title)}" />
-      </label>
+      <section class="alc-color-editor" data-rgbw-editor data-phase="${phase}" data-config-entry-id="${this.escape(configEntryId)}">
+        <label class="alc-color-main">
+          <input class="alc-color-picker" type="color" value="${this.rgbwToHex(rgbw)}" data-rgb-picker aria-label="Farbe ${this.escape(title)}" />
+          <span class="alc-color-copy">
+            <span class="alc-color-title">${this.escape(title)}</span>
+            <span class="alc-color-values">RGBW ${rgbw[0]} / ${rgbw[1]} / ${rgbw[2]} / ${rgbw[3]}</span>
+          </span>
+        </label>
+        ${durationEntity ? `
+          <label class="alc-transition-duration">
+            <span class="alc-duration-head">
+              <span>Dauer</span>
+              <strong>${duration} Min.</strong>
+            </span>
+            <input
+              type="range"
+              min="10"
+              max="240"
+              step="5"
+              value="${duration}"
+              data-transition-duration="${this.escape(durationEntity)}"
+              aria-label="Dauer ${this.escape(title)} in Minuten"
+            />
+          </label>
+        ` : ""}
+        <label class="alc-white-control">
+          Weisskanal W ${rgbw[3]}
+          <input class="alc-white-slider" type="range" min="0" max="255" step="1" value="${rgbw[3]}" data-white-picker aria-label="Weisskanal fuer ${this.escape(title)}" />
+        </label>
+      </section>
     `;
   }
 
@@ -841,6 +933,27 @@ class AquariumLedSimulatorCard extends HTMLElement {
       return [...fallback];
     }
     return value.map((channel) => Math.max(0, Math.min(255, Math.round(Number(channel) || 0))));
+  }
+
+  rgbwCss(rgbw) {
+    return `rgb(${rgbw[0]}, ${rgbw[1]}, ${rgbw[2]})`;
+  }
+
+  intensityGradientStops(sunrise, sunset, sunriseDuration, sunsetDuration, sunriseRgbw, sunsetRgbw) {
+    const sunriseMinute = this.parseMinute(sunrise, 360);
+    const sunsetMinute = this.parseMinute(sunset, 1080);
+    const positions = [
+      [0, "rgb(0, 10, 90)"],
+      [(sunriseMinute / 1440) * 100, this.rgbwCss(sunriseRgbw)],
+      [((sunriseMinute + sunriseDuration) / 1440) * 100, "rgb(190, 220, 255)"],
+      [((sunsetMinute - sunsetDuration) / 1440) * 100, "rgb(190, 220, 255)"],
+      [(sunsetMinute / 1440) * 100, this.rgbwCss(sunsetRgbw)],
+      [100, "rgb(0, 10, 90)"],
+    ].map(([offset, color]) => [Math.max(0, Math.min(100, offset)), color]);
+    positions.sort((left, right) => left[0] - right[0]);
+    return positions
+      .map(([offset, color]) => `<stop offset="${offset.toFixed(2)}%" stop-color="${color}"></stop>`)
+      .join("");
   }
 
   rgbwToHex(rgbw) {
@@ -934,13 +1047,13 @@ class AquariumLedSimulatorCard extends HTMLElement {
         sunriseDuration,
         sunsetDuration,
       );
-      const x = (index / 96) * 320;
-      const y = 88 - (pct / 100) * 72;
+      const x = (index / 96) * 720;
+      const y = 292 - (pct / 100) * 68;
       points.push([x, y]);
     }
 
     const line = points.map((point, index) => `${index === 0 ? "M" : "L"} ${point[0].toFixed(1)} ${point[1].toFixed(1)}`).join(" ");
-    const fill = `${line} L 320 92 L 0 92 Z`;
+    const fill = `${line} L 720 292 L 0 292 Z`;
     return { line, fill };
   }
 

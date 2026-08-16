@@ -86,6 +86,24 @@ class FrontendResourceTests(unittest.TestCase):
         self.assertIn('data-sunrise-offset=', source)
         self.assertIn('step="0.25"', source)
 
+    def test_intensity_curve_is_integrated_into_celestial_diagram(self) -> None:
+        source = RESOURCE.read_text(encoding="utf-8")
+
+        self.assertIn('viewBox="0 0 720 310"', source)
+        self.assertIn("alc-intensity-panel", source)
+        self.assertIn("alc-intensity-line", source)
+        self.assertIn("intensityGradientStops", source)
+        self.assertNotIn('<svg class="alc-chart"', source)
+
+    def test_transition_durations_are_adjustable_in_the_card(self) -> None:
+        source = RESOURCE.read_text(encoding="utf-8")
+
+        self.assertIn("sunrise_duration_number", source)
+        self.assertIn("sunset_duration_number", source)
+        self.assertIn("data-transition-duration", source)
+        self.assertIn('max="240"', source)
+        self.assertIn('step="5"', source)
+
 
 if __name__ == "__main__":
     unittest.main()

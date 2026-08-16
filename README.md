@@ -2,9 +2,9 @@
 
 Aquarium LED Cockpit ist eine Home-Assistant-Custom-Integration fuer eine dynamische Aquarium-Beleuchtung mit strompreisabhaengiger Dimmung, wetterbasierter Wolkensimulation, Sonnenaufgangs-/Sonnenuntergangsphasen und Lovelace-Simulator-Karte.
 
-Veroeffentlichungskennzeichen: `V260523.018_BETA.00`
+Veroeffentlichungskennzeichen: `V260816.020_BETA.00`
 
-Home-Assistant-Manifest-Version: `26.5.23-beta.18`
+Home-Assistant-Manifest-Version: `26.8.16-beta.20`
 
 [![Home Assistant oeffnen und dieses Repository in HACS anzeigen.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Thomash100&repository=HA-Aquarium-&category=integration)
 ![HACS Custom](https://img.shields.io/badge/HACS-Custom-orange.svg)
@@ -36,8 +36,9 @@ Die Integration verwandelt deine Aquarium-Beleuchtung in einen dynamischen Tages
 - Eigene Switch- und Number-Entitaeten fuer Normalbetrieb, sichere Simulation und Zeitraffer-Test
 - Mehrere Aquarien mit eigenem Namen, eigener Runtime und eigenen Entitaeten
 - Dienste mit Aquarium-Auswahl, damit Status und Ressourcen gezielt einem Aquarium zugeordnet werden
-- Echter RGBW-Sonnenverlauf aus `sun.sun`: morgens 60 Minuten Tiefrot ueber Orange, Gold und Warmweiss zu Tagesweiss, abends 90 Minuten exakt rueckwaerts bis zum Sonnenuntergang
+- Echter RGBW-Sonnenverlauf aus `sun.sun` mit getrennt einstellbarer Dauer fuer Auf- und Untergang: Wunschfarbe ueber Orange, Gold und Warmweiss zu Tagesweiss und abends exakt rueckwaerts
 - Getrennt einstellbare RGBW-Endfarben fuer Sonnenaufgang und Sonnenuntergang direkt in der Simulator-Karte
+- Gemeinsames Sonnenbahn-Diagramm mit integrierter, farbcodierter 24-Stunden-Vorschau der Lichtintensitaet
 - Durchgaengiges blaues Mondlicht nach Sonnenuntergang ohne Weisskanal; die eingestellte Nachtlicht-Helligkeit bildet die Vollmond-Obergrenze
 - Mondphasenabhaengige Nachthelligkeit mit sanfter Wolkensimulation und mindestens einem Prozent Licht statt Ein/Aus-Schalten
 - Sonnenbahn mit echten Auf-/Untergangszeiten und realer Mondphase aus `sensor.moon_phase`
@@ -110,6 +111,8 @@ Fuer die Simulator-Karte muss die Lovelace-Ressource `/local/aquarium_led_cockpi
 | `switch.<aquarium>_zeitraffer_am_aquarium` | Spielt nach Bestaetigung genau einen Zeitraffer-Durchlauf auf den echten Leuchten ab und stellt anschliessend deren vorherigen Zustand wieder her |
 | `number.<aquarium>_simulationszeit` | Simulierte Minute des Tages, wobei `360` fuer `06:00` steht |
 | `number.<aquarium>_sonnenaufgang_verschiebung` | Verschiebt den Licht-Sonnenaufgang in Viertelstundenschritten um minus sechs bis plus sechs Stunden; `0` folgt der echten Sonne |
+| `number.<aquarium>_sonnenaufgang_dauer` | Dauer des farbigen Sonnenaufgangs von 10 bis 240 Minuten |
+| `number.<aquarium>_sonnenuntergang_dauer` | Dauer des farbigen Sonnenuntergangs von 10 bis 240 Minuten |
 | `number.<aquarium>_zeitraffer_schritt` | Gesamtdauer eines simulierten 24-Stunden-Tages, einstellbar von 1 bis 10 Minuten |
 
 ### Strompreis-Dimmung
@@ -122,7 +125,7 @@ Die Simulator-Karte laedt die letzten 12 Stunden Strompreis und 24 Stunden Batte
 
 ### Sonnenaufgang und Mondlicht
 
-Das Mondlicht beginnt am echten Sonnenuntergang und bleibt bis zum eingestellten Licht-Sonnenaufgang aktiv. Mit `number.<aquarium>_sonnenaufgang_verschiebung` laesst sich dieser Morgenzeitpunkt relativ zur echten Sonne verschieben: `+2` startet den roten Sonnenaufgang zwei Stunden spaeter und verlaengert das Mondlicht entsprechend; `-1` startet ihn eine Stunde frueher. Die Simulator-Karte zeigt echte Sonnenzeit, Lichtstart und Versatz getrennt an.
+Das Mondlicht beginnt am echten Sonnenuntergang und bleibt bis zum eingestellten Licht-Sonnenaufgang aktiv. Mit `number.<aquarium>_sonnenaufgang_verschiebung` laesst sich dieser Morgenzeitpunkt relativ zur echten Sonne verschieben: `+2` startet den roten Sonnenaufgang zwei Stunden spaeter und verlaengert das Mondlicht entsprechend; `-1` startet ihn eine Stunde frueher. Die Dauer-Regler legen getrennt fest, wie lange der Morgen von der Wunschfarbe zu Tagesweiss und der Abend von Tagesweiss zur Wunschfarbe ueberblendet. Die Simulator-Karte zeigt echte Sonnenzeit, Lichtstart, Versatz, Farben und Intensitaetsverlauf gemeinsam an.
 
 ### Zeitraffer-Simulation
 

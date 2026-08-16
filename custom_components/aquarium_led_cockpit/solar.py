@@ -6,6 +6,8 @@ from dataclasses import dataclass
 
 SUNRISE_DURATION_MINUTES = 60
 SUNSET_DURATION_MINUTES = 90
+MIN_TRANSITION_DURATION_MINUTES = 10
+MAX_TRANSITION_DURATION_MINUTES = 240
 MIN_SUNRISE_OFFSET_HOURS = -6.0
 MAX_SUNRISE_OFFSET_HOURS = 6.0
 
@@ -61,6 +63,21 @@ def shift_sunrise_minute(sunrise_minute: int, offset_hours: object) -> int:
         )
     )
     return int(_clamp(shifted, 0, 1439))
+
+
+def normalize_transition_duration(value: object, default: int) -> int:
+    """Return a valid user-selectable dawn or dusk duration in minutes."""
+    try:
+        duration = int(round(float(value)))
+    except (TypeError, ValueError):
+        duration = int(default)
+    return int(
+        _clamp(
+            duration,
+            MIN_TRANSITION_DURATION_MINUTES,
+            MAX_TRANSITION_DURATION_MINUTES,
+        )
+    )
 
 
 def _interpolate_rgbw(
@@ -186,23 +203,34 @@ def calculate_solar_profile(
     night_brightness_pct: float,
     sunrise_rgbw: object = DAWN_DUSK_RGBW,
     sunset_rgbw: object = DAWN_DUSK_RGBW,
+    sunrise_duration_minutes: object = SUNRISE_DURATION_MINUTES,
+    sunset_duration_minutes: object = SUNSET_DURATION_MINUTES,
 ) -> SolarProfile:
     """Return the profile for real sunrise and sunset event minutes.
 
-    Sunrise begins at the actual event and reaches daylight after one hour.
-    Sunset begins 90 minutes before the actual event and reaches deep red at
-    the event. The following night uses a greatly reduced cool moonlight.
+    Sunrise begins at the shifted event and reaches daylight after the
+    configured duration. Sunset begins by its configured duration before the
+    real event and reaches its endpoint colour at sunset. The following night
+    uses a greatly reduced cool moonlight.
     """
     minute %= 1440
     sunrise_minute %= 1440
     sunset_minute %= 1440
-    sunrise_end = sunrise_minute + SUNRISE_DURATION_MINUTES
-    sunset_start = sunset_minute - SUNSET_DURATION_MINUTES
+    sunrise_duration = normalize_transition_duration(
+        sunrise_duration_minutes,
+        SUNRISE_DURATION_MINUTES,
+    )
+    sunset_duration = normalize_transition_duration(
+        sunset_duration_minutes,
+        SUNSET_DURATION_MINUTES,
+    )
+    sunrise_end = sunrise_minute + sunrise_duration
+    sunset_start = sunset_minute - sunset_duration
 
     if sunrise_minute <= minute < sunrise_end:
         phase = "sunrise"
         progress = _clamp(
-            (minute - sunrise_minute) / SUNRISE_DURATION_MINUTES,
+            (minute - sunrise_minute) / sunrise_duration,
             0,
             1,
         )
@@ -221,7 +249,7 @@ def calculate_solar_profile(
     elif sunset_start <= minute < sunset_minute:
         phase = "sunset"
         progress = _clamp(
-            (minute - sunset_start) / SUNSET_DURATION_MINUTES,
+            (minute - sunset_start) / sunset_duration,
             0,
             1,
         )
