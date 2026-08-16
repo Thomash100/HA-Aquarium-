@@ -36,6 +36,12 @@ class OptionsFlowCompatibilityTests(unittest.TestCase):
         self.assertNotIn("config_entry", assigned_attributes)
         self.assertIn("_config_entry", assigned_attributes)
 
+    def test_battery_power_balance_entities_are_configurable(self) -> None:
+        source = CONFIG_FLOW.read_text(encoding="utf-8")
+
+        self.assertIn("CONF_BATTERY_CHARGING_POWER_ENTITY", source)
+        self.assertIn("CONF_BATTERY_DISCHARGE_POWER_ENTITY", source)
+
 
 if __name__ == "__main__":
     unittest.main()

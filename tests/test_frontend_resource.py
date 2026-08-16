@@ -72,6 +72,7 @@ class FrontendResourceTests(unittest.TestCase):
         self.assertIn('callService("aquarium_led_cockpit", "set_transition_color"', source)
         self.assertIn("Pause: Nacht", source)
         self.assertIn("Pause: Speicher voll", source)
+        self.assertIn("Pause: PV-Überschuss", source)
 
     def test_continuous_moonlight_factors_are_visible(self) -> None:
         source = RESOURCE.read_text(encoding="utf-8")
@@ -103,6 +104,8 @@ class FrontendResourceTests(unittest.TestCase):
         self.assertIn("midday_peak_minute", source)
         self.assertIn("price_response_exponent", source)
         self.assertIn("cloud_simulation_coverage", source)
+        self.assertIn("battery_charge_surplus", source)
+        self.assertIn("Laden &gt; Entladen", source)
         self.assertIn("alc-effect-noon", source)
         self.assertNotIn("alc-intensity-panel", source)
 

@@ -9,6 +9,8 @@ from homeassistant.helpers import selector
 
 from .const import (
     CONF_AUTO_INSTALL,
+    CONF_BATTERY_CHARGING_POWER_ENTITY,
+    CONF_BATTERY_DISCHARGE_POWER_ENTITY,
     CONF_BATTERY_FULL_THRESHOLD,
     CONF_BATTERY_SOC_ENTITY,
     CONF_EXPORT_FRONTEND_RESOURCES,
@@ -71,6 +73,14 @@ def _build_schema(defaults: dict) -> vol.Schema:
             vol.Optional(
                 CONF_BATTERY_SOC_ENTITY,
                 default=defaults.get(CONF_BATTERY_SOC_ENTITY, ""),
+            ): selector.EntitySelector(selector.EntitySelectorConfig(domain="sensor")),
+            vol.Optional(
+                CONF_BATTERY_CHARGING_POWER_ENTITY,
+                default=defaults.get(CONF_BATTERY_CHARGING_POWER_ENTITY, ""),
+            ): selector.EntitySelector(selector.EntitySelectorConfig(domain="sensor")),
+            vol.Optional(
+                CONF_BATTERY_DISCHARGE_POWER_ENTITY,
+                default=defaults.get(CONF_BATTERY_DISCHARGE_POWER_ENTITY, ""),
             ): selector.EntitySelector(selector.EntitySelectorConfig(domain="sensor")),
             vol.Optional(
                 CONF_SOLAR_POWER_ENTITY,

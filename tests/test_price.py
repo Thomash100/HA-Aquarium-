@@ -84,15 +84,27 @@ class PriceAdjustmentTests(unittest.TestCase):
         self.assertFalse(PRICE.is_battery_full(None, 95))
 
     def test_high_battery_adds_daylight_brightness_factor(self) -> None:
-        self.assertEqual(1.0, PRICE.calculate_battery_brightness_factor(89.9, 90))
-        self.assertEqual(1.15, PRICE.calculate_battery_brightness_factor(90, 90))
-        self.assertEqual(1.15, PRICE.calculate_battery_brightness_factor(100, 90))
+        self.assertEqual(1.0, PRICE.calculate_battery_brightness_factor(False))
+        self.assertEqual(1.15, PRICE.calculate_battery_brightness_factor(True))
 
     def test_battery_boost_is_bounded(self) -> None:
-        self.assertEqual(1.5, PRICE.calculate_battery_brightness_factor(90, 90, 80))
-        self.assertEqual(90, PRICE.apply_battery_brightness_boost(80, 90, 90, 90))
-        self.assertEqual(80.5, PRICE.apply_battery_brightness_boost(70, 90, 90, 90))
-        self.assertEqual(70, PRICE.apply_battery_brightness_boost(70, 90, 89.9, 90))
+        self.assertEqual(1.5, PRICE.calculate_battery_brightness_factor(True, 80))
+        self.assertEqual(90, PRICE.apply_battery_brightness_boost(80, 90, True))
+        self.assertEqual(80.5, PRICE.apply_battery_brightness_boost(70, 90, True))
+        self.assertEqual(70, PRICE.apply_battery_brightness_boost(70, 90, False))
+
+    def test_battery_priority_requires_soc_and_positive_pv_balance(self) -> None:
+        self.assertFalse(PRICE.calculate_battery_priority(89.9, 90, 500, 100)["active"])
+        self.assertFalse(PRICE.calculate_battery_priority(90, 90, 100, 100)["active"])
+        self.assertFalse(PRICE.calculate_battery_priority(90, 90, 99, 100)["active"])
+        priority = PRICE.calculate_battery_priority(90, 90, 500, 100)
+        self.assertTrue(priority["active"])
+        self.assertTrue(priority["charge_surplus"])
+        self.assertEqual(400, priority["net_charging_power"])
+
+    def test_missing_power_sensor_blocks_battery_priority(self) -> None:
+        self.assertFalse(PRICE.calculate_battery_priority(100, 90, None, 0)["active"])
+        self.assertFalse(PRICE.calculate_battery_priority(100, 90, 500, None)["active"])
 
 
 if __name__ == "__main__":

@@ -1,5 +1,16 @@
 # Aenderungsprotokoll
 
+## V260816.024_BETA.00
+
+Akku-Prioritaet an einen echten PV-Ladeueberschuss gebunden.
+
+- Fuegt getrennte Konfigurationsfelder fuer Growatt Akku-Lade- und Entladeleistung hinzu.
+- Aktiviert Preisfreigabe und 15-Prozent-Lichtbonus ab 90 Prozent SOC nur, solange die Ladeleistung strikt groesser als die Entladeleistung ist.
+- Sperrt die Akku-Prioritaet bei fehlenden Leistungssensoren sowie bei gleicher oder hoeherer Entladeleistung sicher.
+- Zeigt Ladeleistung, Entladeleistung, Nettobilanz und Freigabestatus im Live-Status und Dashboard an.
+- Spiegelt dieselbe Freigabebedingung in der projizierten Tageskurve.
+- Erhoeht die Home-Assistant-Manifest-Version auf `26.8.16-beta.24`.
+
 ## V260816.023_BETA.00
 
 Akku-Prioritaet ab 90 Prozent um einen begrenzten Helligkeitsbonus erweitert.
