@@ -24,9 +24,11 @@ from .const import (
     CONTROL_PRICE_DIMMING,
     CONTROL_SIMULATION,
     CONTROL_SIMULATION_TIME,
+    CONTROL_SUNRISE_DURATION,
     CONTROL_SUNRISE_OFFSET,
     CONTROL_SUNRISE_RGBW,
     CONTROL_SUNSET_RGBW,
+    CONTROL_SUNSET_DURATION,
     CONTROL_TIME_LAPSE_DURATION,
     CONTROL_TIME_LAPSE,
     DEFAULT_CLOUD_STRENGTH,
@@ -36,19 +38,20 @@ from .const import (
     DEFAULT_MOON_ENTITY,
     DEFAULT_PRICE_DIMMING,
     DEFAULT_SIMULATION_TIME,
+    DEFAULT_SUNRISE_DURATION_MINUTES,
     DEFAULT_SUNRISE_OFFSET_HOURS,
+    DEFAULT_SUNSET_DURATION_MINUTES,
     DEFAULT_SUN_ENTITY,
 )
 from .price import calculate_price_adjustment, is_battery_full
 from .solar import (
     DAWN_DUSK_RGBW,
     MIN_MOONLIGHT_BRIGHTNESS_PCT,
-    SUNRISE_DURATION_MINUTES,
-    SUNSET_DURATION_MINUTES,
     calculate_moonlight_target,
     calculate_solar_profile,
     normalize_rgbw,
     normalize_sunrise_offset,
+    normalize_transition_duration,
     shift_sunrise_minute,
 )
 from .time_lapse import MINUTES_PER_DAY, normalize_time_lapse_duration
@@ -209,6 +212,14 @@ def calculate_target(
         controls.get(CONTROL_SUNRISE_OFFSET, DEFAULT_SUNRISE_OFFSET_HOURS)
     )
     sunrise_start = shift_sunrise_minute(sunrise_actual, sunrise_offset_hours)
+    sunrise_duration = normalize_transition_duration(
+        controls.get(CONTROL_SUNRISE_DURATION),
+        DEFAULT_SUNRISE_DURATION_MINUTES,
+    )
+    sunset_duration = normalize_transition_duration(
+        controls.get(CONTROL_SUNSET_DURATION),
+        DEFAULT_SUNSET_DURATION_MINUTES,
+    )
     day = _clamp(float(controls.get(CONTROL_DAY_BRIGHTNESS, DEFAULT_DAY_BRIGHTNESS)), 1, 100)
     night = _clamp(float(controls.get(CONTROL_NIGHT_BRIGHTNESS, DEFAULT_NIGHT_BRIGHTNESS)), 1, 30)
     solar_profile = calculate_solar_profile(
@@ -219,6 +230,8 @@ def calculate_target(
         night,
         controls.get(CONTROL_SUNRISE_RGBW, DAWN_DUSK_RGBW),
         controls.get(CONTROL_SUNSET_RGBW, DAWN_DUSK_RGBW),
+        sunrise_duration,
+        sunset_duration,
     )
     phase = solar_profile.phase
     base_pct = solar_profile.base_pct
@@ -281,11 +294,11 @@ def calculate_target(
         "sunrise": _minutes_to_clock(sunrise_start),
         "sunrise_actual": _minutes_to_clock(sunrise_actual),
         "sunrise_offset_hours": sunrise_offset_hours,
-        "sunrise_duration_minutes": SUNRISE_DURATION_MINUTES,
-        "sunrise_end": _minutes_to_clock(sunrise_start + SUNRISE_DURATION_MINUTES),
+        "sunrise_duration_minutes": sunrise_duration,
+        "sunrise_end": _minutes_to_clock(sunrise_start + sunrise_duration),
         "sunset": _minutes_to_clock(sunset_event),
-        "sunset_duration_minutes": SUNSET_DURATION_MINUTES,
-        "sunset_phase_start": _minutes_to_clock(sunset_event - SUNSET_DURATION_MINUTES),
+        "sunset_duration_minutes": sunset_duration,
+        "sunset_phase_start": _minutes_to_clock(sunset_event - sunset_duration),
         "moonlight_start": _minutes_to_clock(sunset_event),
         "moonlight_end": _minutes_to_clock(sunrise_start),
         "light_mode": "moonlight" if phase == "night" else phase,

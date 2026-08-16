@@ -144,6 +144,42 @@ class SolarProfileTests(unittest.TestCase):
         self.assertEqual(1439, SOLAR.shift_sunrise_minute(1200, 20))
         self.assertEqual(300, SOLAR.shift_sunrise_minute(300, "invalid"))
 
+    def test_sunrise_and_sunset_durations_are_adjustable(self) -> None:
+        sunrise_midpoint = SOLAR.calculate_solar_profile(
+            420,
+            360,
+            1200,
+            90,
+            2,
+            sunrise_duration_minutes=120,
+            sunset_duration_minutes=30,
+        )
+        sunset_midpoint = SOLAR.calculate_solar_profile(
+            1185,
+            360,
+            1200,
+            90,
+            2,
+            sunrise_duration_minutes=120,
+            sunset_duration_minutes=30,
+        )
+
+        self.assertEqual("sunrise", sunrise_midpoint.phase)
+        self.assertAlmostEqual(46, sunrise_midpoint.base_pct)
+        self.assertEqual("sunset", sunset_midpoint.phase)
+        self.assertAlmostEqual(46, sunset_midpoint.base_pct)
+
+    def test_transition_duration_is_clipped_to_safe_range(self) -> None:
+        self.assertEqual(
+            SOLAR.MIN_TRANSITION_DURATION_MINUTES,
+            SOLAR.normalize_transition_duration(-20, 60),
+        )
+        self.assertEqual(
+            SOLAR.MAX_TRANSITION_DURATION_MINUTES,
+            SOLAR.normalize_transition_duration(999, 90),
+        )
+        self.assertEqual(60, SOLAR.normalize_transition_duration("invalid", 60))
+
 
 if __name__ == "__main__":
     unittest.main()

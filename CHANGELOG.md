@@ -1,5 +1,15 @@
 # Aenderungsprotokoll
 
+## V260816.020_BETA.00
+
+Sonnenbahn und Lichtintensitaet zusammengefuehrt sowie Uebergangszeiten einstellbar gemacht.
+
+- Integriert die farbcodierte 24-Stunden-Lichtintensitaet direkt unter der Sonnen- und Mondbahn in dasselbe Diagramm.
+- Verwendet die eingestellten RGBW-Farben auch in der Himmels- und Intensitaetsvorschau.
+- Fuegt getrennte, dauerhaft gespeicherte Regler fuer Sonnenaufgangs- und Sonnenuntergangsdauer von 10 bis 240 Minuten hinzu.
+- Gruppiert je Phase Farbe, Weisskanal und Dauer in einem gemeinsamen Bedienfeld.
+- Erhoeht die Home-Assistant-Manifest-Version auf `26.8.16-beta.20`.
+
 ## V260816.019_BETA.00
 
 Einstellbare Verschiebung des Sonnenaufgangs ergaenzt.
