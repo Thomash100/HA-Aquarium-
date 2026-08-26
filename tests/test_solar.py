@@ -210,15 +210,18 @@ class SolarProfileTests(unittest.TestCase):
 
         self.assertEqual(SOLAR.DAWN_DUSK_RGBW, profile.rgbw)
 
-    def test_sunrise_can_be_shifted_later_by_hours(self) -> None:
-        shifted = SOLAR.shift_sunrise_minute(355, 2.5)
+    def test_light_day_can_be_shifted_later_by_hours(self) -> None:
+        self.assertEqual((505, 1350, 2.5), SOLAR.shift_light_day(355, 1200, 2.5))
 
-        self.assertEqual(505, shifted)
+    def test_light_day_shift_is_limited_and_does_not_wrap_days(self) -> None:
+        self.assertEqual((0, 900, -5), SOLAR.shift_light_day(300, 1200, -20))
 
-    def test_sunrise_shift_is_limited_and_does_not_wrap_days(self) -> None:
-        self.assertEqual(0, SOLAR.shift_sunrise_minute(300, -20))
-        self.assertEqual(1439, SOLAR.shift_sunrise_minute(1200, 20))
-        self.assertEqual(300, SOLAR.shift_sunrise_minute(300, "invalid"))
+        sunrise, sunset, applied = SOLAR.shift_light_day(300, 1200, 20)
+        self.assertEqual(1439, sunset)
+        self.assertEqual(900, sunset - sunrise)
+        self.assertAlmostEqual(239 / 60, applied)
+
+        self.assertEqual((300, 1200, 0), SOLAR.shift_light_day(300, 1200, "invalid"))
 
     def test_sunrise_and_sunset_durations_are_adjustable(self) -> None:
         sunrise_midpoint = SOLAR.calculate_solar_profile(

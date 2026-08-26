@@ -1,5 +1,17 @@
 # Aenderungsprotokoll
 
+## V260826.027_BETA.00
+
+Verschiebung wirkt jetzt auf den kompletten Lichttag statt nur auf den Aufgang.
+
+- Bewegt Aufgang und Untergang gemeinsam: `number.<aquarium>_sonnenaufgang_verschiebung` heisst im Cockpit nun `Lichttag-Verschiebung` und laesst die Laenge des Lichttages unveraendert.
+- Laesst das Tagesmaximum mit dem Lichttag wandern, damit der Helligkeitsbogen seine Form behaelt statt an einen Fensterrand geklemmt zu werden.
+- Begrenzt eine Verschiebung, die ein Ende ueber Mitternacht schieben wuerde, auf den groesstmoeglichen Wert und zeigt den wirksamen Wert in der Karte an.
+- Verhindert, dass sich Auf- und Untergangsrampe an kurzen Lichttagen ueberlappen: beide werden proportional gekuerzt, sodass immer Tageslicht uebrig bleibt.
+- Zeichnet in der Sonnenbahn beide Lichtmarker und beschriftet echten Auf- und Untergang getrennt.
+- Behaelt Speicherschluessel, Entitaets-ID und die Kartenoption `sunrise_offset_number` bei; bestehende Dashboards laufen unveraendert weiter.
+- Erhoeht die Home-Assistant-Manifest-Version auf `26.8.26-beta.27`.
+
 ## V260816.026_BETA.00
 
 Aquarium-Aufgang von der realen Sonnenbahn getrennt und beide Weissausgaenge einstellbar gemacht.

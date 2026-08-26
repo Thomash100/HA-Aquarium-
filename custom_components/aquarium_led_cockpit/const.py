@@ -39,7 +39,7 @@ DEFAULT_PRICE_DIMMING = 40
 DEFAULT_BATTERY_FULL_THRESHOLD = 90
 DEFAULT_CLOUD_STRENGTH = 45
 DEFAULT_SIMULATION_TIME = 360
-DEFAULT_SUNRISE_OFFSET_HOURS = 0
+DEFAULT_DAY_OFFSET_HOURS = 0
 DEFAULT_SUNRISE_DURATION_MINUTES = 60
 DEFAULT_SUNSET_DURATION_MINUTES = 90
 DEFAULT_WHITE_CHANNEL_LEVEL = 100
@@ -68,7 +68,9 @@ CONTROL_CLOUD_STRENGTH = "cloud_strength_pct"
 CONTROL_SIMULATION_TIME = "simulation_time_minutes"
 # The stored key and entity unique ID stay unchanged for upgrade compatibility.
 CONTROL_TIME_LAPSE_DURATION = "simulation_step_minutes"
-CONTROL_SUNRISE_OFFSET = "sunrise_offset_hours"
+# The stored key and entity unique ID stay unchanged for upgrade
+# compatibility; the control now shifts the whole light day.
+CONTROL_DAY_OFFSET = "sunrise_offset_hours"
 CONTROL_SUNRISE_DURATION = "sunrise_duration_minutes"
 CONTROL_SUNSET_DURATION = "sunset_duration_minutes"
 CONTROL_WHITE_CHANNEL_1_LEVEL = "white_channel_1_level_pct"

@@ -61,14 +61,16 @@ class AquariumLedSimulatorCard extends HTMLElement {
     const sunrise = attr.sunrise || "06:00";
     const sunriseActual = attr.sunrise_actual || sunrise;
     const sunset = attr.sunset || "18:00";
+    const sunsetActual = attr.celestial_sunset || attr.sunset_actual || sunset;
     const sunriseDuration = Number(attr.sunrise_duration_minutes ?? 60);
     const sunsetDuration = Number(attr.sunset_duration_minutes ?? 90);
     const sunriseStartRgbw = this.normalizeRgbw(attr.sunrise_start_rgbw || attr.sunrise_rgbw, [255, 0, 0, 0]);
     const sunriseEndRgbw = this.normalizeRgbw(attr.sunrise_end_rgbw, [190, 220, 255, 255]);
     const sunsetStartRgbw = this.normalizeRgbw(attr.sunset_start_rgbw, [190, 220, 255, 255]);
     const sunsetEndRgbw = this.normalizeRgbw(attr.sunset_end_rgbw || attr.sunset_rgbw, [255, 0, 0, 0]);
-    const celestial = this.celestialGeometry(currentTime, sunriseActual, sunset);
+    const celestial = this.celestialGeometry(currentTime, sunriseActual, sunsetActual);
     const lightStartX = ((this.parseMinute(sunrise, 360) / 1440) * 720).toFixed(1);
+    const lightEndX = ((this.parseMinute(sunset, 1080) / 1440) * 720).toFixed(1);
     const moonPhaseIcon = attr.moon_phase_icon || "🌙";
     const moonPhaseLabel = attr.moon_phase_label || "Mondphase";
     const moonPhaseBrightness = Number(attr.moon_phase_brightness_pct ?? 60);
@@ -80,7 +82,7 @@ class AquariumLedSimulatorCard extends HTMLElement {
     const priceEntity = this.config.price_entity || attr.price_entity || "";
     const batteryEntity = this.config.battery_entity || attr.battery_soc_entity || "";
     const timeLapseDurationEntity = this.config.time_lapse_duration_number || "";
-    const sunriseOffsetEntity = this.config.sunrise_offset_number || "";
+    const dayOffsetEntity = this.config.day_offset_number || this.config.sunrise_offset_number || "";
     const whiteChannelNumberEntities = [
       this.config.white_channel_1_number || attr.white_channel_number_entities?.[0] || "",
       this.config.white_channel_2_number || attr.white_channel_number_entities?.[1] || "",
@@ -97,10 +99,17 @@ class AquariumLedSimulatorCard extends HTMLElement {
       ?? attr.time_lapse_duration_minutes
       ?? 1,
     );
-    const sunriseOffsetHours = Number(
-      this._hass.states[sunriseOffsetEntity]?.state
+    const dayOffsetHours = Number(
+      this._hass.states[dayOffsetEntity]?.state
+      ?? attr.day_offset_hours
       ?? attr.sunrise_offset_hours
       ?? 0,
+    );
+    // What the engine could actually apply after the midnight limit.
+    const appliedOffsetHours = Number(
+      attr.day_offset_applied_hours
+      ?? attr.sunrise_offset_hours
+      ?? dayOffsetHours,
     );
     const configuredSunriseDuration = Number(
       this._hass.states[sunriseDurationEntity]?.state
@@ -133,19 +142,21 @@ class AquariumLedSimulatorCard extends HTMLElement {
               <line x1="0" y1="138" x2="720" y2="138" class="alc-horizon-line"></line>
               <line x1="${celestial.nowX}" y1="12" x2="${celestial.nowX}" y2="166" class="alc-sky-now"></line>
               <line x1="${lightStartX}" y1="118" x2="${lightStartX}" y2="166" class="alc-light-start"></line>
+              <line x1="${lightEndX}" y1="118" x2="${lightEndX}" y2="166" class="alc-light-start"></line>
               ${celestial.isDay
                 ? `<circle cx="${celestial.bodyX}" cy="${celestial.bodyY}" r="14" class="alc-sun-body"></circle>`
                 : `<text x="${celestial.bodyX}" y="${celestial.bodyY + 9}" class="alc-moon-body" text-anchor="middle">${this.escape(moonPhaseIcon)}</text>`}
               <text x="${celestial.sunriseX}" y="160" class="alc-sky-label" text-anchor="middle">Sonne ${this.escape(sunriseActual)}</text>
               <text x="${lightStartX}" y="112" class="alc-light-start-label" text-anchor="middle">Licht ${this.escape(sunrise)}</text>
-              <text x="${celestial.sunsetX}" y="160" class="alc-sky-label" text-anchor="middle">${this.escape(sunset)}</text>
+              <text x="${lightEndX}" y="112" class="alc-light-start-label" text-anchor="middle">Licht ${this.escape(sunset)}</text>
+              <text x="${celestial.sunsetX}" y="160" class="alc-sky-label" text-anchor="middle">Sonne ${this.escape(sunsetActual)}</text>
               <text x="360" y="181" class="alc-moon-label" text-anchor="middle">${this.escape(moonPhaseIcon)} ${this.escape(moonPhaseLabel)} · Mond ${Math.round(moonPhaseBrightness)}% · Wolken −${Math.round(moonCloudDimming)}%</text>
             </svg>
           </div>
 
           <div class="alc-times">
-            <span>Sonnenbahn fest: ${this.escape(sunriseActual)} · Aquarium-Aufgang ${this.escape(sunrise)} (${this.escape(this.formatSignedHours(sunriseOffsetHours))}) · ${configuredSunriseDuration} Min.</span>
-            <span>Anfang → Ende ${configuredSunsetDuration} Min. · ab ${this.escape(attr.sunset_phase_start || sunset)} · Untergang ${this.escape(sunset)}</span>
+            <span>Sonnenbahn fest: ${this.escape(sunriseActual)} – ${this.escape(sunsetActual)} · Lichttag ${this.escape(this.formatSignedHours(appliedOffsetHours))} verschoben</span>
+            <span>Aufgang ${this.escape(sunrise)} · ${configuredSunriseDuration} Min. → Untergang ab ${this.escape(attr.sunset_phase_start || sunset)} · ${configuredSunsetDuration} Min. → ${this.escape(sunset)}</span>
           </div>
 
           ${this.intensitySection(
@@ -158,7 +169,7 @@ class AquariumLedSimulatorCard extends HTMLElement {
             configuredSunsetDuration,
           )}
 
-          ${this.sunriseOffsetControl(sunriseOffsetEntity, sunriseOffsetHours)}
+          ${this.dayOffsetControl(dayOffsetEntity, dayOffsetHours, appliedOffsetHours)}
 
           ${this.whiteChannelControls(
             whiteLightEntities,
@@ -201,7 +212,7 @@ class AquariumLedSimulatorCard extends HTMLElement {
             ${this.metric("Mondlicht", this.formatPercent(attr.moonlight_target_pct))}
             ${this.metric("Mondphase", `${Math.round(moonPhaseBrightness)}%`)}
             ${this.metric("Mond-Wolken", `−${Math.round(moonCloudDimming)}%`)}
-            ${this.metric("Sonnenaufgang", `${sunrise} · ${this.formatSignedHours(sunriseOffsetHours)}`)}
+            ${this.metric("Lichttag", `${sunrise} – ${sunset} · ${this.formatSignedHours(appliedOffsetHours)}`)}
             ${this.metric("Am Aquarium", aquariumPreviewActive ? "Vorschau aktiv" : "Geschuetzt")}
           </div>
 
@@ -250,25 +261,25 @@ class AquariumLedSimulatorCard extends HTMLElement {
       });
     });
 
-    this.querySelectorAll("[data-sunrise-offset]").forEach((input) => {
+    this.querySelectorAll("[data-day-offset]").forEach((input) => {
       input.addEventListener("change", () => {
         const value = Math.max(-6, Math.min(6, Math.round(Number(input.value) * 4) / 4));
         input.value = String(value);
         this._hass.callService("number", "set_value", {
-          entity_id: input.dataset.sunriseOffset,
+          entity_id: input.dataset.dayOffset,
           value,
         });
       });
     });
 
-    this.querySelectorAll("[data-sunrise-offset-delta]").forEach((button) => {
+    this.querySelectorAll("[data-day-offset-delta]").forEach((button) => {
       button.addEventListener("click", () => {
-        const input = this.querySelector(`[data-sunrise-offset="${button.dataset.sunriseOffsetEntity}"]`);
+        const input = this.querySelector(`[data-day-offset="${button.dataset.dayOffsetEntity}"]`);
         if (!input) {
           return;
         }
         input.value = String(
-          Math.max(-6, Math.min(6, Number(input.value) + Number(button.dataset.sunriseOffsetDelta))),
+          Math.max(-6, Math.min(6, Number(input.value) + Number(button.dataset.dayOffsetDelta))),
         );
         input.dispatchEvent(new Event("change"));
       });
@@ -412,7 +423,7 @@ class AquariumLedSimulatorCard extends HTMLElement {
         .alc-duration-head { align-items: center; display: flex; font-size: 12px; gap: 12px; justify-content: space-between; }
         .alc-duration-head strong { color: var(--primary-text-color); white-space: nowrap; }
         .alc-duration input { accent-color: var(--primary-color); cursor: pointer; margin: 8px 0 0; width: 100%; }
-        .alc-sunrise-offset { display: block; margin-top: 14px; }
+        .alc-day-offset { display: block; margin-top: 14px; }
         .alc-control-note { color: var(--secondary-text-color); font-size: 11px; line-height: 1.4; margin-top: 7px; }
         .alc-offset-stepper { align-items: center; display: grid; gap: 8px; grid-template-columns: 52px minmax(90px, 1fr) 52px; margin-top: 9px; }
         .alc-offset-stepper button, .alc-white-stepper button { background: color-mix(in srgb, var(--primary-color) 18%, var(--card-background-color)); border: 1px solid color-mix(in srgb, var(--primary-color) 50%, transparent); border-radius: 10px; color: var(--primary-text-color); cursor: pointer; font: inherit; font-size: 24px; min-height: 48px; touch-action: manipulation; }
@@ -514,7 +525,7 @@ class AquariumLedSimulatorCard extends HTMLElement {
         <div class="alc-effect-head">
           <div>
             <div class="alc-effect-title">Lichtintensität über den Tag</div>
-            <div class="alc-effect-sub">Tagesbogen mit Sollmaximum um 12:00 Uhr; Preis, Wolken sowie das Verhältnis aus PV-Erzeugung, Leistungsabgabe und Akku-SOC formen das Ergebnis.</div>
+            <div class="alc-effect-sub">Tagesbogen mit Sollmaximum um ${this.escape(attr.midday_peak_time || "12:00")} Uhr; Preis, Wolken sowie das Verhältnis aus PV-Erzeugung, Leistungsabgabe und Akku-SOC formen das Ergebnis.</div>
           </div>
           <div class="alc-effect-current">Jetzt ${Math.round(currentTarget)} %</div>
         </div>
@@ -1212,31 +1223,37 @@ class AquariumLedSimulatorCard extends HTMLElement {
     `;
   }
 
-  sunriseOffsetControl(entity, value) {
+  dayOffsetControl(entity, value, appliedValue) {
     if (!entity) {
       return "";
     }
     const offset = Math.max(-6, Math.min(6, Number(value) || 0));
+    const applied = Number.isFinite(Number(appliedValue)) ? Number(appliedValue) : offset;
+    const clamped = Math.abs(applied - offset) > 0.001;
     return `
-      <section class="alc-duration alc-sunrise-offset">
+      <section class="alc-duration alc-day-offset">
         <div class="alc-duration-head">
-          <span>Sonnenaufgang verschieben</span>
+          <span>Lichttag verschieben</span>
           <strong>${this.escape(this.formatSignedHours(offset))}</strong>
         </div>
         <div class="alc-offset-stepper">
-          <button type="button" data-sunrise-offset-delta="-0.25" data-sunrise-offset-entity="${this.escape(entity)}" aria-label="Aquarium-Sonnenaufgang 15 Minuten frueher">−</button>
+          <button type="button" data-day-offset-delta="-0.25" data-day-offset-entity="${this.escape(entity)}" aria-label="Lichttag 15 Minuten frueher">−</button>
           <input
             type="number"
             min="-6"
             max="6"
             step="0.25"
             value="${offset}"
-            data-sunrise-offset="${this.escape(entity)}"
-            aria-label="Aquarium-Sonnenaufgang in Stunden verschieben"
+            data-day-offset="${this.escape(entity)}"
+            aria-label="Lichttag in Stunden verschieben"
           />
-          <button type="button" data-sunrise-offset-delta="0.25" data-sunrise-offset-entity="${this.escape(entity)}" aria-label="Aquarium-Sonnenaufgang 15 Minuten spaeter">+</button>
+          <button type="button" data-day-offset-delta="0.25" data-day-offset-entity="${this.escape(entity)}" aria-label="Lichttag 15 Minuten spaeter">+</button>
         </div>
-        <div class="alc-control-note">Verschiebt nur den Aquarium-Lichtaufgang in 15-Minuten-Schritten. Die echte Sonnenbahn und der Sonnenuntergang bleiben fest.</div>
+        <div class="alc-control-note">Verschiebt Aufgang und Untergang gemeinsam in 15-Minuten-Schritten. Die Laenge des Lichttages bleibt gleich, die echte Sonnenbahn bleibt fest.${
+          clamped
+            ? ` <strong>Begrenzt auf ${this.escape(this.formatSignedHours(applied))}</strong>, weil der Lichttag sonst ueber Mitternacht laufen wuerde.`
+            : ""
+        }</div>
       </section>
     `;
   }

@@ -82,18 +82,25 @@ class FrontendResourceTests(unittest.TestCase):
         self.assertIn('this.metric("Mondlicht"', source)
         self.assertIn('this.metric("Mond-Wolken"', source)
 
-    def test_sunrise_offset_is_adjustable_and_shows_real_time(self) -> None:
+    def test_light_day_offset_is_adjustable_and_shows_real_time(self) -> None:
         source = RESOURCE.read_text(encoding="utf-8")
 
+        self.assertIn("day_offset_number", source)
+        # Dashboards written before the rename keep working.
         self.assertIn("sunrise_offset_number", source)
         self.assertIn("sunrise_actual", source)
-        self.assertIn("Sonnenaufgang verschieben", source)
-        self.assertIn('data-sunrise-offset=', source)
-        self.assertIn("data-sunrise-offset-delta", source)
+        self.assertIn("celestial_sunset", source)
+        self.assertIn("Lichttag verschieben", source)
+        self.assertIn('data-day-offset=', source)
+        self.assertIn("data-day-offset-delta", source)
         self.assertIn('type="number"', source)
         self.assertIn('step="0.25"', source)
-        self.assertIn("celestialGeometry(currentTime, sunriseActual, sunset)", source)
-        self.assertIn("Die echte Sonnenbahn und der Sonnenuntergang bleiben fest", source)
+        self.assertIn(
+            "celestialGeometry(currentTime, sunriseActual, sunsetActual)",
+            source,
+        )
+        self.assertIn("Verschiebt Aufgang und Untergang gemeinsam", source)
+        self.assertIn("die echte Sonnenbahn bleibt fest", source)
 
     def test_two_separate_white_channels_are_adjustable(self) -> None:
         source = RESOURCE.read_text(encoding="utf-8")

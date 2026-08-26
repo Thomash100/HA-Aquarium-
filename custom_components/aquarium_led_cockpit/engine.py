@@ -25,13 +25,13 @@ from .const import (
     CONTROL_AQUARIUM_PREVIEW,
     CONTROL_CLOUD_STRENGTH,
     CONTROL_DAY_BRIGHTNESS,
+    CONTROL_DAY_OFFSET,
     CONTROL_NIGHT_BRIGHTNESS,
     CONTROL_PRICE_DIMMING,
     CONTROL_SIMULATION,
     CONTROL_SIMULATION_TIME,
     CONTROL_SUNRISE_DURATION,
     CONTROL_SUNRISE_END_RGBW,
-    CONTROL_SUNRISE_OFFSET,
     CONTROL_SUNRISE_RGBW,
     CONTROL_SUNSET_START_RGBW,
     CONTROL_SUNSET_RGBW,
@@ -47,8 +47,8 @@ from .const import (
     DEFAULT_MOON_ENTITY,
     DEFAULT_PRICE_DIMMING,
     DEFAULT_SIMULATION_TIME,
+    DEFAULT_DAY_OFFSET_HOURS,
     DEFAULT_SUNRISE_DURATION_MINUTES,
-    DEFAULT_SUNRISE_OFFSET_HOURS,
     DEFAULT_SUNSET_DURATION_MINUTES,
     DEFAULT_SUN_ENTITY,
 )
@@ -77,11 +77,12 @@ from .solar import (
     calculate_moonlight_target,
     calculate_daylight_cloud_factors,
     calculate_solar_profile,
+    fit_transition_durations,
+    normalize_day_offset,
     normalize_rgbw,
-    normalize_sunrise_offset,
     normalize_transition_duration,
     normalize_white_channel_level,
-    shift_sunrise_minute,
+    shift_light_day,
 )
 from .time_lapse import MINUTES_PER_DAY, normalize_time_lapse_duration
 
@@ -250,15 +251,19 @@ def calculate_target(
         else now.hour * 60 + now.minute
     )
 
-    sunrise_actual, sunset_event = _sun_window(
+    sunrise_actual, sunset_actual = _sun_window(
         hass,
         str(settings.get(CONF_SUN_ENTITY) or DEFAULT_SUN_ENTITY),
         now,
     )
-    sunrise_offset_hours = normalize_sunrise_offset(
-        controls.get(CONTROL_SUNRISE_OFFSET, DEFAULT_SUNRISE_OFFSET_HOURS)
+    day_offset_hours = normalize_day_offset(
+        controls.get(CONTROL_DAY_OFFSET, DEFAULT_DAY_OFFSET_HOURS)
     )
-    sunrise_start = shift_sunrise_minute(sunrise_actual, sunrise_offset_hours)
+    sunrise_start, sunset_event, applied_offset_hours = shift_light_day(
+        sunrise_actual,
+        sunset_actual,
+        day_offset_hours,
+    )
     sunrise_duration = normalize_transition_duration(
         controls.get(CONTROL_SUNRISE_DURATION),
         DEFAULT_SUNRISE_DURATION_MINUTES,
@@ -266,6 +271,23 @@ def calculate_target(
     sunset_duration = normalize_transition_duration(
         controls.get(CONTROL_SUNSET_DURATION),
         DEFAULT_SUNSET_DURATION_MINUTES,
+    )
+    # Mirrors the fit inside calculate_solar_profile so the reported clock
+    # times match the ramps the tank actually runs.
+    effective_sunrise_duration, effective_sunset_duration = fit_transition_durations(
+        sunrise_start,
+        sunset_event,
+        sunrise_duration,
+        sunset_duration,
+    )
+    # The brightness peak belongs to the light day, so it travels with it and
+    # is reported already clamped into the window the arc actually spans.
+    midday_peak_minute = int(
+        _clamp(
+            MIDDAY_PEAK_MINUTE + int(round(applied_offset_hours * 60)),
+            sunrise_start + effective_sunrise_duration,
+            sunset_event - effective_sunset_duration,
+        )
     )
     day = _clamp(float(controls.get(CONTROL_DAY_BRIGHTNESS, DEFAULT_DAY_BRIGHTNESS)), 1, 100)
     night = _clamp(float(controls.get(CONTROL_NIGHT_BRIGHTNESS, DEFAULT_NIGHT_BRIGHTNESS)), 1, 30)
@@ -281,6 +303,7 @@ def calculate_target(
         sunset_duration,
         controls.get(CONTROL_SUNRISE_END_RGBW, DAYLIGHT_RGBW),
         controls.get(CONTROL_SUNSET_START_RGBW, DAYLIGHT_RGBW),
+        midday_peak_minute,
     )
     phase = solar_profile.phase
     base_pct = solar_profile.base_pct
@@ -411,13 +434,27 @@ def calculate_target(
         "sunrise_actual": _minutes_to_clock(sunrise_actual),
         "celestial_sunrise": _minutes_to_clock(sunrise_actual),
         "sunrise_light_start": _minutes_to_clock(sunrise_start),
-        "sunrise_control_scope": "aquarium_dawn_only",
-        "sunrise_offset_hours": sunrise_offset_hours,
+        "sunrise_control_scope": "aquarium_light_day",
+        "day_offset_hours": day_offset_hours,
+        "day_offset_applied_hours": applied_offset_hours,
+        "day_offset_clamped": applied_offset_hours != day_offset_hours,
+        # Legacy name kept for dashboards written before the shift moved
+        # both ends of the light day.
+        "sunrise_offset_hours": applied_offset_hours,
         "sunrise_duration_minutes": sunrise_duration,
-        "sunrise_end": _minutes_to_clock(sunrise_start + sunrise_duration),
+        "sunrise_duration_effective_minutes": effective_sunrise_duration,
+        "sunrise_end": _minutes_to_clock(sunrise_start + effective_sunrise_duration),
         "sunset": _minutes_to_clock(sunset_event),
+        "sunset_actual": _minutes_to_clock(sunset_actual),
+        "celestial_sunset": _minutes_to_clock(sunset_actual),
+        "sunset_light_end": _minutes_to_clock(sunset_event),
         "sunset_duration_minutes": sunset_duration,
-        "sunset_phase_start": _minutes_to_clock(sunset_event - sunset_duration),
+        "sunset_duration_effective_minutes": effective_sunset_duration,
+        "transitions_compressed": (
+            effective_sunrise_duration != sunrise_duration
+            or effective_sunset_duration != sunset_duration
+        ),
+        "sunset_phase_start": _minutes_to_clock(sunset_event - effective_sunset_duration),
         "moonlight_start": _minutes_to_clock(sunset_event),
         "moonlight_end": _minutes_to_clock(sunrise_start),
         "light_mode": "moonlight" if phase == "night" else phase,
@@ -450,8 +487,8 @@ def calculate_target(
         "moonlight_continuous": True,
         "day_brightness_pct": round(day, 1),
         "day_edge_brightness_factor": DAY_EDGE_BRIGHTNESS_FACTOR,
-        "midday_peak_minute": MIDDAY_PEAK_MINUTE,
-        "midday_peak_time": _minutes_to_clock(MIDDAY_PEAK_MINUTE),
+        "midday_peak_minute": midday_peak_minute,
+        "midday_peak_time": _minutes_to_clock(midday_peak_minute),
         "night_brightness_pct": round(night, 1),
         "base_pct": round(base_pct, 1),
         "target_pct": brightness,

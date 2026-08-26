@@ -16,8 +16,8 @@ from .const import (
     CONTROL_NIGHT_BRIGHTNESS,
     CONTROL_PRICE_DIMMING,
     CONTROL_SIMULATION_TIME,
+    CONTROL_DAY_OFFSET,
     CONTROL_SUNRISE_DURATION,
-    CONTROL_SUNRISE_OFFSET,
     CONTROL_SUNSET_DURATION,
     CONTROL_TIME_LAPSE_DURATION,
     CONTROL_WHITE_CHANNEL_1_LEVEL,
@@ -25,9 +25,9 @@ from .const import (
     DOMAIN,
 )
 from .solar import (
-    MAX_SUNRISE_OFFSET_HOURS,
+    MAX_DAY_OFFSET_HOURS,
     MAX_TRANSITION_DURATION_MINUTES,
-    MIN_SUNRISE_OFFSET_HOURS,
+    MIN_DAY_OFFSET_HOURS,
     MIN_TRANSITION_DURATION_MINUTES,
 )
 from .runtime import AquariumLedCockpitRuntime, async_get_runtime
@@ -103,11 +103,11 @@ NUMBERS = (
         NumberMode.BOX,
     ),
     NumberDescription(
-        CONTROL_SUNRISE_OFFSET,
-        "Sonnenaufgang-Verschiebung",
-        "mdi:weather-sunset-up",
-        MIN_SUNRISE_OFFSET_HOURS,
-        MAX_SUNRISE_OFFSET_HOURS,
+        CONTROL_DAY_OFFSET,
+        "Lichttag-Verschiebung",
+        "mdi:sun-clock",
+        MIN_DAY_OFFSET_HOURS,
+        MAX_DAY_OFFSET_HOURS,
         0.25,
         UnitOfTime.HOURS,
         NumberMode.BOX,

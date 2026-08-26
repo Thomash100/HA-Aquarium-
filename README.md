@@ -43,7 +43,7 @@ Die Integration verwandelt deine Aquarium-Beleuchtung in einen dynamischen Tages
 - Durchgaengiges blaues Mondlicht nach Sonnenuntergang ohne Weisskanal; die eingestellte Nachtlicht-Helligkeit bildet die Vollmond-Obergrenze
 - Mondphasenabhaengige Nachthelligkeit mit sanfter Wolkensimulation und mindestens einem Prozent Licht statt Ein/Aus-Schalten
 - Sonnenbahn mit echten Auf-/Untergangszeiten und realer Mondphase aus `sensor.moon_phase`
-- Einstellbare Aquarium-Sonnenaufgangs-Verschiebung von minus sechs bis plus sechs Stunden mit grossen 15-Minuten-Tasten und direktem Stundenfeld; die reale Sonnenbahn und der Untergang bleiben davon unberuehrt
+- Einstellbare Lichttag-Verschiebung von minus sechs bis plus sechs Stunden mit grossen 15-Minuten-Tasten und direktem Stundenfeld; Aufgang, Tagesmaximum und Untergang wandern gemeinsam, die reale Sonnenbahn bleibt davon unberuehrt
 - Deutlich sichtbare Wolkensimulation tagsueber: reale Bewoelkung und eingestellte Wolkenstaerke erzeugen einen staerkeren Grundabschlag und dynamische Wolkenwellen
 - Simulationsmodus, der den Cockpit-Status aktualisiert, ohne Lichtbefehle zu senden
 - Konfigurierbarer 24-Stunden-Zeitraffer: ein kompletter Tag in einer bis zehn realen Minuten
@@ -113,7 +113,7 @@ Fuer die Simulator-Karte muss die Lovelace-Ressource `/local/aquarium_led_cockpi
 | `switch.<aquarium>_zeitraffer` | Fuehrt eine sichere Zeitraffer-Simulation ohne Lichtbefehle aus |
 | `switch.<aquarium>_zeitraffer_am_aquarium` | Spielt nach Bestaetigung genau einen Zeitraffer-Durchlauf auf den echten Leuchten ab und stellt anschliessend deren vorherigen Zustand wieder her |
 | `number.<aquarium>_simulationszeit` | Simulierte Minute des Tages, wobei `360` fuer `06:00` steht |
-| `number.<aquarium>_sonnenaufgang_verschiebung` | Verschiebt den Licht-Sonnenaufgang in Viertelstundenschritten um minus sechs bis plus sechs Stunden; `0` folgt der echten Sonne |
+| `number.<aquarium>_sonnenaufgang_verschiebung` | Verschiebt den kompletten Lichttag – Aufgang, Tagesmaximum und Untergang – in Viertelstundenschritten um minus sechs bis plus sechs Stunden; `0` folgt der echten Sonne. Der Entitaetsname stammt aus der Zeit, in der nur der Aufgang verschoben wurde |
 | `number.<aquarium>_sonnenaufgang_dauer` | Dauer des farbigen Sonnenaufgangs von 10 bis 240 Minuten |
 | `number.<aquarium>_sonnenuntergang_dauer` | Dauer des farbigen Sonnenuntergangs von 10 bis 240 Minuten |
 | `number.<aquarium>_zeitraffer_schritt` | Gesamtdauer eines simulierten 24-Stunden-Tages, einstellbar von 1 bis 10 Minuten |
@@ -132,7 +132,7 @@ Die Simulator-Karte laedt die letzten 12 Stunden Strompreis und 24 Stunden Batte
 
 ### Sonnenaufgang und Mondlicht
 
-Das Mondlicht beginnt am echten Sonnenuntergang und bleibt bis zum eingestellten Licht-Sonnenaufgang aktiv. Mit `number.<aquarium>_sonnenaufgang_verschiebung` laesst sich nur dieser Aquarium-Morgenzeitpunkt relativ zur echten Sonne verschieben: `+2` startet den roten Lichtaufgang zwei Stunden spaeter und verlaengert das Mondlicht entsprechend; `-1` startet ihn eine Stunde frueher. Die reale Sonnen- und Mondbahn sowie der Sonnenuntergang werden nicht mitverschoben. In der Cockpit-Karte erfolgt die Einstellung mobil bedienbar ueber grosse Minus-/Plus-Tasten in 15-Minuten-Schritten oder direkt ueber das Stundenfeld. Die Dauer-Felder mit grossen Minus-/Plus-Tasten legen getrennt fest, wie lange Auf- und Untergang dauern. Fuer Anfang und Ende jedes Uebergangs lassen sich Rot, Gruen, Blau und Weiss mit grossen Reglern von 0 bis 255 einstellen. Die Integration interpoliert jeden Kanal stufenlos. Die Sonnenbahn bleibt dabei eine reine Himmelsdarstellung; die wirksame Intensitaet steht in einem eigenen Diagramm darunter.
+Das Mondlicht beginnt am Licht-Sonnenuntergang und bleibt bis zum Licht-Sonnenaufgang aktiv. Mit `number.<aquarium>_sonnenaufgang_verschiebung` laesst sich der gesamte Lichttag relativ zur echten Sonne verschieben: `+2` startet den roten Lichtaufgang zwei Stunden spaeter und beendet den Untergang ebenfalls zwei Stunden spaeter; `-1` zieht beide Enden eine Stunde vor. Die Laenge des Lichttages und damit die Nachtdauer bleiben unveraendert, und das Tagesmaximum wandert mit. Die reale Sonnen- und Mondbahn bleiben fest. Eine Verschiebung, die ein Ende ueber Mitternacht schieben wuerde, wird auf den groesstmoeglichen Wert begrenzt; die Karte zeigt dann den tatsaechlich wirksamen Wert an. In der Cockpit-Karte erfolgt die Einstellung mobil bedienbar ueber grosse Minus-/Plus-Tasten in 15-Minuten-Schritten oder direkt ueber das Stundenfeld. Die Dauer-Felder mit grossen Minus-/Plus-Tasten legen getrennt fest, wie lange Auf- und Untergang dauern. Fuer Anfang und Ende jedes Uebergangs lassen sich Rot, Gruen, Blau und Weiss mit grossen Reglern von 0 bis 255 einstellen. Die Integration interpoliert jeden Kanal stufenlos. Die Sonnenbahn bleibt dabei eine reine Himmelsdarstellung; die wirksame Intensitaet steht in einem eigenen Diagramm darunter.
 
 Die beiden separaten Weiss-Leuchten besitzen eigene Regler von 0 bis 100 Prozent. Diese Werte skalieren den jeweils berechneten RGBW-Weissanteil: 100 Prozent folgt dem W-Kanal vollstaendig, 50 Prozent gibt die Haelfte davon aus und 0 Prozent schaltet nur den betreffenden Weissausgang ab. RGB und der jeweils andere Weisskanal bleiben davon unberuehrt.
 

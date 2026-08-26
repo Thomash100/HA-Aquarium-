@@ -9,8 +9,10 @@ SUNRISE_DURATION_MINUTES = 60
 SUNSET_DURATION_MINUTES = 90
 MIN_TRANSITION_DURATION_MINUTES = 10
 MAX_TRANSITION_DURATION_MINUTES = 240
-MIN_SUNRISE_OFFSET_HOURS = -6.0
-MAX_SUNRISE_OFFSET_HOURS = 6.0
+MIN_DAY_OFFSET_HOURS = -6.0
+MAX_DAY_OFFSET_HOURS = 6.0
+MINUTES_PER_DAY = 1440
+MIN_DAYLIGHT_MINUTES = 10
 
 DAWN_DUSK_RGBW = (255, 0, 0, 0)
 DAYLIGHT_RGBW = (190, 220, 255, 255)
@@ -132,24 +134,69 @@ def calculate_solar_energy_adjustment(
     )
 
 
-def normalize_sunrise_offset(value: object) -> float:
-    """Return a valid user-selectable sunrise shift in hours."""
+def normalize_day_offset(value: object) -> float:
+    """Return a valid user-selectable light-day shift in hours."""
     try:
         offset = float(value)
     except (TypeError, ValueError):
         offset = 0.0
-    return _clamp(offset, MIN_SUNRISE_OFFSET_HOURS, MAX_SUNRISE_OFFSET_HOURS)
+    return _clamp(offset, MIN_DAY_OFFSET_HOURS, MAX_DAY_OFFSET_HOURS)
 
 
-def shift_sunrise_minute(sunrise_minute: int, offset_hours: object) -> int:
-    """Shift sunrise without wrapping into the previous or following day."""
-    shifted = int(
-        round(
-            int(sunrise_minute)
-            + (normalize_sunrise_offset(offset_hours) * 60)
+def shift_light_day(
+    sunrise_minute: int,
+    sunset_minute: int,
+    offset_hours: object,
+) -> tuple[int, int, float]:
+    """Move sunrise and sunset together without wrapping past midnight.
+
+    Both ends keep their distance, so the shift never changes the length of
+    the light day. A request that would push an end across midnight is
+    reduced to the largest shift that still fits; the applied shift is
+    returned in hours so the UI can show what actually took effect.
+    """
+    sunrise = int(sunrise_minute)
+    sunset = int(sunset_minute)
+    requested = int(round(normalize_day_offset(offset_hours) * 60))
+    applied = int(
+        _clamp(
+            requested,
+            -min(sunrise, sunset),
+            (MINUTES_PER_DAY - 1) - max(sunrise, sunset),
         )
     )
-    return int(_clamp(shifted, 0, 1439))
+    return sunrise + applied, sunset + applied, applied / 60
+
+
+def fit_transition_durations(
+    sunrise_minute: int,
+    sunset_minute: int,
+    sunrise_duration: int,
+    sunset_duration: int,
+) -> tuple[int, int]:
+    """Shrink dawn and dusk proportionally so daylight always survives.
+
+    Without this the dusk ramp can start before the dawn ramp has finished
+    on a short light day, which drops the day phase entirely and jumps the
+    tank from dawn straight into a part-finished sunset.
+    """
+    sunrise = int(sunrise_duration)
+    sunset = int(sunset_duration)
+    span = int(sunset_minute) - int(sunrise_minute)
+    total = sunrise + sunset
+    if span <= 0 or total <= 0:
+        return sunrise, sunset
+
+    budget = span - MIN_DAYLIGHT_MINUTES
+    if total <= budget:
+        return sunrise, sunset
+    if budget < 2:
+        half = max(1, span // 2)
+        return half, max(1, span - half)
+
+    fitted_sunrise = max(1, int(round(budget * sunrise / total)))
+    fitted_sunset = max(1, budget - fitted_sunrise)
+    return fitted_sunrise, fitted_sunset
 
 
 def normalize_transition_duration(value: object, default: int) -> int:
@@ -234,14 +281,20 @@ def calculate_daylight_brightness(
     sunrise_end: int,
     sunset_start: int,
     day_brightness_pct: float,
+    midday_peak_minute: int = MIDDAY_PEAK_MINUTE,
 ) -> float:
-    """Return a smooth daytime arc with its configured maximum at 12:00."""
+    """Return a smooth daytime arc peaking at the light day's midday.
+
+    The peak defaults to 12:00 and travels with the light day when the
+    whole day is shifted, so the arc keeps its shape instead of being
+    clamped against one edge of the window.
+    """
     maximum = _clamp(float(day_brightness_pct), 1, 100)
     edge = maximum * DAY_EDGE_BRIGHTNESS_FACTOR
     if sunset_start <= sunrise_end:
         return maximum
 
-    peak = int(_clamp(MIDDAY_PEAK_MINUTE, sunrise_end, sunset_start))
+    peak = int(_clamp(midday_peak_minute, sunrise_end, sunset_start))
     if minute <= peak:
         span = max(1, peak - sunrise_end)
         progress = _clamp((minute - sunrise_end) / span, 0, 1)
@@ -297,6 +350,7 @@ def calculate_solar_profile(
     sunset_duration_minutes: object = SUNSET_DURATION_MINUTES,
     sunrise_end_rgbw: object = DAYLIGHT_RGBW,
     sunset_start_rgbw: object = DAYLIGHT_RGBW,
+    midday_peak_minute: int = MIDDAY_PEAK_MINUTE,
 ) -> SolarProfile:
     """Return the profile for real sunrise and sunset event minutes.
 
@@ -314,6 +368,12 @@ def calculate_solar_profile(
     sunset_duration = normalize_transition_duration(
         sunset_duration_minutes,
         SUNSET_DURATION_MINUTES,
+    )
+    sunrise_duration, sunset_duration = fit_transition_durations(
+        sunrise_minute,
+        sunset_minute,
+        sunrise_duration,
+        sunset_duration,
     )
     sunrise_end = sunrise_minute + sunrise_duration
     sunset_start = sunset_minute - sunset_duration
@@ -350,6 +410,7 @@ def calculate_solar_profile(
             sunrise_end,
             sunset_start,
             day_brightness_pct,
+            midday_peak_minute,
         )
         rgbw = _interpolate_rgbw(
             sunrise_end_color,

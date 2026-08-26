@@ -27,7 +27,7 @@ from .const import (
     CONTROL_SIMULATION_TIME,
     CONTROL_SUNRISE_DURATION,
     CONTROL_SUNRISE_END_RGBW,
-    CONTROL_SUNRISE_OFFSET,
+    CONTROL_DAY_OFFSET,
     CONTROL_SUNRISE_RGBW,
     CONTROL_SUNSET_START_RGBW,
     CONTROL_SUNSET_RGBW,
@@ -43,7 +43,7 @@ from .const import (
     DEFAULT_PRICE_DIMMING,
     DEFAULT_SIMULATION_TIME,
     DEFAULT_SUNRISE_DURATION_MINUTES,
-    DEFAULT_SUNRISE_OFFSET_HOURS,
+    DEFAULT_DAY_OFFSET_HOURS,
     DEFAULT_SUNSET_DURATION_MINUTES,
     DEFAULT_TRANSITION_SECONDS,
     DEFAULT_WHITE_CHANNEL_LEVEL,
@@ -56,7 +56,7 @@ from .solar import (
     DAWN_DUSK_RGBW,
     DAYLIGHT_RGBW,
     normalize_rgbw,
-    normalize_sunrise_offset,
+    normalize_day_offset,
     normalize_transition_duration,
     normalize_white_channel_level,
 )
@@ -77,7 +77,7 @@ DEFAULT_CONTROLS = {
     CONTROL_PRICE_DIMMING: DEFAULT_PRICE_DIMMING,
     CONTROL_CLOUD_STRENGTH: DEFAULT_CLOUD_STRENGTH,
     CONTROL_SIMULATION_TIME: DEFAULT_SIMULATION_TIME,
-    CONTROL_SUNRISE_OFFSET: DEFAULT_SUNRISE_OFFSET_HOURS,
+    CONTROL_DAY_OFFSET: DEFAULT_DAY_OFFSET_HOURS,
     CONTROL_SUNRISE_DURATION: DEFAULT_SUNRISE_DURATION_MINUTES,
     CONTROL_SUNSET_DURATION: DEFAULT_SUNSET_DURATION_MINUTES,
     CONTROL_TIME_LAPSE_DURATION: DEFAULT_TIME_LAPSE_DURATION_MINUTES,
@@ -136,8 +136,8 @@ class AquariumLedCockpitRuntime:
         self._controls[CONTROL_TIME_LAPSE_DURATION] = normalize_time_lapse_duration(
             self._controls.get(CONTROL_TIME_LAPSE_DURATION)
         )
-        self._controls[CONTROL_SUNRISE_OFFSET] = normalize_sunrise_offset(
-            self._controls.get(CONTROL_SUNRISE_OFFSET)
+        self._controls[CONTROL_DAY_OFFSET] = normalize_day_offset(
+            self._controls.get(CONTROL_DAY_OFFSET)
         )
         self._controls[CONTROL_SUNRISE_DURATION] = normalize_transition_duration(
             self._controls.get(CONTROL_SUNRISE_DURATION),
@@ -209,8 +209,8 @@ class AquariumLedCockpitRuntime:
             await self._async_stop_aquarium_preview()
         if key == CONTROL_TIME_LAPSE_DURATION:
             value = normalize_time_lapse_duration(value)
-        if key == CONTROL_SUNRISE_OFFSET:
-            value = normalize_sunrise_offset(value)
+        if key == CONTROL_DAY_OFFSET:
+            value = normalize_day_offset(value)
         if key == CONTROL_SUNRISE_DURATION:
             value = normalize_transition_duration(value, DEFAULT_SUNRISE_DURATION_MINUTES)
         if key == CONTROL_SUNSET_DURATION:
