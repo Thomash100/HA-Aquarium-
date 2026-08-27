@@ -213,15 +213,22 @@ class SolarProfileTests(unittest.TestCase):
     def test_light_day_can_be_shifted_later_by_hours(self) -> None:
         self.assertEqual((505, 1350, 2.5), SOLAR.shift_light_day(355, 1200, 2.5))
 
-    def test_light_day_shift_is_limited_and_does_not_wrap_days(self) -> None:
-        self.assertEqual((0, 900, -5), SOLAR.shift_light_day(300, 1200, -20))
+    def test_light_day_shift_wraps_past_midnight_at_full_strength(self) -> None:
+        # Der Regler wird auf plus/minus sechs Stunden normiert, nicht gekappt.
+        self.assertEqual((1380, 840, -6.0), SOLAR.shift_light_day(300, 1200, -20))
 
         sunrise, sunset, applied = SOLAR.shift_light_day(300, 1200, 20)
-        self.assertEqual(1439, sunset)
-        self.assertEqual(900, sunset - sunrise)
-        self.assertAlmostEqual(239 / 60, applied)
+        self.assertEqual(660, sunrise)
+        self.assertEqual(120, sunset)
+        self.assertEqual(6.0, applied)
+        self.assertEqual(900, SOLAR.light_day_span(sunrise, sunset))
 
         self.assertEqual((300, 1200, 0), SOLAR.shift_light_day(300, 1200, "invalid"))
+
+    def test_light_day_span_measures_forward_from_sunrise(self) -> None:
+        self.assertEqual(900, SOLAR.light_day_span(300, 1200))
+        self.assertEqual(900, SOLAR.light_day_span(660, 120))
+        self.assertEqual(1440, SOLAR.light_day_span(500, 500))
 
     def test_sunrise_and_sunset_durations_are_adjustable(self) -> None:
         sunrise_midpoint = SOLAR.calculate_solar_profile(

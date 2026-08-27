@@ -635,7 +635,10 @@ class AquariumLedSimulatorCard extends HTMLElement {
         dayEdgeFactor,
         middayPeakMinute,
       );
-      const night = wrappedMinute < sunriseMinute || wrappedMinute >= sunsetMinute;
+      // Nacht ist alles ausserhalb des Lichttages - relativ gemessen, damit
+      // ein Lichttag ueber Mitternacht richtig eingeordnet wird.
+      const lightSpan = (((sunsetMinute - sunriseMinute) % 1440) + 1440) % 1440 || 1440;
+      const night = ((((wrappedMinute - sunriseMinute) % 1440) + 1440) % 1440) >= lightSpan;
       const wave = (Math.sin((wrappedMinute / 1440) * Math.PI * 2 * 8) + 1) / 2;
       const battery = this.timelineValueAt(batteryPoints, time, currentBattery);
       const price = this.timelineValueAt(pricePoints, time, currentPrice);
@@ -1229,7 +1232,6 @@ class AquariumLedSimulatorCard extends HTMLElement {
     }
     const offset = Math.max(-6, Math.min(6, Number(value) || 0));
     const applied = Number.isFinite(Number(appliedValue)) ? Number(appliedValue) : offset;
-    const clamped = Math.abs(applied - offset) > 0.001;
     return `
       <section class="alc-duration alc-day-offset">
         <div class="alc-duration-head">
@@ -1249,10 +1251,8 @@ class AquariumLedSimulatorCard extends HTMLElement {
           />
           <button type="button" data-day-offset-delta="0.25" data-day-offset-entity="${this.escape(entity)}" aria-label="Lichttag 15 Minuten spaeter">+</button>
         </div>
-        <div class="alc-control-note">Verschiebt Aufgang und Untergang gemeinsam in 15-Minuten-Schritten. Die Laenge des Lichttages bleibt gleich, die echte Sonnenbahn bleibt fest.${
-          clamped
-            ? ` <strong>Begrenzt auf ${this.escape(this.formatSignedHours(applied))}</strong>, weil der Lichttag sonst ueber Mitternacht laufen wuerde.`
-            : ""
+        <div class="alc-control-note">Verschiebt Aufgang und Untergang gemeinsam in 15-Minuten-Schritten. Die Laenge des Lichttages bleibt gleich, die echte Sonnenbahn bleibt fest. Der Lichttag darf dabei ueber Mitternacht laufen.${
+          applied !== 0 ? ` Wirksam: ${this.escape(this.formatSignedHours(applied))}.` : ""
         }</div>
       </section>
     `;
@@ -1507,21 +1507,27 @@ class AquariumLedSimulatorCard extends HTMLElement {
     edgeFactor = 0.55,
     middayPeakMinute = 720,
   ) {
-    const sunriseEnd = sunrise + sunriseDuration;
-    const sunsetStart = sunset - sunsetDuration;
+    // Zeitachse relativ zum Lichtaufgang - spiegelt calculate_solar_profile
+    // und haelt die Vergleiche geordnet, auch wenn der Lichttag ueber
+    // Mitternacht laeuft.
+    const span = (((sunset - sunrise) % 1440) + 1440) % 1440 || 1440;
+    const elapsed = (((minute - sunrise) % 1440) + 1440) % 1440;
+    const peakElapsed = (((middayPeakMinute - sunrise) % 1440) + 1440) % 1440;
+    const sunriseEnd = sunriseDuration;
+    const sunsetStart = span - sunsetDuration;
     const edge = day * edgeFactor;
-    if (minute >= sunrise && minute < sunriseEnd) {
-      return night + ((edge - night) * ((minute - sunrise) / sunriseDuration));
+    if (elapsed < sunriseEnd) {
+      return night + ((edge - night) * (elapsed / Math.max(1, sunriseDuration)));
     }
-    if (minute >= sunriseEnd && minute < sunsetStart) {
-      const peak = Math.max(sunriseEnd, Math.min(sunsetStart, middayPeakMinute));
-      const progress = minute <= peak
-        ? Math.max(0, Math.min(1, (minute - sunriseEnd) / Math.max(1, peak - sunriseEnd)))
-        : Math.max(0, Math.min(1, (sunsetStart - minute) / Math.max(1, sunsetStart - peak)));
+    if (elapsed < sunsetStart) {
+      const peak = Math.max(sunriseEnd, Math.min(sunsetStart, peakElapsed));
+      const progress = elapsed <= peak
+        ? Math.max(0, Math.min(1, (elapsed - sunriseEnd) / Math.max(1, peak - sunriseEnd)))
+        : Math.max(0, Math.min(1, (sunsetStart - elapsed) / Math.max(1, sunsetStart - peak)));
       return edge + ((day - edge) * Math.sin(progress * Math.PI / 2));
     }
-    if (minute >= sunsetStart && minute < sunset) {
-      return edge + ((night - edge) * ((minute - sunsetStart) / sunsetDuration));
+    if (elapsed < span) {
+      return edge + ((night - edge) * ((elapsed - sunsetStart) / Math.max(1, sunsetDuration)));
     }
     return night;
   }

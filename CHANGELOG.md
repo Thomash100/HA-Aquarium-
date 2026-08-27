@@ -1,5 +1,16 @@
 # Aenderungsprotokoll
 
+## V260827.028_BETA.00
+
+Der Lichttag darf jetzt ueber Mitternacht laufen.
+
+- Rechnet die Phasenlogik in Minuten seit dem Lichtaufgang statt in Uhrzeiten. Damit ist ein Lichttag, der nach Mitternacht endet, ein gewoehnlicher Fall und kein Sonderfall mehr.
+- Entfernt die Kappung der Verschiebung: `+6` wirkt jetzt als volle sechs Stunden. Bei Sonnenaufgang 06:12 und -untergang 20:05 ergibt das einen Lichttag von 12:12 bis 02:05 statt der bisher moeglichen 10:06 bis 23:59.
+- Laesst das Tagesmaximum seine relative Lage im Lichttag behalten, gemessen am Abstand des Sonnenhoechststandes vom echten Aufgang.
+- Zieht dieselbe Rechnung in die Cockpit-Karte, damit Intensitaetskurve und Nachterkennung zum tatsaechlichen Verlauf passen.
+- Ersetzt das Statusattribut `day_offset_clamped` durch `light_day_minutes` und `light_day_crosses_midnight`.
+- Erhoeht die Home-Assistant-Manifest-Version auf `26.8.27-beta.28`.
+
 ## V260826.027_BETA.00
 
 Verschiebung wirkt jetzt auf den kompletten Lichttag statt nur auf den Aufgang.

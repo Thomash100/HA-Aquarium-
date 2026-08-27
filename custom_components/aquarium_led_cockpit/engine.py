@@ -78,6 +78,7 @@ from .solar import (
     calculate_daylight_cloud_factors,
     calculate_solar_profile,
     fit_transition_durations,
+    light_day_span,
     normalize_day_offset,
     normalize_rgbw,
     normalize_transition_duration,
@@ -280,15 +281,19 @@ def calculate_target(
         sunrise_duration,
         sunset_duration,
     )
-    # The brightness peak belongs to the light day, so it travels with it and
-    # is reported already clamped into the window the arc actually spans.
-    midday_peak_minute = int(
+    # Das Tagesmaximum behaelt seine relative Lage im Lichttag: es sitzt so
+    # weit hinter dem Lichtaufgang wie der Sonnenhoechststand hinter dem
+    # echten Aufgang. Gerechnet wird relativ, damit ein Lichttag ueber
+    # Mitternacht keine Sonderbehandlung braucht.
+    light_span = light_day_span(sunrise_start, sunset_event)
+    peak_elapsed = int(
         _clamp(
-            MIDDAY_PEAK_MINUTE + int(round(applied_offset_hours * 60)),
-            sunrise_start + effective_sunrise_duration,
-            sunset_event - effective_sunset_duration,
+            (MIDDAY_PEAK_MINUTE - sunrise_actual) % MINUTES_PER_DAY,
+            effective_sunrise_duration,
+            max(effective_sunrise_duration, light_span - effective_sunset_duration),
         )
     )
+    midday_peak_minute = (sunrise_start + peak_elapsed) % MINUTES_PER_DAY
     day = _clamp(float(controls.get(CONTROL_DAY_BRIGHTNESS, DEFAULT_DAY_BRIGHTNESS)), 1, 100)
     night = _clamp(float(controls.get(CONTROL_NIGHT_BRIGHTNESS, DEFAULT_NIGHT_BRIGHTNESS)), 1, 30)
     solar_profile = calculate_solar_profile(
@@ -437,7 +442,8 @@ def calculate_target(
         "sunrise_control_scope": "aquarium_light_day",
         "day_offset_hours": day_offset_hours,
         "day_offset_applied_hours": applied_offset_hours,
-        "day_offset_clamped": applied_offset_hours != day_offset_hours,
+        "light_day_minutes": light_span,
+        "light_day_crosses_midnight": sunset_event < sunrise_start,
         # Legacy name kept for dashboards written before the shift moved
         # both ends of the light day.
         "sunrise_offset_hours": applied_offset_hours,

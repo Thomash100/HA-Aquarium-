@@ -143,29 +143,34 @@ def normalize_day_offset(value: object) -> float:
     return _clamp(offset, MIN_DAY_OFFSET_HOURS, MAX_DAY_OFFSET_HOURS)
 
 
+def light_day_span(sunrise_minute: int, sunset_minute: int) -> int:
+    """Return the length of the light day, valid across midnight.
+
+    A light day that ends on the following calendar day is a normal case
+    once the whole day is shifted, so the distance is measured forward from
+    sunrise instead of subtracting clock values. Sunrise equal to sunset is
+    read as a sun that never sets.
+    """
+    span = (int(sunset_minute) - int(sunrise_minute)) % MINUTES_PER_DAY
+    return span or MINUTES_PER_DAY
+
+
 def shift_light_day(
     sunrise_minute: int,
     sunset_minute: int,
     offset_hours: object,
 ) -> tuple[int, int, float]:
-    """Move sunrise and sunset together without wrapping past midnight.
+    """Move sunrise and sunset together, across midnight where needed.
 
     Both ends keep their distance, so the shift never changes the length of
-    the light day. A request that would push an end across midnight is
-    reduced to the largest shift that still fits; the applied shift is
-    returned in hours so the UI can show what actually took effect.
+    the light day. The applied shift is returned in hours; it always equals
+    the requested one, because the phase logic works on a time axis relative
+    to sunrise and therefore does not care where the day sits on the clock.
     """
-    sunrise = int(sunrise_minute)
-    sunset = int(sunset_minute)
-    requested = int(round(normalize_day_offset(offset_hours) * 60))
-    applied = int(
-        _clamp(
-            requested,
-            -min(sunrise, sunset),
-            (MINUTES_PER_DAY - 1) - max(sunrise, sunset),
-        )
-    )
-    return sunrise + applied, sunset + applied, applied / 60
+    applied = int(round(normalize_day_offset(offset_hours) * 60))
+    sunrise = (int(sunrise_minute) + applied) % MINUTES_PER_DAY
+    sunset = (int(sunset_minute) + applied) % MINUTES_PER_DAY
+    return sunrise, sunset, applied / 60
 
 
 def fit_transition_durations(
@@ -182,9 +187,9 @@ def fit_transition_durations(
     """
     sunrise = int(sunrise_duration)
     sunset = int(sunset_duration)
-    span = int(sunset_minute) - int(sunrise_minute)
+    span = light_day_span(sunrise_minute, sunset_minute)
     total = sunrise + sunset
-    if span <= 0 or total <= 0:
+    if total <= 0:
         return sunrise, sunset
 
     budget = span - MIN_DAYLIGHT_MINUTES
@@ -285,9 +290,10 @@ def calculate_daylight_brightness(
 ) -> float:
     """Return a smooth daytime arc peaking at the light day's midday.
 
-    The peak defaults to 12:00 and travels with the light day when the
-    whole day is shifted, so the arc keeps its shape instead of being
-    clamped against one edge of the window.
+    All four minute values must share one frame. calculate_solar_profile
+    passes minutes elapsed since sunrise, which keeps the comparisons
+    ordered even when the light day runs past midnight; the 12:00 default
+    belongs to the plain clock frame.
     """
     maximum = _clamp(float(day_brightness_pct), 1, 100)
     edge = maximum * DAY_EDGE_BRIGHTNESS_FACTOR
@@ -352,15 +358,19 @@ def calculate_solar_profile(
     sunset_start_rgbw: object = DAYLIGHT_RGBW,
     midday_peak_minute: int = MIDDAY_PEAK_MINUTE,
 ) -> SolarProfile:
-    """Return the profile for real sunrise and sunset event minutes.
+    """Return the profile for the given sunrise and sunset event minutes.
+
+    Everything is measured forward from sunrise rather than against the
+    clock, so a light day that runs past midnight is an ordinary case and
+    needs no special handling.
 
     Each transition interpolates every RGBW channel linearly between its two
     configurable endpoints. The daytime colour moves smoothly from the end of
     sunrise to the start of sunset. The following night uses cool moonlight.
     """
-    minute %= 1440
-    sunrise_minute %= 1440
-    sunset_minute %= 1440
+    minute %= MINUTES_PER_DAY
+    sunrise_minute %= MINUTES_PER_DAY
+    sunset_minute %= MINUTES_PER_DAY
     sunrise_duration = normalize_transition_duration(
         sunrise_duration_minutes,
         SUNRISE_DURATION_MINUTES,
@@ -375,18 +385,22 @@ def calculate_solar_profile(
         sunrise_duration,
         sunset_duration,
     )
-    sunrise_end = sunrise_minute + sunrise_duration
-    sunset_start = sunset_minute - sunset_duration
+    # Zeitachse relativ zum Lichtaufgang: 0 ist der Aufgang, span das Ende.
+    span = light_day_span(sunrise_minute, sunset_minute)
+    elapsed = (minute - sunrise_minute) % MINUTES_PER_DAY
+    peak_elapsed = (midday_peak_minute - sunrise_minute) % MINUTES_PER_DAY
+    sunrise_end = sunrise_duration
+    sunset_start = span - sunset_duration
     sunrise_start_color = normalize_rgbw(sunrise_rgbw)
     sunrise_end_color = normalize_rgbw(sunrise_end_rgbw, DAYLIGHT_RGBW)
     sunset_start_color = normalize_rgbw(sunset_start_rgbw, DAYLIGHT_RGBW)
     sunset_end_color = normalize_rgbw(sunset_rgbw)
     day_edge_pct = float(day_brightness_pct) * DAY_EDGE_BRIGHTNESS_FACTOR
 
-    if sunrise_minute <= minute < sunrise_end:
+    if elapsed < sunrise_end:
         phase = "sunrise"
         progress = _clamp(
-            (minute - sunrise_minute) / sunrise_duration,
+            elapsed / sunrise_duration,
             0,
             1,
         )
@@ -398,29 +412,29 @@ def calculate_solar_profile(
             sunrise_end_color,
             progress,
         )
-    elif sunrise_end <= minute < sunset_start:
+    elif elapsed < sunset_start:
         phase = "day"
         progress = _clamp(
-            (minute - sunrise_end) / max(1, sunset_start - sunrise_end),
+            (elapsed - sunrise_end) / max(1, sunset_start - sunrise_end),
             0,
             1,
         )
         base_pct = calculate_daylight_brightness(
-            minute,
+            elapsed,
             sunrise_end,
             sunset_start,
             day_brightness_pct,
-            midday_peak_minute,
+            peak_elapsed,
         )
         rgbw = _interpolate_rgbw(
             sunrise_end_color,
             sunset_start_color,
             progress,
         )
-    elif sunset_start <= minute < sunset_minute:
+    elif elapsed < span:
         phase = "sunset"
         progress = _clamp(
-            (minute - sunset_start) / sunset_duration,
+            (elapsed - sunset_start) / sunset_duration,
             0,
             1,
         )

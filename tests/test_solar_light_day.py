@@ -52,20 +52,32 @@ class ShiftLightDayTests(unittest.TestCase):
             (SUNRISE, SUNSET, 0),
         )
 
-    def test_late_shift_stops_at_midnight_without_wrapping(self) -> None:
+    def test_late_shift_runs_past_midnight(self) -> None:
+        """+6 h must be applied in full, even though sunset lands next day."""
         sunrise, sunset, applied = solar.shift_light_day(SUNRISE, SUNSET, 6)
 
-        self.assertEqual(sunset, 1439)
-        self.assertEqual(sunset - sunrise, SUNSET - SUNRISE)
-        self.assertLess(applied, 6)
-        self.assertAlmostEqual(applied, (1439 - SUNSET) / 60)
+        self.assertEqual(applied, 6)
+        self.assertEqual(sunrise, SUNRISE + 360)
+        self.assertEqual(sunset, (SUNSET + 360) % 1440)
+        self.assertLess(sunset, sunrise)
+        self.assertEqual(solar.light_day_span(sunrise, sunset), SUNSET - SUNRISE)
 
-    def test_early_shift_stops_at_midnight_without_wrapping(self) -> None:
+    def test_early_shift_runs_past_midnight(self) -> None:
         sunrise, sunset, applied = solar.shift_light_day(120, 1000, -6)
 
-        self.assertEqual(sunrise, 0)
-        self.assertEqual(sunset, 1000 - 120)
-        self.assertAlmostEqual(applied, -2)
+        self.assertEqual(applied, -6)
+        self.assertEqual(sunrise, 1440 + 120 - 360)
+        self.assertEqual(sunset, 1000 - 360)
+        self.assertEqual(solar.light_day_span(sunrise, sunset), 880)
+
+    def test_span_survives_every_offset(self) -> None:
+        for offset in (-6, -4.25, -1, 0, 1, 3.5, 6):
+            with self.subTest(offset=offset):
+                sunrise, sunset, _ = solar.shift_light_day(SUNRISE, SUNSET, offset)
+                self.assertEqual(
+                    solar.light_day_span(sunrise, sunset),
+                    SUNSET - SUNRISE,
+                )
 
     def test_offset_outside_the_slider_range_is_normalised(self) -> None:
         self.assertEqual(
@@ -145,25 +157,65 @@ class SolarProfileDaylightTests(unittest.TestCase):
         self.assertIn("sunrise", phases)
         self.assertIn("sunset", phases)
 
-    def test_shifted_day_is_the_unshifted_day_moved_in_time(self) -> None:
-        """A shifted light day must reproduce the original curve exactly."""
-        sunrise, sunset, applied = solar.shift_light_day(SUNRISE, SUNSET, 2)
-        shifted_peak = solar.MIDDAY_PEAK_MINUTE + int(round(applied * 60))
+    def test_peak_keeps_its_place_in_a_shifted_day(self) -> None:
+        """The peak must sit as far into the light day as solar noon does."""
+        noon_offset = (solar.MIDDAY_PEAK_MINUTE - SUNRISE) % 1440
+        sunrise_end, sunset_start = 160, (SUNSET - SUNRISE) - 165
 
-        for offset_minute in (5, 200, 600, 830):
-            with self.subTest(offset_minute=offset_minute):
+        brightest = max(
+            range(sunrise_end, sunset_start),
+            key=lambda elapsed: solar.calculate_daylight_brightness(
+                elapsed,
+                sunrise_end,
+                sunset_start,
+                90,
+                noon_offset,
+            ),
+        )
+        self.assertEqual(brightest, noon_offset)
+
+    def test_a_light_day_past_midnight_runs_through_every_phase(self) -> None:
+        """The whole point of the shift: light after midnight, not clipped."""
+        sunrise, sunset, _ = solar.shift_light_day(SUNRISE, SUNSET, 6)
+        span = solar.light_day_span(sunrise, sunset)
+        seen = []
+        for elapsed in range(0, 1440):
+            profile = solar.calculate_solar_profile(
+                (sunrise + elapsed) % 1440,
+                sunrise,
+                sunset,
+                90,
+                3,
+                sunrise_duration_minutes=160,
+                sunset_duration_minutes=165,
+            )
+            if not seen or seen[-1][0] != profile.phase:
+                seen.append((profile.phase, elapsed))
+
+        self.assertEqual([entry[0] for entry in seen], ["sunrise", "day", "sunset", "night"])
+        self.assertEqual(seen[1][1], 160)
+        self.assertEqual(seen[2][1], span - 165)
+        self.assertEqual(seen[3][1], span)
+
+    def test_shifted_day_matches_the_unshifted_one_minute_for_minute(self) -> None:
+        """A shift may move the day on the clock, never reshape it."""
+        sunrise, sunset, _ = solar.shift_light_day(SUNRISE, SUNSET, 6)
+        noon_offset = (solar.MIDDAY_PEAK_MINUTE - SUNRISE) % 1440
+
+        for elapsed in range(0, 1440, 7):
+            with self.subTest(elapsed=elapsed):
                 shifted = solar.calculate_solar_profile(
-                    sunrise + offset_minute,
+                    (sunrise + elapsed) % 1440,
                     sunrise,
                     sunset,
                     90,
                     3,
                     sunrise_duration_minutes=160,
                     sunset_duration_minutes=165,
-                    midday_peak_minute=shifted_peak,
+                    midday_peak_minute=(sunrise + noon_offset) % 1440,
                 )
                 plain = solar.calculate_solar_profile(
-                    SUNRISE + offset_minute,
+                    (SUNRISE + elapsed) % 1440,
                     SUNRISE,
                     SUNSET,
                     90,
@@ -173,29 +225,7 @@ class SolarProfileDaylightTests(unittest.TestCase):
                 )
                 self.assertEqual(shifted.phase, plain.phase)
                 self.assertAlmostEqual(shifted.base_pct, plain.base_pct, places=6)
-
-    def test_peak_stays_inside_a_shifted_window(self) -> None:
-        """A fixed 12:00 peak would fall outside a strongly shifted day."""
-        sunrise, sunset, applied = solar.shift_light_day(SUNRISE, SUNSET, 6)
-        shifted_peak = solar.MIDDAY_PEAK_MINUTE + int(round(applied * 60))
-        sunrise_end = sunrise + 160
-        sunset_start = sunset - 165
-
-        self.assertLess(solar.MIDDAY_PEAK_MINUTE, sunrise_end)
-        self.assertGreaterEqual(shifted_peak, sunrise_end)
-        self.assertLessEqual(shifted_peak, sunset_start)
-
-        brightest = max(
-            range(sunrise_end, sunset_start),
-            key=lambda minute: solar.calculate_daylight_brightness(
-                minute,
-                sunrise_end,
-                sunset_start,
-                90,
-                shifted_peak,
-            ),
-        )
-        self.assertEqual(brightest, shifted_peak)
+                self.assertEqual(shifted.rgbw, plain.rgbw)
 
 
 if __name__ == "__main__":

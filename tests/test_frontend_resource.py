@@ -33,7 +33,10 @@ class FrontendResourceTests(unittest.TestCase):
 
         self.assertIn("sunrise_duration_minutes ?? 60", source)
         self.assertIn("sunset_duration_minutes ?? 90", source)
-        self.assertIn("const sunsetStart = sunset - sunsetDuration", source)
+        # Die Kurve rechnet relativ zum Lichtaufgang, damit ein Lichttag ueber
+        # Mitternacht dieselbe Form behaelt wie im Python-Profil.
+        self.assertIn("const sunsetStart = span - sunsetDuration", source)
+        self.assertIn("const elapsed = (((minute - sunrise) % 1440) + 1440) % 1440", source)
         self.assertIn('night: "Mondlicht"', source)
 
     def test_time_lapse_duration_is_adjustable_in_the_card(self) -> None:
