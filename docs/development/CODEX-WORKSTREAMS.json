@@ -1,0 +1,63 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Thomash100/Global/main/docs/development/CODEX-PROJECTS.schema.json",
+  "schemaVersion": 1,
+  "registryVersion": "1.0.0",
+  "generatedAt": "2026-08-15T14:00:00+02:00",
+  "identityStandard": "global.development.identity@1.0.0",
+  "sourcePolicy": {
+    "scope": "project-local",
+    "localRepository": "Thomash100/HA-Aquarium-",
+    "globalRegistry": "https://github.com/Thomash100/Global/blob/main/docs/development/CODEX-PROJECTS.json",
+    "localStateWins": true,
+    "historyRewriteAllowed": false
+  },
+  "statusValues": [
+    "PLANNED",
+    "ACTIVE",
+    "TECHNICALLY_COMPLETE",
+    "MANUAL_REVIEW_REQUIRED",
+    "BLOCKED",
+    "READY_FOR_NEXT",
+    "INTEGRATED",
+    "RELEASED",
+    "SUPERSEDED"
+  ],
+  "projects": [
+    {
+      "projectCode": "HAA",
+      "projectName": "Home Assistant Aquarium",
+      "repositories": [
+        {
+          "repository": "Thomash100/HA-Aquarium-",
+          "role": "primary-automation",
+          "defaultBranch": "main",
+          "status": "ACTIVE",
+          "note": "Lokaler Checkout enthält 24 nicht synchronisierte Änderungen."
+        }
+      ],
+      "workstreams": [
+        {
+          "workstreamId": "HAA-AUTO",
+          "workstreamName": "Aquarium-Automatisierung",
+          "chatTitle": "HAA-AUTO – Home Assistant – Aquarium-Automatisierung",
+          "repository": "Thomash100/HA-Aquarium-",
+          "identityState": "LEGACY_UNPHASED",
+          "phasePolicy": "legacy-gaps",
+          "currentPhase": null,
+          "lastCompletedPhase": null,
+          "nextPlannedPhase": null,
+          "status": "BLOCKED",
+          "branch": "main",
+          "pullRequest": null,
+          "manualGate": null,
+          "phases": [],
+          "historicalIds": [],
+          "legacyReferences": [
+            "Lokaler Dirty-Stand"
+          ],
+          "blockedReason": "Lokale Änderungen müssen vor einer Phasenvergabe eingeordnet werden."
+        }
+      ]
+    }
+  ]
+}
